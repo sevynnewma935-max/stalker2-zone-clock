@@ -1,13 +1,21 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#111612">
+  <meta id="themeColorMeta" name="theme-color" content="#111612">
   <meta name="description" content="Часы игрового времени и выбросов для S.T.A.L.K.E.R. 2">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Zone Clock">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem('stalker2-zone-clock-theme');
+      if (savedTheme === 'light' || savedTheme === 'dark') {
+        document.documentElement.dataset.theme = savedTheme;
+      }
+    } catch (_) {}
+  </script>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
@@ -63,20 +71,6 @@
             </label>
           </div>
 
-          <label>
-            <span>Профиль времени</span>
-            <select id="profileInput">
-              <option value="vanilla">Vanilla — ~60 мин/сутки, день/ночь 70/30</option>
-              <option value="uniform24">Равномерно ×24 — 60 мин/сутки</option>
-              <option value="custom">Своя длительность суток</option>
-            </select>
-          </label>
-
-          <label id="customWrap" class="hidden">
-            <span>Реальных минут на игровые сутки</span>
-            <input id="customMinutes" type="number" min="10" max="1440" step="1" value="60">
-          </label>
-
           <button class="btn primary wide" type="submit">Синхронизировать и запустить</button>
         </form>
 
@@ -84,6 +78,8 @@
           <button id="pauseBtn" class="btn ghost" type="button">Пауза</button>
           <button id="resumeBtn" class="btn ghost" type="button">Продолжить</button>
         </div>
+
+        <p class="sync-hint muted">Профиль хода времени теперь находится в разделе «Настройки».</p>
       </article>
     </section>
 
@@ -140,6 +136,54 @@
         <button id="dayPlusBtn" class="btn ghost" type="button">+1 игровой день</button>
       </div>
     </section>
+
+    <details class="card settings-card">
+      <summary>
+        <span class="settings-summary">
+          <span class="settings-icon" aria-hidden="true">⚙</span>
+          <span>
+            <span class="settings-title">Настройки</span>
+            <span class="settings-subtitle">Профиль времени и оформление</span>
+          </span>
+        </span>
+        <span class="settings-chevron" aria-hidden="true">⌄</span>
+      </summary>
+
+      <div class="settings-content">
+        <div class="settings-group">
+          <div class="settings-heading">Оформление</div>
+          <div class="theme-switch" role="group" aria-label="Цветовая тема">
+            <button id="darkThemeBtn" class="theme-option" type="button" data-theme-choice="dark" aria-pressed="true">
+              <span class="theme-preview theme-preview-dark" aria-hidden="true"></span>
+              <span>Тёмная</span>
+            </button>
+            <button id="lightThemeBtn" class="theme-option" type="button" data-theme-choice="light" aria-pressed="false">
+              <span class="theme-preview theme-preview-light" aria-hidden="true"></span>
+              <span>Светлая</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-heading">Ход игрового времени</div>
+          <label>
+            <span>Профиль времени</span>
+            <select id="profileInput">
+              <option value="vanilla">Vanilla — ~60 мин/сутки, день/ночь 70/30</option>
+              <option value="uniform24">Равномерно ×24 — 60 мин/сутки</option>
+              <option value="custom">Своя длительность суток</option>
+            </select>
+          </label>
+
+          <label id="customWrap" class="hidden">
+            <span>Реальных минут на игровые сутки</span>
+            <input id="customMinutes" type="number" min="10" max="1440" step="1" value="60">
+          </label>
+
+          <p class="settings-help muted">После изменения профиля текущее игровое время сохраняется. Если время в игре уже разошлось с часами, выполните синхронизацию выше.</p>
+        </div>
+      </div>
+    </details>
 
     <section class="card compact">
       <div class="row between wrap gap">

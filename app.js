@@ -7,6 +7,7 @@
   const DAY_RATE = (16 * 3600) / (42 * 60);
   const NIGHT_RATE = (8 * 3600) / (18 * 60);
   const STORAGE_KEY = 'stalker2-zone-clock-v1';
+  const THEME_KEY = 'stalker2-zone-clock-theme';
 
   const $ = (id) => document.getElementById(id);
 
@@ -22,7 +23,9 @@
     riskWrap: $('riskWrap'), riskLabel: $('riskLabel'), riskBadge: $('riskBadge'),
     riskProgress: $('riskProgress'), riskDetail: $('riskDetail'), riskNext: $('riskNext'),
     dayMinusBtn: $('dayMinusBtn'), dayPlusBtn: $('dayPlusBtn'),
-    resetBtn: $('resetBtn'), message: $('message'), saveState: $('saveState')
+    resetBtn: $('resetBtn'), message: $('message'), saveState: $('saveState'),
+    darkThemeBtn: $('darkThemeBtn'), lightThemeBtn: $('lightThemeBtn'),
+    themeColorMeta: $('themeColorMeta')
   };
 
   let gameSeconds = 12 * 3600;
@@ -33,6 +36,29 @@
   let emission = null;
   let deferredInstallPrompt = null;
   let lastSavedAt = 0;
+
+  function currentTheme() {
+    return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  }
+
+  function applyTheme(theme, persist = true) {
+    const next = theme === 'light' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+
+    if (els.darkThemeBtn) {
+      els.darkThemeBtn.setAttribute('aria-pressed', String(next === 'dark'));
+    }
+    if (els.lightThemeBtn) {
+      els.lightThemeBtn.setAttribute('aria-pressed', String(next === 'light'));
+    }
+    if (els.themeColorMeta) {
+      els.themeColorMeta.setAttribute('content', next === 'light' ? '#f1f3ed' : '#111612');
+    }
+
+    if (persist) {
+      try { localStorage.setItem(THEME_KEY, next); } catch (_) {}
+    }
+  }
 
   function wrap(v) {
     v %= DAY_SECONDS;
@@ -232,6 +258,7 @@
       lastRealMs,
       profile: els.profileInput.value,
       customMinutes: customMinutesValue(),
+      theme: currentTheme(),
       emission
     };
   }
@@ -257,6 +284,15 @@
       running = Boolean(s.running);
       lastRealMs = Number(s.lastRealMs) || Date.now();
       emission = s.emission || null;
+
+      let storedTheme = null;
+      try { storedTheme = localStorage.getItem(THEME_KEY); } catch (_) {}
+      applyTheme(
+        storedTheme === 'light' || storedTheme === 'dark'
+          ? storedTheme
+          : (s.theme === 'light' ? 'light' : 'dark'),
+        false
+      );
 
       const allowed = new Set(['vanilla', 'uniform24', 'custom']);
       els.profileInput.value = allowed.has(s.profile) ? s.profile : 'vanilla';
@@ -394,6 +430,7 @@
 
   els.resetBtn.addEventListener('click', () => {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(THEME_KEY);
     gameSeconds = 12 * 3600;
     gameDay = 1;
     absoluteGameSeconds = gameDay * DAY_SECONDS + gameSeconds;
@@ -403,11 +440,22 @@
     els.profileInput.value = 'vanilla';
     els.customMinutes.value = '60';
     els.customWrap.classList.add('hidden');
+    applyTheme('dark');
     els.dayInput.value = '1';
     els.timeInput.value = '12:00:00';
     els.message.textContent = 'Все сохранённые данные сброшены.';
     render();
     saveState(true);
+  });
+
+  document.querySelectorAll('[data-theme-choice]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      applyTheme(btn.dataset.themeChoice);
+      els.message.textContent = btn.dataset.themeChoice === 'light'
+        ? 'Включена светлая тема.'
+        : 'Включена тёмная тема.';
+      saveState(true);
+    });
   });
 
   window.addEventListener('beforeinstallprompt', (event) => {
@@ -448,6 +496,8 @@
       });
     });
   }
+
+  applyTheme(currentTheme(), false);
 
   const restored = loadState();
   if (restored) els.message.textContent = 'Состояние восстановлено.';
