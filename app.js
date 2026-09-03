@@ -13,13 +13,13 @@
   const $ = (id) => document.getElementById(id);
 
   const els = {
-    clock: $('clock'), gameDay: $('gameDay'), runState: $('runState'), rate: $('rate'),
+    clock: $('clock'), gameDay: $('gameDay'), runState: $('runState'),
     daypart: $('daypart'), boundary: $('boundary'), boundaryLabel: $('boundaryLabel'),
     syncForm: $('syncForm'), dayInput: $('dayInput'), timeInput: $('timeInput'),
     profileInput: $('profileInput'), customWrap: $('customWrap'), customMinutes: $('customMinutes'),
     pauseBtn: $('pauseBtn'), resumeBtn: $('resumeBtn'), sleepBtn: $('sleepBtn'), installBtn: $('installBtn'),
     emissionTime: $('emissionTime'), emissionDay: $('emissionDay'), emissionInfo: $('emissionInfo'),
-    emissionGameElapsed: $('emissionGameElapsed'), emissionRealElapsed: $('emissionRealElapsed'),
+    emissionGameElapsed: $('emissionGameElapsed'),
     markEmissionBtn: $('markEmissionBtn'), clearEmissionBtn: $('clearEmissionBtn'),
     riskWrap: $('riskWrap'), riskLabel: $('riskLabel'), riskBadge: $('riskBadge'),
     riskProgress: $('riskProgress'), riskDetail: $('riskDetail'), riskNext: $('riskNext'),
@@ -234,9 +234,7 @@
     els.clearEmissionBtn.classList.remove('hidden');
 
     const gameElapsed = Math.max(0, absoluteGameSeconds - emission.absoluteGameSeconds);
-    const realElapsed = Math.max(0, (Date.now() - emission.realMs) / 1000);
     els.emissionGameElapsed.textContent = formatDuration(gameElapsed);
-    els.emissionRealElapsed.textContent = formatDuration(realElapsed);
     renderRisk(gameElapsed);
   }
 
@@ -248,7 +246,6 @@
     els.daypart.textContent = day ? 'ДЕНЬ' : 'НОЧЬ';
     els.boundaryLabel.textContent = day ? 'До ночи' : 'До рассвета';
     els.boundary.textContent = formatDuration(realUntilBoundary());
-    els.rate.textContent = '×' + rateAt(gameSeconds).toFixed(2);
     els.runState.textContent = running ? 'Часы идут вместе с реальным временем' : 'Часы на паузе';
 
     els.pauseBtn.disabled = !running;
@@ -387,13 +384,38 @@
     render();
   });
 
+  let sleepButtonBusy = false;
+
   els.sleepBtn.addEventListener('click', () => {
+    if (sleepButtonBusy) return;
+    sleepButtonBusy = true;
+
     updateNow();
-    addGameDelta(SLEEP_GAME_SECONDS);
-    lastRealMs = Date.now();
-    els.message.textContent = `Сон: +8 игровых часов. Сейчас день ${gameDay}, ${formatClock(gameSeconds)}.`;
-    saveState(true);
-    render();
+
+    const sleepLabel = els.sleepBtn.querySelector('.sleep-label');
+    els.sleepBtn.disabled = true;
+    els.sleepBtn.classList.add('sleep-activating');
+    if (sleepLabel) sleepLabel.textContent = 'СОН...';
+
+    window.setTimeout(() => {
+      addGameDelta(SLEEP_GAME_SECONDS);
+      lastRealMs = Date.now();
+      saveState(true);
+      render();
+
+      els.sleepBtn.classList.remove('sleep-activating');
+      els.sleepBtn.classList.add('sleep-confirmed');
+      if (sleepLabel) sleepLabel.textContent = 'ГОТОВО';
+
+      els.message.textContent = `Сон: +8 игровых часов. Сейчас день ${gameDay}, ${formatClock(gameSeconds)}.`;
+
+      window.setTimeout(() => {
+        els.sleepBtn.classList.remove('sleep-confirmed');
+        els.sleepBtn.disabled = false;
+        if (sleepLabel) sleepLabel.textContent = 'СОН';
+        sleepButtonBusy = false;
+      }, 650);
+    }, 700);
   });
 
   els.markEmissionBtn.addEventListener('click', () => {

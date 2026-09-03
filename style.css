@@ -530,3 +530,110 @@ body:has(.settings-dialog[open]) { overflow:hidden; }
 .sleep-icon { font-size:1.25rem; color:var(--accent-2); }
 .sleep-hours { color:var(--accent-2); font-size:.76rem; letter-spacing:.08em; }
 .sleep-btn:active { transform:translateY(1px); }
+
+
+/* PWA v8: в блоке последнего выброса оставлено только игровое время */
+.emission-info {
+  grid-template-columns: 1fr;
+}
+
+
+/* PWA v9: скорость убрана из блока «Время в зоне» */
+.hero-stats-single {
+  grid-template-columns: 1fr;
+  justify-items: end;
+}
+.hero-stats-single .align-right {
+  text-align: right;
+}
+
+
+/* PWA v10: более заметное нажатие «СОН +8 Ч» */
+.sleep-btn {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform .28s cubic-bezier(.2,.75,.25,1),
+    background .35s ease,
+    border-color .35s ease,
+    box-shadow .35s ease,
+    filter .35s ease;
+}
+
+.sleep-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 24%, transparent),
+    transparent
+  );
+  transform: translateX(-100%);
+}
+
+.sleep-btn.sleep-activating {
+  transform: translateY(3px) scale(.985);
+  border-color: var(--accent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--accent) 29%, var(--card)),
+      color-mix(in srgb, var(--accent) 16%, var(--card))
+    );
+  box-shadow:
+    inset 0 3px 8px color-mix(in srgb, black 28%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--accent) 13%, transparent);
+  filter: brightness(.95);
+  opacity: 1;
+}
+
+.sleep-btn.sleep-activating::after {
+  opacity: 1;
+  animation: sleep-scan .7s ease-out both;
+}
+
+.sleep-btn.sleep-confirmed {
+  transform: translateY(0) scale(1);
+  border-color: var(--accent-2);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--accent) 38%, var(--card)),
+      color-mix(in srgb, var(--accent) 20%, var(--card))
+    );
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent),
+    0 0 22px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.sleep-btn.sleep-activating .sleep-icon {
+  animation: sleep-moon-pulse .7s ease-in-out both;
+}
+
+.sleep-btn.sleep-confirmed .sleep-label,
+.sleep-btn.sleep-confirmed .sleep-hours {
+  color: var(--accent-2);
+}
+
+@keyframes sleep-scan {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes sleep-moon-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(.82); opacity: .6; }
+  100% { transform: scale(1.08); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sleep-btn,
+  .sleep-btn::after,
+  .sleep-btn .sleep-icon {
+    animation: none !important;
+  }
+}
