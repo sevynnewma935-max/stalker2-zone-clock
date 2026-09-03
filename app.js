@@ -25,7 +25,9 @@
     dayMinusBtn: $('dayMinusBtn'), dayPlusBtn: $('dayPlusBtn'),
     resetBtn: $('resetBtn'), message: $('message'), saveState: $('saveState'),
     darkThemeBtn: $('darkThemeBtn'), lightThemeBtn: $('lightThemeBtn'),
-    themeColorMeta: $('themeColorMeta')
+    themeColorMeta: $('themeColorMeta'),
+    settingsBtn: $('settingsBtn'), closeSettingsBtn: $('closeSettingsBtn'),
+    settingsDialog: $('settingsDialog')
   };
 
   let gameSeconds = 12 * 3600;
@@ -446,6 +448,31 @@
     els.message.textContent = 'Все сохранённые данные сброшены.';
     render();
     saveState(true);
+  });
+
+  function openSettings() {
+    if (!els.settingsDialog) return;
+    if (typeof els.settingsDialog.showModal === 'function') {
+      if (!els.settingsDialog.open) els.settingsDialog.showModal();
+    } else {
+      els.settingsDialog.setAttribute('open', '');
+    }
+  }
+
+  function closeSettings() {
+    if (!els.settingsDialog) return;
+    if (typeof els.settingsDialog.close === 'function' && els.settingsDialog.open) {
+      els.settingsDialog.close();
+    } else {
+      els.settingsDialog.removeAttribute('open');
+    }
+  }
+
+  els.settingsBtn?.addEventListener('click', openSettings);
+  els.closeSettingsBtn?.addEventListener('click', closeSettings);
+
+  els.settingsDialog?.addEventListener('click', (event) => {
+    if (event.target === els.settingsDialog) closeSettings();
   });
 
   document.querySelectorAll('[data-theme-choice]').forEach(btn => {

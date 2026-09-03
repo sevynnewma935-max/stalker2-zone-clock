@@ -246,3 +246,87 @@ input:focus,select:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior:auto !important; transition:none !important; }
 }
+
+
+/* Верхняя кнопка настроек */
+.top-actions {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.icon-btn {
+  width:46px;
+  height:46px;
+  min-width:46px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:var(--ghost);
+  color:var(--text);
+  cursor:pointer;
+  transition:background .18s ease, border-color .18s ease, transform .12s ease;
+}
+.icon-btn:hover { border-color:var(--accent); }
+.icon-btn:active { transform:translateY(1px); }
+.icon-btn:focus-visible { outline:3px solid var(--focus-ring); outline-offset:2px; }
+.icon-btn svg {
+  width:22px;
+  height:22px;
+  fill:currentColor;
+}
+.icon-btn.small {
+  width:42px;
+  height:42px;
+  min-width:42px;
+  border-radius:12px;
+}
+
+/* Модальное окно настроек */
+.settings-dialog {
+  width:min(92vw, 560px);
+  max-width:560px;
+  padding:0;
+  border:0;
+  border-radius:20px;
+  background:transparent;
+  color:var(--text);
+}
+.settings-dialog::backdrop {
+  background:rgba(0,0,0,.58);
+  backdrop-filter:blur(4px);
+}
+.settings-modal {
+  overflow:hidden;
+  border:1px solid var(--border);
+  border-radius:20px;
+  background:var(--card);
+  box-shadow:0 24px 70px rgba(0,0,0,.38);
+}
+.settings-modal-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:18px;
+  border-bottom:1px solid var(--border);
+}
+.settings-modal-header h2 {
+  margin:.2rem 0 0;
+  font-size:1.35rem;
+}
+.settings-content.modal-content {
+  border-top:0;
+  padding:18px;
+}
+body:has(.settings-dialog[open]) {
+  overflow:hidden;
+}
+@media (max-width:520px) {
+  .top-actions { gap:8px; }
+  .icon-btn { width:44px; height:44px; min-width:44px; }
+  .settings-dialog { width:calc(100% - 24px); }
+  .settings-modal-header,
+  .settings-content.modal-content { padding:15px; }
+}
