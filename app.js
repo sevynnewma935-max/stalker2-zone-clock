@@ -6,14 +6,18 @@
   const DAWN_RATE_END = 7 * 3600;      // 07:00
   const DAY_START = 10 * 3600;         // 10:00
   const EVENING_START = 18 * 3600;     // 18:00
-  const NIGHT_START = 21.5 * 3600;     // 21:30
+  const NIGHT_TRANSITION_START = 21 * 3600; // 21:00
+  const NIGHT_START = 21.5 * 3600;          // 21:30 — смена статуса ВЕЧЕР/НОЧЬ
+  const NIGHT_TRANSITION_END = 22 * 3600;   // 22:00
   const DAY_RATE = ((16 * 3600) / (42 * 60)) * 0.604838710;
   const EVENING_RATE = ((16 * 3600) / (42 * 60)) * 0.483870968;
   const DAWN_RATE = 9.74;               // calibrated from 05:05–06:00 test
   const NIGHT_RATE = ((8 * 3600) / (18 * 60)) * 0.754616477;
+  const NIGHT_TRANSITION_RATE = NIGHT_RATE * 10;
   const SLEEP_GAME_SECONDS = 8 * 3600;
   const STORAGE_KEY = 'stalker2-zone-clock-v1';
   const THEME_KEY = 'stalker2-zone-clock-theme';
+  const TEST_STORAGE_KEY = 'stalker2-zone-clock-test-v1';
 
   const $ = (id) => document.getElementById(id);
 
@@ -33,7 +37,10 @@
     darkThemeBtn: $('darkThemeBtn'), lightThemeBtn: $('lightThemeBtn'),
     themeColorMeta: $('themeColorMeta'),
     settingsBtn: $('settingsBtn'), closeSettingsBtn: $('closeSettingsBtn'),
-    settingsDialog: $('settingsDialog')
+    settingsDialog: $('settingsDialog'),
+    testBtn: $('testBtn'), closeTestBtn: $('closeTestBtn'), testDialog: $('testDialog'),
+    testTableBody: $('testTableBody'), exportTestBtn: $('exportTestBtn'),
+    clearTestBtn: $('clearTestBtn'), testMessage: $('testMessage')
   };
 
   let gameSeconds = 12 * 3600;
@@ -160,10 +167,12 @@
     if (els.profileInput.value === 'custom') return DAY_SECONDS / (customMinutesValue() * 60);
 
     const v = wrap(value);
-    if (v < MORNING_START || v >= NIGHT_START) return NIGHT_RATE;
+    if (v < MORNING_START) return NIGHT_RATE;
     if (v < DAWN_RATE_END) return DAWN_RATE;
     if (v < EVENING_START) return DAY_RATE;
-    return EVENING_RATE;
+    if (v < NIGHT_TRANSITION_START) return EVENING_RATE;
+    if (v < NIGHT_TRANSITION_END) return NIGHT_TRANSITION_RATE;
+    return NIGHT_RATE;
   }
 
   function addGameDelta(delta) {
@@ -198,8 +207,10 @@
         gameToBoundary = DAWN_RATE_END - v;
       } else if (v < EVENING_START) {
         gameToBoundary = EVENING_START - v;
-      } else if (v < NIGHT_START) {
-        gameToBoundary = NIGHT_START - v;
+      } else if (v < NIGHT_TRANSITION_START) {
+        gameToBoundary = NIGHT_TRANSITION_START - v;
+      } else if (v < NIGHT_TRANSITION_END) {
+        gameToBoundary = NIGHT_TRANSITION_END - v;
       } else {
         gameToBoundary = (DAY_SECONDS - v) + MORNING_START;
       }
@@ -634,6 +645,167 @@
       saveState(true);
     }
   });
+
+
+  function buildTestRows() {
+    if (!els.testTableBody || els.testTableBody.children.length) return;
+
+    let saved = {};
+    try {
+      saved = JSON.parse(localStorage.getItem(TEST_STORAGE_KEY) || '{}') || {};
+    } catch (_) {
+      saved = {};
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    for (let totalMinutes = 0; totalMinutes <= 24 * 60; totalMinutes += 15) {
+      const h = Math.floor(totalMinutes / 60);
+      const m = totalMinutes % 60;
+      const label = totalMinutes === 24 * 60
+        ? '24:00'
+        : `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+
+      const tr = document.createElement('tr');
+
+      const gameCell = document.createElement('td');
+      gameCell.className = 'test-game-time';
+      gameCell.textContent = label;
+
+      const zoneCell = document.createElement('td');
+      const input = document.createElement('input');
+      input.className = 'test-zone-input';
+      input.type = 'text';
+      input.inputMode = 'numeric';
+      input.autocomplete = 'off';
+      input.placeholder = 'HH:MM';
+      input.maxLength = 5;
+      input.dataset.gameTime = label;
+      input.value = typeof saved[label] === 'string' ? saved[label] : '';
+
+      input.addEventListener('input', () => {
+        let value = input.value.replace(/[^\d:]/g, '').slice(0, 5);
+
+        if (/^\d{3,4}$/.test(value) && !value.includes(':')) {
+          value = value.length === 3
+            ? `${value.slice(0, 1)}:${value.slice(1)}`
+            : `${value.slice(0, 2)}:${value.slice(2)}`;
+        }
+
+        input.value = value;
+        saveTestTable();
+      });
+
+      zoneCell.appendChild(input);
+      tr.append(gameCell, zoneCell);
+      fragment.appendChild(tr);
+    }
+
+    els.testTableBody.appendChild(fragment);
+  }
+
+  function getTestData() {
+    const result = {};
+    if (!els.testTableBody) return result;
+
+    els.testTableBody.querySelectorAll('.test-zone-input').forEach(input => {
+      result[input.dataset.gameTime] = input.value.trim();
+    });
+
+    return result;
+  }
+
+  function saveTestTable() {
+    try {
+      localStorage.setItem(TEST_STORAGE_KEY, JSON.stringify(getTestData()));
+      if (els.testMessage) els.testMessage.textContent = 'Значения сохранены.';
+    } catch (_) {
+      if (els.testMessage) els.testMessage.textContent = 'Не удалось сохранить значения.';
+    }
+  }
+
+  function csvEscape(value) {
+    const text = String(value ?? '');
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+
+  function exportTestCsv() {
+    const data = getTestData();
+    const rows = [
+      ['Игра', 'ZONE CLOCK'],
+    ];
+
+    for (let totalMinutes = 0; totalMinutes <= 24 * 60; totalMinutes += 15) {
+      const h = Math.floor(totalMinutes / 60);
+      const m = totalMinutes % 60;
+      const label = totalMinutes === 24 * 60
+        ? '24:00'
+        : `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      rows.push([label, data[label] || '']);
+    }
+
+    const csv = '\uFEFF' + rows
+      .map(row => row.map(csvEscape).join(';'))
+      .join('\r\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'zone-clock-test-v37.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    if (els.testMessage) {
+      els.testMessage.textContent = 'CSV экспортирован. Этот файл можно загрузить в ChatGPT.';
+    }
+  }
+
+  function clearTestTable() {
+    if (!window.confirm('Очистить все введённые значения теста?')) return;
+
+    if (els.testTableBody) {
+      els.testTableBody.querySelectorAll('.test-zone-input').forEach(input => {
+        input.value = '';
+      });
+    }
+
+    localStorage.removeItem(TEST_STORAGE_KEY);
+    if (els.testMessage) els.testMessage.textContent = 'Таблица очищена.';
+  }
+
+  if (els.testBtn) {
+    els.testBtn.addEventListener('click', () => {
+      buildTestRows();
+      if (typeof els.testDialog.showModal === 'function') {
+        els.testDialog.showModal();
+      } else {
+        els.testDialog.setAttribute('open', '');
+      }
+    });
+  }
+
+  if (els.closeTestBtn) {
+    els.closeTestBtn.addEventListener('click', () => {
+      if (typeof els.testDialog.close === 'function') els.testDialog.close();
+      else els.testDialog.removeAttribute('open');
+    });
+  }
+
+  if (els.testDialog) {
+    els.testDialog.addEventListener('click', (event) => {
+      if (event.target === els.testDialog) {
+        if (typeof els.testDialog.close === 'function') els.testDialog.close();
+        else els.testDialog.removeAttribute('open');
+      }
+    });
+  }
+
+  if (els.exportTestBtn) els.exportTestBtn.addEventListener('click', exportTestCsv);
+  if (els.clearTestBtn) els.clearTestBtn.addEventListener('click', clearTestTable);
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
