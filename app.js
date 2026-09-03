@@ -204,18 +204,12 @@
     return { at: DAY_SECONDS + MORNING_START, label: 'До утра' };
   }
 
-  function realUntilBoundary() {
+  // All durations shown on the main screen use Zone/game time.
+  // Real time is used only internally to advance the clock between renders.
+  function gameUntilBoundary() {
     const v = wrap(gameSeconds);
     const next = nextDayPartBoundary(v);
-    const gameDelta = next.at - v;
-
-    if (els.profileInput.value !== 'vanilla') {
-      return gameDelta / rateAt(v);
-    }
-
-    // All daylight sub-periods use the current vanilla daylight coefficient.
-    // Night uses the current vanilla night coefficient.
-    return gameDelta / rateAt(v);
+    return Math.max(0, next.at - v);
   }
 
   function emissionRisk(elapsed) {
@@ -321,8 +315,8 @@
     const nextPart = nextDayPartBoundary(gameSeconds);
     els.daypart.textContent = part;
     els.boundaryLabel.textContent = nextPart.label;
-    els.boundary.textContent = formatDuration(realUntilBoundary());
-    els.runState.textContent = running ? 'Часы идут вместе с реальным временем' : 'Часы на паузе';
+    els.boundary.textContent = formatDuration(gameUntilBoundary());
+    els.runState.textContent = running ? 'Часы идут' : 'Часы на паузе';
 
     els.pauseBtn.disabled = !running;
     els.resumeBtn.disabled = running;
