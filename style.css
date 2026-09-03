@@ -774,3 +774,10 @@ body.emission-danger-high .emission-danger-overlay {
   font-size: .82rem;
   color: var(--muted);
 }
+
+
+/* PWA v20 — время последнего выброса по центру */
+.emission-time {
+  text-align: center;
+  width: 100%;
+}

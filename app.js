@@ -103,14 +103,15 @@
 
   function formatDaysHoursAgo(sec) {
     sec = Math.max(0, Math.floor(sec));
-    const days = Math.floor(sec / DAY_SECONDS);
-    const hours = Math.floor((sec % DAY_SECONDS) / 3600);
+    const totalHours = Math.floor(sec / 3600);
 
-    if (days === 0) {
-      if (hours === 0) return 'менее часа назад';
-      return `${hours} ${ruPlural(hours, 'час', 'часа', 'часов')} назад`;
+    if (totalHours < 24) {
+      if (totalHours === 0) return 'менее часа назад';
+      return `${totalHours} ${ruPlural(totalHours, 'час', 'часа', 'часов')} назад`;
     }
 
+    const days = Math.floor(totalHours / 24);
+    const hours = totalHours % 24;
     const dayText = `${days} ${ruPlural(days, 'день', 'дня', 'дней')}`;
 
     if (hours === 0) {
