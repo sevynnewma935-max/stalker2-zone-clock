@@ -1043,3 +1043,28 @@ body:has(.test-dialog[open]) {
     max-width: 118px;
   }
 }
+
+
+/* PWA v38 — текущее время в заголовке теста */
+.test-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.test-current-time {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .67rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.test-current-time strong {
+  color: var(--accent-2);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+}

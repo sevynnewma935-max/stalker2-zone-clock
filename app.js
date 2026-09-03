@@ -39,8 +39,9 @@
     settingsBtn: $('settingsBtn'), closeSettingsBtn: $('closeSettingsBtn'),
     settingsDialog: $('settingsDialog'),
     testBtn: $('testBtn'), closeTestBtn: $('closeTestBtn'), testDialog: $('testDialog'),
-    testTableBody: $('testTableBody'), exportTestBtn: $('exportTestBtn'),
-    clearTestBtn: $('clearTestBtn'), testMessage: $('testMessage')
+    testCurrentTime: $('testCurrentTime'), testTableBody: $('testTableBody'),
+    exportTestBtn: $('exportTestBtn'), clearTestBtn: $('clearTestBtn'),
+    testMessage: $('testMessage')
   };
 
   let gameSeconds = 12 * 3600;
@@ -338,6 +339,7 @@
 
   function render() {
     els.clock.textContent = formatClock(gameSeconds);
+    if (els.testCurrentTime) els.testCurrentTime.textContent = formatClock(gameSeconds);
     if (els.correctionCurrentTime) els.correctionCurrentTime.textContent = formatClock(gameSeconds);
     els.gameDay.textContent = String(gameDay);
 
@@ -681,7 +683,8 @@
       input.placeholder = 'HH:MM';
       input.maxLength = 5;
       input.dataset.gameTime = label;
-      input.value = typeof saved[label] === 'string' ? saved[label] : '';
+      const savedValue = typeof saved[label] === 'string' ? saved[label].trim() : '';
+      input.value = savedValue || label;
 
       input.addEventListener('input', () => {
         let value = input.value.replace(/[^\d:]/g, '').slice(0, 5);
@@ -752,7 +755,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v37.csv';
+    link.download = 'zone-clock-test-v38.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -779,6 +782,7 @@
 
   if (els.testBtn) {
     els.testBtn.addEventListener('click', () => {
+      if (els.testCurrentTime) els.testCurrentTime.textContent = formatClock(gameSeconds);
       buildTestRows();
       if (typeof els.testDialog.showModal === 'function') {
         els.testDialog.showModal();
