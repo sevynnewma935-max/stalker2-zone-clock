@@ -800,3 +800,32 @@ body.emission-danger-high .emission-danger-overlay {
   width: 100%;
   text-align: center;
 }
+
+
+/* PWA v24 — версия приложения в настройках */
+.version-group {
+  padding-bottom: 2px;
+}
+
+.app-version {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 50px;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--input);
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .84rem;
+  font-weight: 700;
+  letter-spacing: .10em;
+}
+
+.app-version strong {
+  color: var(--accent-2);
+  font-size: 1rem;
+  letter-spacing: .08em;
+}
