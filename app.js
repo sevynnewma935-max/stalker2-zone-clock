@@ -6,6 +6,7 @@
   const NIGHT_START = 21.5 * 3600;
   const DAY_RATE = (16 * 3600) / (42 * 60);
   const NIGHT_RATE = (8 * 3600) / (18 * 60);
+  const SLEEP_GAME_SECONDS = 8 * 3600;
   const STORAGE_KEY = 'stalker2-zone-clock-v1';
   const THEME_KEY = 'stalker2-zone-clock-theme';
 
@@ -16,7 +17,7 @@
     daypart: $('daypart'), boundary: $('boundary'), boundaryLabel: $('boundaryLabel'),
     syncForm: $('syncForm'), dayInput: $('dayInput'), timeInput: $('timeInput'),
     profileInput: $('profileInput'), customWrap: $('customWrap'), customMinutes: $('customMinutes'),
-    pauseBtn: $('pauseBtn'), resumeBtn: $('resumeBtn'), installBtn: $('installBtn'),
+    pauseBtn: $('pauseBtn'), resumeBtn: $('resumeBtn'), sleepBtn: $('sleepBtn'), installBtn: $('installBtn'),
     emissionTime: $('emissionTime'), emissionDay: $('emissionDay'), emissionInfo: $('emissionInfo'),
     emissionGameElapsed: $('emissionGameElapsed'), emissionRealElapsed: $('emissionRealElapsed'),
     markEmissionBtn: $('markEmissionBtn'), clearEmissionBtn: $('clearEmissionBtn'),
@@ -382,6 +383,15 @@
     running = true;
     lastRealMs = Date.now();
     els.message.textContent = 'Ход времени продолжен.';
+    saveState(true);
+    render();
+  });
+
+  els.sleepBtn.addEventListener('click', () => {
+    updateNow();
+    addGameDelta(SLEEP_GAME_SECONDS);
+    lastRealMs = Date.now();
+    els.message.textContent = `Сон: +8 игровых часов. Сейчас день ${gameDay}, ${formatClock(gameSeconds)}.`;
     saveState(true);
     render();
   });

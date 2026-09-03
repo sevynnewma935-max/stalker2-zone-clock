@@ -510,3 +510,23 @@ body:has(.settings-dialog[open]) { overflow:hidden; }
 @media (prefers-reduced-motion: reduce) {
   * { transition:none !important; scroll-behavior:auto !important; }
 }
+
+
+/* Сон */
+.sleep-btn {
+  width:100%;
+  min-height:58px;
+  margin-top:10px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:10px;
+  border-color:color-mix(in srgb, var(--accent) 72%, var(--border));
+  background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 16%, var(--card)), color-mix(in srgb, var(--accent) 8%, var(--card)));
+  font-family:ui-monospace, monospace;
+  font-weight:800;
+  letter-spacing:.11em;
+}
+.sleep-icon { font-size:1.25rem; color:var(--accent-2); }
+.sleep-hours { color:var(--accent-2); font-size:.76rem; letter-spacing:.08em; }
+.sleep-btn:active { transform:translateY(1px); }
