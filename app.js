@@ -8,6 +8,7 @@
   const EVENING_START = 18 * 3600;     // 18:00
   const NIGHT_START = 21.5 * 3600;     // 21:30
   const DAY_RATE = ((16 * 3600) / (42 * 60)) * 0.604838710;
+  const EVENING_RATE = ((16 * 3600) / (42 * 60)) * 0.483870968;
   const DAWN_RATE = 9.74;               // calibrated from 05:05–06:00 test
   const NIGHT_RATE = ((8 * 3600) / (18 * 60)) * 0.754616477;
   const SLEEP_GAME_SECONDS = 8 * 3600;
@@ -161,7 +162,8 @@
     const v = wrap(value);
     if (v < MORNING_START || v >= NIGHT_START) return NIGHT_RATE;
     if (v < DAWN_RATE_END) return DAWN_RATE;
-    return DAY_RATE;
+    if (v < EVENING_START) return DAY_RATE;
+    return EVENING_RATE;
   }
 
   function addGameDelta(delta) {
@@ -194,6 +196,8 @@
         gameToBoundary = MORNING_START - v;
       } else if (v < DAWN_RATE_END) {
         gameToBoundary = DAWN_RATE_END - v;
+      } else if (v < EVENING_START) {
+        gameToBoundary = EVENING_START - v;
       } else if (v < NIGHT_START) {
         gameToBoundary = NIGHT_START - v;
       } else {
