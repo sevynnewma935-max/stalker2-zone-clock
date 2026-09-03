@@ -675,6 +675,10 @@
       gameCell.textContent = label;
 
       const zoneCell = document.createElement('td');
+
+      const zoneControls = document.createElement('div');
+      zoneControls.className = 'test-zone-controls';
+
       const input = document.createElement('input');
       input.className = 'test-zone-input';
       input.type = 'text';
@@ -699,7 +703,34 @@
         saveTestTable();
       });
 
-      zoneCell.appendChild(input);
+      const nowBtn = document.createElement('button');
+      nowBtn.type = 'button';
+      nowBtn.className = 'test-now-btn';
+      nowBtn.textContent = 'СЕЙЧАС';
+      nowBtn.title = 'Записать текущее время ZONE CLOCK';
+      nowBtn.setAttribute('aria-label', `Записать текущее время ZONE CLOCK для ${label}`);
+
+      nowBtn.addEventListener('click', () => {
+        updateNow();
+        const current = formatClock(gameSeconds);
+        input.value = current;
+        saveTestTable();
+
+        nowBtn.classList.add('captured');
+        nowBtn.textContent = 'ГОТОВО';
+        if (els.testCurrentTime) els.testCurrentTime.textContent = current;
+        if (els.testMessage) {
+          els.testMessage.textContent = `${label}: записано время ZONE CLOCK ${current}.`;
+        }
+
+        window.setTimeout(() => {
+          nowBtn.classList.remove('captured');
+          nowBtn.textContent = 'СЕЙЧАС';
+        }, 650);
+      });
+
+      zoneControls.append(input, nowBtn);
+      zoneCell.appendChild(zoneControls);
       tr.append(gameCell, zoneCell);
       fragment.appendChild(tr);
     }
@@ -755,7 +786,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v38.csv';
+    link.download = 'zone-clock-test-v39.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
