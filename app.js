@@ -21,7 +21,7 @@
     profileInput: $('profileInput'), customWrap: $('customWrap'), customMinutes: $('customMinutes'),
     pauseBtn: $('pauseBtn'), resumeBtn: $('resumeBtn'), sleepBtn: $('sleepBtn'), installBtn: $('installBtn'),
     emissionTime: $('emissionTime'), emissionDay: $('emissionDay'),
-    markEmissionBtn: $('markEmissionBtn'), clearEmissionBtn: $('clearEmissionBtn'),
+    markEmissionBtn: $('markEmissionBtn'),
     riskWrap: $('riskWrap'), riskLabel: $('riskLabel'), riskBadge: $('riskBadge'),
     riskProgress: $('riskProgress'), riskDetail: $('riskDetail'), riskNext: $('riskNext'),
     riskPercent: $('riskPercent'),
@@ -106,7 +106,17 @@
     const days = Math.floor(sec / DAY_SECONDS);
     const hours = Math.floor((sec % DAY_SECONDS) / 3600);
 
+    if (days === 0) {
+      if (hours === 0) return 'менее часа назад';
+      return `${hours} ${ruPlural(hours, 'час', 'часа', 'часов')} назад`;
+    }
+
     const dayText = `${days} ${ruPlural(days, 'день', 'дня', 'дней')}`;
+
+    if (hours === 0) {
+      return `${dayText} назад`;
+    }
+
     const hourText = `${hours} ${ruPlural(hours, 'час', 'часа', 'часов')}`;
     return `${dayText} ${hourText} назад`;
   }
@@ -287,7 +297,6 @@
     if (!emission) {
       els.emissionTime.textContent = 'Не отмечен';
       els.emissionDay.textContent = '';
-      els.clearEmissionBtn.classList.add('hidden');
       els.riskWrap.classList.add('hidden');
       document.documentElement.style.setProperty('--emission-danger-level', '0');
       document.documentElement.style.setProperty('--emission-danger-pulse', '0');
@@ -296,11 +305,9 @@
     }
 
     const gameElapsed = Math.max(0, absoluteGameSeconds - emission.absoluteGameSeconds);
-    const wholeDays = Math.floor(gameElapsed / DAY_SECONDS);
 
     els.emissionTime.textContent = formatDaysHoursAgo(gameElapsed);
-    els.emissionDay.textContent = `Прошло дней: ${wholeDays}`;
-    els.clearEmissionBtn.classList.remove('hidden');
+    els.emissionDay.textContent = '';
 
     renderRisk(gameElapsed);
   }
@@ -495,13 +502,6 @@
       realMs: Date.now()
     };
     els.message.textContent = `Выброс отмечен: день ${gameDay}, ${formatClock(gameSeconds)}.`;
-    saveState(true);
-    render();
-  });
-
-  els.clearEmissionBtn.addEventListener('click', () => {
-    emission = null;
-    els.message.textContent = 'Отметка выброса удалена.';
     saveState(true);
     render();
   });
