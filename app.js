@@ -7,7 +7,7 @@
   const EVENING_START = 18 * 3600;    // 18:00
   const NIGHT_START = 21.5 * 3600;    // 21:30
   const DAY_RATE = ((16 * 3600) / (42 * 60)) * 0.625;
-  const NIGHT_RATE = ((8 * 3600) / (18 * 60)) * 0.625;
+  const NIGHT_RATE = ((8 * 3600) / (18 * 60)) * 0.78125;
   const SLEEP_GAME_SECONDS = 8 * 3600;
   const STORAGE_KEY = 'stalker2-zone-clock-v1';
   const THEME_KEY = 'stalker2-zone-clock-theme';
@@ -165,8 +165,9 @@
   }
 
   // Patch 2.0 calibrated timing profile:
-  // calibrated from measured ratio: 10 in-game minutes / 16 Zone Clock minutes.
-  // all previous vanilla rates are scaled by 0.625.
+  // daylight: calibrated from 10 in-game min / 16 previous Zone Clock min => original rate * 0.625.
+  // night: measured 55 in-game min / 44 Zone Clock min => previous night rate * 1.25,
+  //        therefore original night rate * 0.78125.
   // daylight rate applies from 05:30 to 21:30,
   // night rate applies from 21:30 to 05:30.
   function advance(realSeconds) {
