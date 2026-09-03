@@ -330,3 +330,33 @@ body:has(.settings-dialog[open]) {
   .settings-modal-header,
   .settings-content.modal-content { padding:15px; }
 }
+
+
+/* Главный экран после переноса синхронизации в настройки */
+.control-card {
+  min-height:315px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+.control-title {
+  margin-top:8px;
+  font-size:1.35rem;
+  font-weight:800;
+}
+.control-help {
+  margin:8px 0 0;
+  max-width:34rem;
+  font-size:.86rem;
+  line-height:1.5;
+}
+.control-buttons {
+  margin-top:22px;
+}
+.settings-sync-form {
+  display:grid;
+  gap:14px;
+}
+@media (max-width:760px) {
+  .control-card { min-height:auto; }
+}

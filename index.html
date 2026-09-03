@@ -66,28 +66,17 @@
         </div>
       </article>
 
-      <article class="card">
-        <form id="syncForm">
-          <div class="form-grid">
-            <label>
-              <span>Игровых дней прошло</span>
-              <input id="dayInput" type="number" min="0" max="99999" step="1" value="1" inputmode="numeric">
-            </label>
-            <label>
-              <span>Время в игре</span>
-              <input id="timeInput" type="time" step="1" value="12:00:00">
-            </label>
-          </div>
+      <article class="card control-card">
+        <div>
+          <div class="label">УПРАВЛЕНИЕ ЧАСАМИ</div>
+          <div class="control-title">Пауза и продолжение</div>
+          <p class="control-help muted">Синхронизация игрового дня и времени находится в настройках.</p>
+        </div>
 
-          <button class="btn primary wide" type="submit">Синхронизировать и запустить</button>
-        </form>
-
-        <div class="grid two-buttons">
+        <div class="grid two-buttons control-buttons">
           <button id="pauseBtn" class="btn ghost" type="button">Пауза</button>
           <button id="resumeBtn" class="btn ghost" type="button">Продолжить</button>
         </div>
-
-        <p class="sync-hint muted">Профиль хода времени теперь находится в разделе «Настройки».</p>
       </article>
     </section>
 
@@ -185,6 +174,27 @@
               <span>Светлая</span>
             </button>
           </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-heading">Синхронизация</div>
+
+          <form id="syncForm" class="settings-sync-form">
+            <div class="form-grid">
+              <label>
+                <span>Игровых дней прошло</span>
+                <input id="dayInput" type="number" min="0" max="99999" step="1" value="1" inputmode="numeric">
+              </label>
+              <label>
+                <span>Время в игре</span>
+                <input id="timeInput" type="time" step="1" value="12:00:00">
+              </label>
+            </div>
+
+            <button class="btn primary wide" type="submit">Синхронизировать и запустить</button>
+          </form>
+
+          <p class="settings-help muted">Введите значения, которые сейчас показывает игра. После синхронизации часы сразу продолжат ход.</p>
         </div>
 
         <div class="settings-group">
