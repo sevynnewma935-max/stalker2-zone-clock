@@ -23,11 +23,13 @@
   <title>S.T.A.L.K.E.R. 2 — Zone Clock</title>
 </head>
 <body>
+  <div class="background-grid" aria-hidden="true"></div>
+
   <main class="shell">
     <header class="topbar">
-      <div>
+      <div class="brand">
         <div class="eyebrow">S.T.A.L.K.E.R. 2</div>
-        <h1>Zone Clock</h1>
+        <h1>ZONE CLOCK</h1>
       </div>
 
       <div class="top-actions">
@@ -40,119 +42,122 @@
       </div>
     </header>
 
-    <section class="grid two">
-      <article class="card hero">
-        <div class="row between wrap">
-          <span class="label">ВРЕМЯ В ЗОНЕ</span>
-          <span id="daypart" class="pill">ДЕНЬ</span>
-        </div>
+    <section class="terminal-card hero">
+      <div class="terminal-corner tl"></div><div class="terminal-corner tr"></div>
+      <div class="terminal-corner bl"></div><div class="terminal-corner br"></div>
 
-        <div id="clock" class="clock" aria-live="polite">12:00:00</div>
-
-        <div class="meta-row">
-          <span>Игровой день: <strong id="gameDay">1</strong></span>
-          <span id="runState">Часы идут</span>
-        </div>
-
-        <div class="stat-grid">
-          <div>
-            <span class="muted">Скорость сейчас</span>
-            <strong id="rate">×22.86</strong>
-          </div>
-          <div>
-            <span id="boundaryLabel" class="muted">До ночи</span>
-            <strong id="boundary">—</strong>
-          </div>
-        </div>
-
-        <div id="riskWrap" class="risk zone-risk hidden">
-          <div class="row between wrap gap">
-            <div>
-              <div class="muted">Вероятность следующего выброса</div>
-              <div id="riskLabel" class="risk-title">Низкая вероятность</div>
-            </div>
-            <span id="riskBadge" class="pill">НИЗКИЙ</span>
-          </div>
-
-          <div class="risk-track"><div id="riskProgress" class="risk-progress"></div></div>
-          <div class="risk-scale"><span>0 дней</span><span>2 дня</span><span>3+ дня</span></div>
-          <p id="riskDetail" class="muted"></p>
-          <p id="riskNext" class="risk-next"></p>
-          <p class="note">Ориентир, а не точный таймер. Сюжетный выброс и погодная логика игры могут изменить интервал.</p>
-        </div>
-      </article>
-
-      <article class="card control-card">
-        <div>
-          <div class="label">УПРАВЛЕНИЕ ЧАСАМИ</div>
-          <div class="control-title">Пауза и продолжение</div>
-          <p class="control-help muted">Синхронизация игрового дня и времени находится в настройках.</p>
-        </div>
-
-        <div class="grid two-buttons control-buttons">
-          <button id="pauseBtn" class="btn ghost" type="button">Пауза</button>
-          <button id="resumeBtn" class="btn ghost" type="button">Продолжить</button>
-        </div>
-      </article>
-    </section>
-
-    <section class="card emission">
-      <div class="row between wrap gap">
-        <div>
-          <div class="label">☢ ПОСЛЕДНИЙ ВЫБРОС</div>
-          <div id="emissionTime" class="emission-time">Не отмечен</div>
-          <div id="emissionDay" class="muted"></div>
-        </div>
-        <button id="markEmissionBtn" class="btn danger" type="button">Отметить выброс сейчас</button>
+      <div class="row between wrap top-line">
+        <span class="section-label">ВРЕМЯ В ЗОНЕ</span>
+        <span id="daypart" class="status-chip">ДЕНЬ</span>
       </div>
 
-      <div id="emissionInfo" class="stat-grid hidden">
+      <div id="clock" class="clock" aria-live="polite">18:47:32</div>
+      <div class="game-day-line">Игровой день <strong id="gameDay">1</strong></div>
+
+      <div class="hero-stats">
         <div>
-          <span class="muted">Прошло игрового времени</span>
+          <span class="muted">Скорость</span>
+          <strong id="rate">×22.86</strong>
+        </div>
+        <div class="stat-divider" aria-hidden="true"></div>
+        <div class="align-right">
+          <span id="boundaryLabel" class="muted">До ночи</span>
+          <strong id="boundary">—</strong>
+        </div>
+      </div>
+
+      <div id="riskWrap" class="risk-zone hidden">
+        <div class="risk-head">
+          <span class="section-label">ВЕРОЯТНОСТЬ ВЫБРОСА</span>
+          <span id="riskBadge" class="risk-badge">НИЗКИЙ</span>
+        </div>
+
+        <div class="risk-title-row">
+          <div id="riskLabel" class="risk-title">Низкая вероятность</div>
+          <div id="riskPercent" class="risk-percent" aria-hidden="true">0%</div>
+        </div>
+
+        <div class="risk-track" aria-hidden="true">
+          <div id="riskProgress" class="risk-progress"></div>
+        </div>
+        <div class="risk-scale"><span>0%</span><span>50%</span><span>100%</span></div>
+
+        <p id="riskDetail" class="risk-detail"></p>
+        <p id="riskNext" class="risk-next"></p>
+        <p class="note">Ориентир, а не точный таймер. Сюжетный выброс и погодная логика игры могут изменить интервал.</p>
+      </div>
+    </section>
+
+    <section class="terminal-card emission">
+      <div class="terminal-corner tl"></div><div class="terminal-corner tr"></div>
+      <div class="terminal-corner bl"></div><div class="terminal-corner br"></div>
+
+      <div class="row between wrap gap">
+        <div>
+          <div class="section-label emission-label"><span class="radiation">☢</span> ПОСЛЕДНИЙ ВЫБРОС</div>
+          <div id="emissionTime" class="emission-time">Не отмечен</div>
+          <div id="emissionDay" class="emission-day muted"></div>
+        </div>
+        <button id="markEmissionBtn" class="btn outline-accent" type="button">ОТМЕТИТЬ ВЫБРОС</button>
+      </div>
+
+      <div id="emissionInfo" class="emission-info hidden">
+        <div>
+          <span class="muted">Игрового времени</span>
           <strong id="emissionGameElapsed">—</strong>
         </div>
         <div>
-          <span class="muted">Прошло реального времени</span>
+          <span class="muted">Реального времени</span>
           <strong id="emissionRealElapsed">—</strong>
         </div>
       </div>
 
-      <button id="clearEmissionBtn" class="btn ghost hidden" type="button">Удалить отметку</button>
+      <button id="clearEmissionBtn" class="btn text-btn hidden" type="button">Удалить отметку</button>
     </section>
 
-    <section class="card">
-      <div class="label">БЫСТРАЯ КОРРЕКЦИЯ</div>
+    <section class="terminal-card control-card">
+      <div class="terminal-corner tl"></div><div class="terminal-corner tr"></div>
+      <div class="terminal-corner bl"></div><div class="terminal-corner br"></div>
+
+      <div class="section-label">УПРАВЛЕНИЕ ЧАСАМИ</div>
+      <div id="runState" class="run-state muted">Часы идут</div>
+
+      <div class="grid two-buttons control-buttons">
+        <button id="pauseBtn" class="btn control-btn" type="button">Ⅱ&nbsp;&nbsp;ПАУЗА</button>
+        <button id="resumeBtn" class="btn control-btn" type="button">▶&nbsp;&nbsp;ПРОДОЛЖИТЬ</button>
+      </div>
+    </section>
+
+    <section class="utility-panel">
+      <div class="section-label">БЫСТРАЯ КОРРЕКЦИЯ</div>
       <div class="grid correction-grid">
-        <button class="btn ghost" type="button" data-shift="-600">−10 мин</button>
-        <button class="btn ghost" type="button" data-shift="-60">−1 мин</button>
-        <button class="btn ghost" type="button" data-shift="60">+1 мин</button>
-        <button class="btn ghost" type="button" data-shift="600">+10 мин</button>
+        <button class="btn utility-btn" type="button" data-shift="-600">−10 мин</button>
+        <button class="btn utility-btn" type="button" data-shift="-60">−1 мин</button>
+        <button class="btn utility-btn" type="button" data-shift="60">+1 мин</button>
+        <button class="btn utility-btn" type="button" data-shift="600">+10 мин</button>
       </div>
       <div class="grid two-buttons">
-        <button id="dayMinusBtn" class="btn ghost" type="button">−1 игровой день</button>
-        <button id="dayPlusBtn" class="btn ghost" type="button">+1 игровой день</button>
+        <button id="dayMinusBtn" class="btn utility-btn" type="button">−1 игровой день</button>
+        <button id="dayPlusBtn" class="btn utility-btn" type="button">+1 игровой день</button>
       </div>
     </section>
 
-    <section class="card compact">
-      <div class="row between wrap gap">
-        <div>
-          <div class="label">СОСТОЯНИЕ</div>
-          <div id="saveState" class="muted">Данные сохраняются автоматически.</div>
-        </div>
-        <button id="resetBtn" class="btn ghost" type="button">Сбросить всё</button>
+    <section class="status-footer">
+      <div>
+        <div class="section-label">СОСТОЯНИЕ</div>
+        <div id="saveState" class="muted">Данные сохраняются автоматически.</div>
       </div>
+      <button id="resetBtn" class="btn text-btn" type="button">Сбросить всё</button>
       <div id="message" class="message" aria-live="polite"></div>
     </section>
   </main>
-
 
   <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsDialogTitle">
     <div class="settings-modal">
       <div class="settings-modal-header">
         <div>
           <div class="eyebrow">ZONE CLOCK</div>
-          <h2 id="settingsDialogTitle">Настройки</h2>
+          <h2 id="settingsDialogTitle">НАСТРОЙКИ</h2>
         </div>
         <button id="closeSettingsBtn" class="icon-btn small" type="button" aria-label="Закрыть настройки" title="Закрыть">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -163,22 +168,7 @@
 
       <div class="settings-content modal-content">
         <div class="settings-group">
-          <div class="settings-heading">Оформление</div>
-          <div class="theme-switch" role="group" aria-label="Цветовая тема">
-            <button id="darkThemeBtn" class="theme-option" type="button" data-theme-choice="dark" aria-pressed="true">
-              <span class="theme-preview theme-preview-dark" aria-hidden="true"></span>
-              <span>Тёмная</span>
-            </button>
-            <button id="lightThemeBtn" class="theme-option" type="button" data-theme-choice="light" aria-pressed="false">
-              <span class="theme-preview theme-preview-light" aria-hidden="true"></span>
-              <span>Светлая</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="settings-group">
-          <div class="settings-heading">Синхронизация</div>
-
+          <div class="settings-heading"><span>1.</span> СИНХРОНИЗАЦИЯ</div>
           <form id="syncForm" class="settings-sync-form">
             <div class="form-grid">
               <label>
@@ -190,17 +180,13 @@
                 <input id="timeInput" type="time" step="1" value="12:00:00">
               </label>
             </div>
-
-            <button class="btn primary wide" type="submit">Синхронизировать и запустить</button>
+            <button class="btn primary wide" type="submit">СИНХРОНИЗИРОВАТЬ</button>
           </form>
-
-          <p class="settings-help muted">Введите значения, которые сейчас показывает игра. После синхронизации часы сразу продолжат ход.</p>
         </div>
 
         <div class="settings-group">
-          <div class="settings-heading">Ход игрового времени</div>
+          <div class="settings-heading"><span>2.</span> ПРОФИЛЬ ВРЕМЕНИ</div>
           <label>
-            <span>Профиль времени</span>
             <select id="profileInput">
               <option value="vanilla">Vanilla — ~60 мин/сутки, день/ночь 70/30</option>
               <option value="uniform24">Равномерно ×24 — 60 мин/сутки</option>
@@ -212,8 +198,20 @@
             <span>Реальных минут на игровые сутки</span>
             <input id="customMinutes" type="number" min="10" max="1440" step="1" value="60">
           </label>
+        </div>
 
-          <p class="settings-help muted">После изменения профиля текущее игровое время сохраняется. Если время в игре уже разошлось с часами, выполните синхронизацию.</p>
+        <div class="settings-group">
+          <div class="settings-heading"><span>3.</span> ОФОРМЛЕНИЕ</div>
+          <div class="theme-switch" role="group" aria-label="Цветовая тема">
+            <button id="darkThemeBtn" class="theme-option" type="button" data-theme-choice="dark" aria-pressed="true">
+              <span aria-hidden="true">☾</span>
+              <span>Тёмная</span>
+            </button>
+            <button id="lightThemeBtn" class="theme-option" type="button" data-theme-choice="light" aria-pressed="false">
+              <span aria-hidden="true">☀</span>
+              <span>Светлая</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

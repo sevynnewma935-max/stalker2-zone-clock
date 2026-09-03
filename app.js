@@ -22,6 +22,7 @@
     markEmissionBtn: $('markEmissionBtn'), clearEmissionBtn: $('clearEmissionBtn'),
     riskWrap: $('riskWrap'), riskLabel: $('riskLabel'), riskBadge: $('riskBadge'),
     riskProgress: $('riskProgress'), riskDetail: $('riskDetail'), riskNext: $('riskNext'),
+    riskPercent: $('riskPercent'),
     dayMinusBtn: $('dayMinusBtn'), dayPlusBtn: $('dayPlusBtn'),
     resetBtn: $('resetBtn'), message: $('message'), saveState: $('saveState'),
     darkThemeBtn: $('darkThemeBtn'), lightThemeBtn: $('lightThemeBtn'),
@@ -201,8 +202,12 @@
     els.riskWrap.classList.remove('hidden');
     els.riskLabel.textContent = r.label;
     els.riskBadge.textContent = r.badge;
-    els.riskProgress.style.width = `${Math.min(100, Math.max(0, r.progress))}%`;
+    const pct = Math.min(100, Math.max(0, r.progress));
+    els.riskProgress.style.width = `${pct}%`;
+    if (els.riskPercent) els.riskPercent.textContent = `${Math.round(pct)}%`;
     els.riskProgress.style.background = r.color;
+    els.riskBadge.style.color = r.color;
+    if (els.riskPercent) els.riskPercent.style.color = r.color;
     els.riskDetail.textContent = r.detail;
 
     if (r.nextAt !== null) {
