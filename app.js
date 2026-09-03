@@ -2,8 +2,10 @@
   'use strict';
 
   const DAY_SECONDS = 86400;
-  const DAY_START = 5.5 * 3600;
-  const NIGHT_START = 21.5 * 3600;
+  const MORNING_START = 5.5 * 3600;   // 05:30
+  const DAY_START = 10 * 3600;        // 10:00
+  const EVENING_START = 18 * 3600;    // 18:00
+  const NIGHT_START = 21.5 * 3600;    // 21:30
   const DAY_RATE = (16 * 3600) / (42 * 60);
   const NIGHT_RATE = (8 * 3600) / (18 * 60);
   const SLEEP_GAME_SECONDS = 8 * 3600;
@@ -106,7 +108,15 @@
 
   function isDay(value) {
     const v = wrap(value);
-    return v >= DAY_START && v < NIGHT_START;
+    return v >= MORNING_START && v < NIGHT_START;
+  }
+
+  function dayPartAt(value) {
+    const v = wrap(value);
+    if (v >= MORNING_START && v < DAY_START) return 'УТРО';
+    if (v >= DAY_START && v < EVENING_START) return 'ДЕНЬ';
+    if (v >= EVENING_START && v < NIGHT_START) return 'ВЕЧЕР';
+    return 'НОЧЬ';
   }
 
   function customMinutesValue() {
@@ -157,17 +167,27 @@
     }
   }
 
+  function nextDayPartBoundary(value) {
+    const v = wrap(value);
+    if (v < MORNING_START) return { at: MORNING_START, label: 'До утра' };
+    if (v < DAY_START) return { at: DAY_START, label: 'До дня' };
+    if (v < EVENING_START) return { at: EVENING_START, label: 'До вечера' };
+    if (v < NIGHT_START) return { at: NIGHT_START, label: 'До ночи' };
+    return { at: DAY_SECONDS + MORNING_START, label: 'До утра' };
+  }
+
   function realUntilBoundary() {
     const v = wrap(gameSeconds);
+    const next = nextDayPartBoundary(v);
+    const gameDelta = next.at - v;
 
-    if (els.profileInput.value === 'vanilla') {
-      if (isDay(v)) return (NIGHT_START - v) / DAY_RATE;
-      const delta = v < DAY_START ? DAY_START - v : (DAY_SECONDS - v) + DAY_START;
-      return delta / NIGHT_RATE;
+    if (els.profileInput.value !== 'vanilla') {
+      return gameDelta / rateAt(v);
     }
 
-    const next = isDay(v) ? NIGHT_START : (v < DAY_START ? DAY_START : DAY_SECONDS + DAY_START);
-    return (next - v) / rateAt(v);
+    // All daylight sub-periods use the current vanilla daylight coefficient.
+    // Night uses the current vanilla night coefficient.
+    return gameDelta / rateAt(v);
   }
 
   function emissionRisk(elapsed) {
@@ -198,8 +218,36 @@
     };
   }
 
+  function updateEmissionDanger(gameElapsed) {
+    const days = Math.max(0, gameElapsed / DAY_SECONDS);
+
+    if (days < 2) {
+      document.documentElement.style.setProperty('--emission-danger-level', '0');
+      document.documentElement.style.setProperty('--emission-danger-pulse', '0');
+      document.body.classList.remove('emission-danger-active', 'emission-danger-high');
+      return;
+    }
+
+    if (days < 3) {
+      const t = Math.min(1, Math.max(0, days - 2));
+      const level = 0.10 + (0.28 * t);
+      const pulse = 0.04 + (0.10 * t);
+
+      document.documentElement.style.setProperty('--emission-danger-level', level.toFixed(3));
+      document.documentElement.style.setProperty('--emission-danger-pulse', pulse.toFixed(3));
+      document.body.classList.add('emission-danger-active');
+      document.body.classList.remove('emission-danger-high');
+      return;
+    }
+
+    document.documentElement.style.setProperty('--emission-danger-level', '0.42');
+    document.documentElement.style.setProperty('--emission-danger-pulse', '0.16');
+    document.body.classList.add('emission-danger-active', 'emission-danger-high');
+  }
+
   function renderRisk(gameElapsed) {
     const r = emissionRisk(gameElapsed);
+    updateEmissionDanger(gameElapsed);
     els.riskWrap.classList.remove('hidden');
     els.riskLabel.textContent = r.label;
     els.riskBadge.textContent = r.badge;
@@ -225,6 +273,9 @@
       els.emissionInfo.classList.add('hidden');
       els.clearEmissionBtn.classList.add('hidden');
       els.riskWrap.classList.add('hidden');
+      document.documentElement.style.setProperty('--emission-danger-level', '0');
+      document.documentElement.style.setProperty('--emission-danger-pulse', '0');
+      document.body.classList.remove('emission-danger-active', 'emission-danger-high');
       return;
     }
 
@@ -242,9 +293,10 @@
     els.clock.textContent = formatClock(gameSeconds);
     els.gameDay.textContent = String(gameDay);
 
-    const day = isDay(gameSeconds);
-    els.daypart.textContent = day ? 'ДЕНЬ' : 'НОЧЬ';
-    els.boundaryLabel.textContent = day ? 'До ночи' : 'До рассвета';
+    const part = dayPartAt(gameSeconds);
+    const nextPart = nextDayPartBoundary(gameSeconds);
+    els.daypart.textContent = part;
+    els.boundaryLabel.textContent = nextPart.label;
     els.boundary.textContent = formatDuration(realUntilBoundary());
     els.runState.textContent = running ? 'Часы идут вместе с реальным временем' : 'Часы на паузе';
 
