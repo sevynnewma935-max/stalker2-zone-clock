@@ -7,7 +7,7 @@
   const DAY_START = 10 * 3600;         // 10:00
   const EVENING_START = 18 * 3600;     // 18:00
   const NIGHT_START = 21.5 * 3600;     // 21:30
-  const DAY_RATE = ((16 * 3600) / (42 * 60)) * 0.625;
+  const DAY_RATE = ((16 * 3600) / (42 * 60)) * 0.604838710;
   const DAWN_RATE = 9.74;               // calibrated from 05:05–06:00 test
   const NIGHT_RATE = ((8 * 3600) / (18 * 60)) * 0.754616477;
   const SLEEP_GAME_SECONDS = 8 * 3600;
@@ -173,7 +173,7 @@
   // Patch 2.0 calibrated timing profile:
   // night: 21:30–05:30, fine-tuned from 85 game min / 88 Zone Clock min;
   // dawn transition: 05:30–07:00, calibrated separately;
-  // day: 07:00–21:30, preserved because clocks match from 07:00 onward.
+  // day: 07:00–21:30, fine-tuned from 60 game min / 62 Zone Clock min.
   function advance(realSeconds) {
     if (!(realSeconds > 0)) return;
 
