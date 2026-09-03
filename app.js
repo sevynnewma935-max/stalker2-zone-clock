@@ -20,8 +20,7 @@
     syncForm: $('syncForm'), dayInput: $('dayInput'), timeInput: $('timeInput'),
     profileInput: $('profileInput'), customWrap: $('customWrap'), customMinutes: $('customMinutes'),
     pauseBtn: $('pauseBtn'), resumeBtn: $('resumeBtn'), sleepBtn: $('sleepBtn'), installBtn: $('installBtn'),
-    emissionTime: $('emissionTime'), emissionDay: $('emissionDay'), emissionInfo: $('emissionInfo'),
-    emissionGameElapsed: $('emissionGameElapsed'),
+    emissionTime: $('emissionTime'), emissionDay: $('emissionDay'),
     markEmissionBtn: $('markEmissionBtn'), clearEmissionBtn: $('clearEmissionBtn'),
     riskWrap: $('riskWrap'), riskLabel: $('riskLabel'), riskBadge: $('riskBadge'),
     riskProgress: $('riskProgress'), riskDetail: $('riskDetail'), riskNext: $('riskNext'),
@@ -288,7 +287,6 @@
     if (!emission) {
       els.emissionTime.textContent = 'Не отмечен';
       els.emissionDay.textContent = '';
-      els.emissionInfo.classList.add('hidden');
       els.clearEmissionBtn.classList.add('hidden');
       els.riskWrap.classList.add('hidden');
       document.documentElement.style.setProperty('--emission-danger-level', '0');
@@ -297,13 +295,13 @@
       return;
     }
 
-    els.emissionTime.textContent = formatClock(emission.gameClock);
-    els.emissionDay.textContent = `Игровой день ${emission.gameDay}`;
-    els.emissionInfo.classList.remove('hidden');
+    const gameElapsed = Math.max(0, absoluteGameSeconds - emission.absoluteGameSeconds);
+    const wholeDays = Math.floor(gameElapsed / DAY_SECONDS);
+
+    els.emissionTime.textContent = formatDaysHoursAgo(gameElapsed);
+    els.emissionDay.textContent = `Прошло дней: ${wholeDays}`;
     els.clearEmissionBtn.classList.remove('hidden');
 
-    const gameElapsed = Math.max(0, absoluteGameSeconds - emission.absoluteGameSeconds);
-    els.emissionGameElapsed.textContent = formatDaysHoursAgo(gameElapsed);
     renderRisk(gameElapsed);
   }
 

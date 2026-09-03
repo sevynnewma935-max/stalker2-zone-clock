@@ -761,3 +761,16 @@ body.emission-danger-high .emission-danger-overlay {
   color: var(--accent-2);
   letter-spacing: .04em;
 }
+
+
+/* PWA v14 — последний выброс показывается относительно текущего игрового времени */
+.emission-time {
+  color: var(--accent-2);
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+.emission-day {
+  margin-top: 7px;
+  font-size: .82rem;
+  color: var(--muted);
+}
