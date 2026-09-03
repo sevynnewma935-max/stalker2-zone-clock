@@ -752,3 +752,12 @@ body.emission-danger-high .emission-danger-overlay {
     filter: saturate(1.32) brightness(.82);
   }
 }
+
+
+/* PWA v13 — сколько времени назад был последний выброс */
+.emission-ago strong {
+  margin-top: 6px;
+  font-size: 1.02rem;
+  color: var(--accent-2);
+  letter-spacing: .04em;
+}

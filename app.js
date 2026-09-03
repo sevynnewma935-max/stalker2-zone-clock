@@ -94,6 +94,24 @@
     return [h, m, s].map(n => String(n).padStart(2, '0')).join(':');
   }
 
+  function ruPlural(n, one, few, many) {
+    const mod10 = Math.abs(n) % 10;
+    const mod100 = Math.abs(n) % 100;
+    if (mod10 === 1 && mod100 !== 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+    return many;
+  }
+
+  function formatDaysHoursAgo(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    const days = Math.floor(sec / DAY_SECONDS);
+    const hours = Math.floor((sec % DAY_SECONDS) / 3600);
+
+    const dayText = `${days} ${ruPlural(days, 'день', 'дня', 'дней')}`;
+    const hourText = `${hours} ${ruPlural(hours, 'час', 'часа', 'часов')}`;
+    return `${dayText} ${hourText} назад`;
+  }
+
   function formatDuration(sec) {
     sec = Math.max(0, Math.floor(sec));
     const d = Math.floor(sec / DAY_SECONDS);
@@ -285,7 +303,7 @@
     els.clearEmissionBtn.classList.remove('hidden');
 
     const gameElapsed = Math.max(0, absoluteGameSeconds - emission.absoluteGameSeconds);
-    els.emissionGameElapsed.textContent = formatDuration(gameElapsed);
+    els.emissionGameElapsed.textContent = formatDaysHoursAgo(gameElapsed);
     renderRisk(gameElapsed);
   }
 
