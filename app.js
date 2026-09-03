@@ -89,8 +89,7 @@
     const v = Math.floor(wrap(value));
     const h = Math.floor(v / 3600);
     const m = Math.floor((v % 3600) / 60);
-    const s = v % 60;
-    return [h, m, s].map(n => String(n).padStart(2, '0')).join(':');
+    return [h, m].map(n => String(n).padStart(2, '0')).join(':');
   }
 
   function ruPlural(n, one, few, many) {
@@ -127,11 +126,11 @@
     const d = Math.floor(sec / DAY_SECONDS);
     const h = Math.floor((sec % DAY_SECONDS) / 3600);
     const m = Math.floor((sec % 3600) / 60);
-    const s = sec % 60;
+
     if (d > 0) return `${d} д ${h} ч ${m} мин`;
     if (h > 0) return `${h} ч ${m} мин`;
-    if (m > 0) return `${m} мин ${s} с`;
-    return `${s} с`;
+    if (m > 0) return `${m} мин`;
+    return 'менее 1 мин';
   }
 
   function isDay(value) {
@@ -165,6 +164,9 @@
     gameSeconds = wrap(absoluteGameSeconds);
   }
 
+  // Patch 2.0 vanilla timing profile:
+  // daylight rate applies from 05:30 to 21:30,
+  // night rate applies from 21:30 to 05:30.
   function advance(realSeconds) {
     if (!(realSeconds > 0)) return;
 
@@ -183,8 +185,8 @@
       let gameToBoundary;
 
       if (day) gameToBoundary = NIGHT_START - v;
-      else if (v < DAY_START) gameToBoundary = DAY_START - v;
-      else gameToBoundary = (DAY_SECONDS - v) + DAY_START;
+      else if (v < MORNING_START) gameToBoundary = MORNING_START - v;
+      else gameToBoundary = (DAY_SECONDS - v) + MORNING_START;
 
       const realToBoundary = gameToBoundary / rate;
       const usedReal = Math.min(left, realToBoundary);
@@ -545,7 +547,7 @@
     els.customWrap.classList.add('hidden');
     applyTheme('dark');
     els.dayInput.value = '1';
-    els.timeInput.value = '12:00:00';
+    els.timeInput.value = '12:00';
     els.message.textContent = 'Все сохранённые данные сброшены.';
     render();
     saveState(true);
