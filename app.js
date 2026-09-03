@@ -222,7 +222,7 @@
     if (days < 1) return {
       badge: 'ОЧЕНЬ НИЗКИЙ', label: 'Очень низкая вероятность',
       progress: Math.max(4, days / 3 * 100), color: 'var(--success)',
-      detail: 'После последнего выброса прошло меньше одного игрового дня.',
+      detail: 'После последнего выброса прошло меньше одного дня.',
       nextAt: DAY_SECONDS, nextText: 'До следующей зоны риска'
     };
     if (days < 2) return {
@@ -234,13 +234,13 @@
     if (days < 3) return {
       badge: 'ПОВЫШЕННЫЙ', label: 'Выброс уже возможен',
       progress: days / 3 * 100, color: 'var(--warning)',
-      detail: 'Вы вошли в ориентировочное окно 2–3 игровых дня после предыдущего выброса.',
+      detail: 'Вы вошли в ориентировочное окно 2–3 дня после предыдущего выброса.',
       nextAt: 3 * DAY_SECONDS, nextText: 'До высокого риска'
     };
     return {
       badge: 'ВЫСОКИЙ', label: 'Высокая вероятность выброса',
       progress: 100, color: 'var(--danger)',
-      detail: 'Прошло 3 или больше игровых дней. Следующий случайный выброс стоит ожидать в ближайшее время.',
+      detail: 'Прошло 3 или больше дней. Следующий случайный выброс стоит ожидать в ближайшее время.',
       nextAt: null, nextText: ''
     };
   }
@@ -408,7 +408,7 @@
     const parsedDay = parseDay(els.dayInput.value);
 
     if (parsedTime === null || parsedDay === null) {
-      els.message.textContent = 'Введите корректный игровой день и время.';
+      els.message.textContent = 'Введите корректный день и время.';
       return;
     }
 
@@ -482,7 +482,7 @@
       els.sleepBtn.classList.add('sleep-confirmed');
       if (sleepLabel) sleepLabel.textContent = 'ГОТОВО';
 
-      els.message.textContent = `Сон: +8 игровых часов. Сейчас день ${gameDay}, ${formatClock(gameSeconds)}.`;
+      els.message.textContent = `Сон: +8 часов. Сейчас день ${gameDay}, ${formatClock(gameSeconds)}.`;
 
       window.setTimeout(() => {
         els.sleepBtn.classList.remove('sleep-confirmed');
@@ -511,7 +511,7 @@
       updateNow();
       addGameDelta(Number(btn.dataset.shift));
       lastRealMs = Date.now();
-      els.message.textContent = 'Игровое время скорректировано.';
+      els.message.textContent = 'Время скорректировано.';
       saveState(true);
       render();
     });
@@ -521,7 +521,7 @@
     updateNow();
     addGameDelta(-DAY_SECONDS);
     lastRealMs = Date.now();
-    els.message.textContent = 'Игровой день уменьшен на 1.';
+    els.message.textContent = 'День уменьшен на 1.';
     saveState(true);
     render();
   });
@@ -530,7 +530,7 @@
     updateNow();
     addGameDelta(DAY_SECONDS);
     lastRealMs = Date.now();
-    els.message.textContent = 'Игровой день увеличен на 1.';
+    els.message.textContent = 'День увеличен на 1.';
     saveState(true);
     render();
   });

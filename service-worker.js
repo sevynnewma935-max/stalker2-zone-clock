@@ -1,4 +1,4 @@
-const CACHE = 'stalker2-zone-clock-v17';
+const CACHE = 'stalker2-zone-clock-v18';
 const ASSETS = [
   './',
   './index.html',
