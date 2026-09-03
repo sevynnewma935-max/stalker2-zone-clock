@@ -3,10 +3,12 @@
 
   const DAY_SECONDS = 86400;
   const MORNING_START = 5.5 * 3600;   // 05:30
-  const DAY_START = 10 * 3600;        // 10:00
-  const EVENING_START = 18 * 3600;    // 18:00
-  const NIGHT_START = 21.5 * 3600;    // 21:30
+  const DAWN_RATE_END = 7 * 3600;      // 07:00
+  const DAY_START = 10 * 3600;         // 10:00
+  const EVENING_START = 18 * 3600;     // 18:00
+  const NIGHT_START = 21.5 * 3600;     // 21:30
   const DAY_RATE = ((16 * 3600) / (42 * 60)) * 0.625;
+  const DAWN_RATE = 9.74;               // calibrated from 05:05–06:00 test
   const NIGHT_RATE = ((8 * 3600) / (18 * 60)) * 0.78125;
   const SLEEP_GAME_SECONDS = 8 * 3600;
   const STORAGE_KEY = 'stalker2-zone-clock-v1';
@@ -155,7 +157,11 @@
   function rateAt(value) {
     if (els.profileInput.value === 'uniform24') return 24;
     if (els.profileInput.value === 'custom') return DAY_SECONDS / (customMinutesValue() * 60);
-    return isDay(value) ? DAY_RATE : NIGHT_RATE;
+
+    const v = wrap(value);
+    if (v < MORNING_START || v >= NIGHT_START) return NIGHT_RATE;
+    if (v < DAWN_RATE_END) return DAWN_RATE;
+    return DAY_RATE;
   }
 
   function addGameDelta(delta) {
@@ -165,11 +171,9 @@
   }
 
   // Patch 2.0 calibrated timing profile:
-  // daylight: calibrated from 10 in-game min / 16 previous Zone Clock min => original rate * 0.625.
-  // night: measured 55 in-game min / 44 Zone Clock min => previous night rate * 1.25,
-  //        therefore original night rate * 0.78125.
-  // daylight rate applies from 05:30 to 21:30,
-  // night rate applies from 21:30 to 05:30.
+  // night: 21:30–05:30;
+  // dawn transition: 05:30–07:00, calibrated separately;
+  // day: 07:00–21:30, preserved because clocks match from 07:00 onward.
   function advance(realSeconds) {
     if (!(realSeconds > 0)) return;
 
@@ -183,13 +187,18 @@
 
     while (left > 0.0001 && guard++ < 30) {
       const v = wrap(gameSeconds);
-      const day = isDay(v);
-      const rate = day ? DAY_RATE : NIGHT_RATE;
+      const rate = rateAt(v);
       let gameToBoundary;
 
-      if (day) gameToBoundary = NIGHT_START - v;
-      else if (v < MORNING_START) gameToBoundary = MORNING_START - v;
-      else gameToBoundary = (DAY_SECONDS - v) + MORNING_START;
+      if (v < MORNING_START) {
+        gameToBoundary = MORNING_START - v;
+      } else if (v < DAWN_RATE_END) {
+        gameToBoundary = DAWN_RATE_END - v;
+      } else if (v < NIGHT_START) {
+        gameToBoundary = NIGHT_START - v;
+      } else {
+        gameToBoundary = (DAY_SECONDS - v) + MORNING_START;
+      }
 
       const realToBoundary = gameToBoundary / rate;
       const usedReal = Math.min(left, realToBoundary);
