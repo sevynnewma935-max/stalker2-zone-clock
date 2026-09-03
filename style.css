@@ -854,3 +854,9 @@ body.emission-danger-high .emission-danger-overlay {
 .correction-hours {
   margin-top: 10px;
 }
+
+
+/* PWA v30 — быстрая коррекция четырьмя парными строками */
+.correction-row {
+  margin-top: 10px;
+}

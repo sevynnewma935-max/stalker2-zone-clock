@@ -123,19 +123,22 @@
         <div class="correction-current-time">Сейчас <strong id="correctionCurrentTime">--:--</strong></div>
       </div>
 
-      <div class="grid correction-grid">
+      <div class="grid two-buttons correction-row">
         <button class="btn utility-btn" type="button" data-shift="-30">−30 сек</button>
-        <button class="btn utility-btn" type="button" data-shift="-60">−1 мин</button>
-        <button class="btn utility-btn" type="button" data-shift="60">+1 мин</button>
         <button class="btn utility-btn" type="button" data-shift="30">+30 сек</button>
       </div>
 
-      <div class="grid two-buttons correction-hours">
+      <div class="grid two-buttons correction-row">
+        <button class="btn utility-btn" type="button" data-shift="-60">−1 мин</button>
+        <button class="btn utility-btn" type="button" data-shift="60">+1 мин</button>
+      </div>
+
+      <div class="grid two-buttons correction-row">
         <button class="btn utility-btn" type="button" data-shift="-3600">−1 час</button>
         <button class="btn utility-btn" type="button" data-shift="3600">+1 час</button>
       </div>
 
-      <div class="grid two-buttons">
+      <div class="grid two-buttons correction-row">
         <button id="dayMinusBtn" class="btn utility-btn" type="button">−1 день</button>
         <button id="dayPlusBtn" class="btn utility-btn" type="button">+1 день</button>
       </div>
@@ -215,7 +218,7 @@
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v29</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v30</strong></div>
         </div>
       </div>
     </div>
