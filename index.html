@@ -118,13 +118,23 @@
     </section>
 
     <section class="utility-panel">
-      <div class="section-label">БЫСТРАЯ КОРРЕКЦИЯ</div>
+      <div class="row between correction-heading">
+        <div class="section-label">БЫСТРАЯ КОРРЕКЦИЯ</div>
+        <div class="correction-current-time">Сейчас <strong id="correctionCurrentTime">--:--:--</strong></div>
+      </div>
+
       <div class="grid correction-grid">
         <button class="btn utility-btn" type="button" data-shift="-600">−10 мин</button>
         <button class="btn utility-btn" type="button" data-shift="-60">−1 мин</button>
         <button class="btn utility-btn" type="button" data-shift="60">+1 мин</button>
         <button class="btn utility-btn" type="button" data-shift="600">+10 мин</button>
       </div>
+
+      <div class="grid two-buttons correction-hours">
+        <button class="btn utility-btn" type="button" data-shift="-3600">−1 час</button>
+        <button class="btn utility-btn" type="button" data-shift="3600">+1 час</button>
+      </div>
+
       <div class="grid two-buttons">
         <button id="dayMinusBtn" class="btn utility-btn" type="button">−1 день</button>
         <button id="dayPlusBtn" class="btn utility-btn" type="button">+1 день</button>
@@ -157,7 +167,7 @@
 
       <div class="settings-content modal-content">
         <div class="settings-group">
-          <div class="settings-heading"><span>1.</span> СИНХРОНИЗАЦИЯ</div>
+          <div class="settings-heading">СИНХРОНИЗАЦИЯ</div>
           <form id="syncForm" class="settings-sync-form">
             <div class="form-grid">
               <label>
@@ -174,7 +184,7 @@
         </div>
 
         <div class="settings-group">
-          <div class="settings-heading"><span>2.</span> ПРОФИЛЬ ВРЕМЕНИ</div>
+          <div class="settings-heading">ПРОФИЛЬ ВРЕМЕНИ</div>
           <label>
             <select id="profileInput">
               <option value="vanilla">Vanilla — ~60 мин/сутки, день/ночь 70/30</option>
@@ -190,7 +200,7 @@
         </div>
 
         <div class="settings-group">
-          <div class="settings-heading"><span>3.</span> ОФОРМЛЕНИЕ</div>
+          <div class="settings-heading">ОФОРМЛЕНИЕ</div>
           <div class="theme-switch" role="group" aria-label="Цветовая тема">
             <button id="darkThemeBtn" class="theme-option" type="button" data-theme-choice="dark" aria-pressed="true">
               <span aria-hidden="true">☾</span>
@@ -204,8 +214,8 @@
         </div>
 
         <div class="settings-group version-group">
-          <div class="settings-heading"><span>4.</span> ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v24</strong></div>
+          <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v26</strong></div>
         </div>
       </div>
     </div>

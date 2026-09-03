@@ -25,7 +25,7 @@
     riskWrap: $('riskWrap'), riskLabel: $('riskLabel'), riskBadge: $('riskBadge'),
     riskProgress: $('riskProgress'), riskDetail: $('riskDetail'), riskNext: $('riskNext'),
     riskPercent: $('riskPercent'),
-    dayMinusBtn: $('dayMinusBtn'), dayPlusBtn: $('dayPlusBtn'),
+    correctionCurrentTime: $('correctionCurrentTime'), dayMinusBtn: $('dayMinusBtn'), dayPlusBtn: $('dayPlusBtn'),
     resetBtn: $('resetBtn'), message: $('message'), saveState: $('saveState'),
     darkThemeBtn: $('darkThemeBtn'), lightThemeBtn: $('lightThemeBtn'),
     themeColorMeta: $('themeColorMeta'),
@@ -309,6 +309,7 @@
 
   function render() {
     els.clock.textContent = formatClock(gameSeconds);
+    if (els.correctionCurrentTime) els.correctionCurrentTime.textContent = formatClock(gameSeconds);
     els.gameDay.textContent = String(gameDay);
 
     const part = dayPartAt(gameSeconds);

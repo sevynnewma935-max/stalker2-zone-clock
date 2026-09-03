@@ -829,3 +829,28 @@ body.emission-danger-high .emission-danger-overlay {
   font-size: 1rem;
   letter-spacing: .08em;
 }
+
+
+/* PWA v26 — текущее время и коррекция по часам */
+.correction-heading {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.correction-current-time {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .68rem;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.correction-current-time strong {
+  color: var(--text);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.correction-hours {
+  margin-top: 10px;
+}
