@@ -360,3 +360,19 @@ body:has(.settings-dialog[open]) {
 @media (max-width:760px) {
   .control-card { min-height:auto; }
 }
+
+
+/* Вероятность выброса внутри блока «Время в зоне» */
+.hero {
+  min-height:auto;
+}
+.zone-risk {
+  margin-top:22px;
+  padding-top:18px;
+}
+.zone-risk .risk-title {
+  font-size:1.05rem;
+}
+.zone-risk .note {
+  margin-bottom:0;
+}

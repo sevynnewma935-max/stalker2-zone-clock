@@ -64,6 +64,22 @@
             <strong id="boundary">—</strong>
           </div>
         </div>
+
+        <div id="riskWrap" class="risk zone-risk hidden">
+          <div class="row between wrap gap">
+            <div>
+              <div class="muted">Вероятность следующего выброса</div>
+              <div id="riskLabel" class="risk-title">Низкая вероятность</div>
+            </div>
+            <span id="riskBadge" class="pill">НИЗКИЙ</span>
+          </div>
+
+          <div class="risk-track"><div id="riskProgress" class="risk-progress"></div></div>
+          <div class="risk-scale"><span>0 дней</span><span>2 дня</span><span>3+ дня</span></div>
+          <p id="riskDetail" class="muted"></p>
+          <p id="riskNext" class="risk-next"></p>
+          <p class="note">Ориентир, а не точный таймер. Сюжетный выброс и погодная логика игры могут изменить интервал.</p>
+        </div>
       </article>
 
       <article class="card control-card">
@@ -99,22 +115,6 @@
           <span class="muted">Прошло реального времени</span>
           <strong id="emissionRealElapsed">—</strong>
         </div>
-      </div>
-
-      <div id="riskWrap" class="risk hidden">
-        <div class="row between wrap gap">
-          <div>
-            <div class="muted">Ориентир следующего выброса</div>
-            <div id="riskLabel" class="risk-title">Низкая вероятность</div>
-          </div>
-          <span id="riskBadge" class="pill">НИЗКИЙ</span>
-        </div>
-
-        <div class="risk-track"><div id="riskProgress" class="risk-progress"></div></div>
-        <div class="risk-scale"><span>0 дней</span><span>2 дня</span><span>3+ дня</span></div>
-        <p id="riskDetail" class="muted"></p>
-        <p id="riskNext" class="risk-next"></p>
-        <p class="note">Это ориентир, а не точный таймер. Сюжетный выброс и внутренняя погодная логика игры могут изменить интервал.</p>
       </div>
 
       <button id="clearEmissionBtn" class="btn ghost hidden" type="button">Удалить отметку</button>
