@@ -1894,3 +1894,63 @@ button.zone-button-press:not(:disabled) {
 
 /* HD-тайлы имеют 4-кратный запас разрешения.
    Выше этого увеличения новых реальных деталей всё равно нет. */
+
+
+/* PWA v59 — TEST перенесён в настройки */
+.settings-test-btn {
+  width: 100%;
+  min-height: 46px;
+  justify-content: center;
+}
+
+.settings-subnote {
+  margin-top: 8px;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .68rem;
+  line-height: 1.45;
+}
+
+
+/* PWA v60 — стабильная цельная карта из исходного PNG */
+.zone-map-tile-layer,
+.map-tile,
+.zone-map-image-hidden {
+  display: none !important;
+}
+
+.zone-map-transform {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2048px;
+  height: 2048px;
+  transform-origin: 0 0;
+  transition: none !important;
+  will-change: transform;
+}
+
+.zone-map-transform img.zone-map-full-image {
+  position: absolute !important;
+  inset: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 2048px !important;
+  height: 2048px !important;
+  max-width: none !important;
+  max-height: none !important;
+  display: block !important;
+  object-fit: fill !important;
+  image-rendering: auto;
+  backface-visibility: visible;
+  transform: none !important;
+  pointer-events: none;
+  user-select: none;
+}
+
+.zone-map-transform .map-overlay {
+  position: absolute;
+  inset: 0;
+  width: 2048px;
+  height: 2048px;
+}

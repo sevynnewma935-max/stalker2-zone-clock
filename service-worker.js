@@ -1,4 +1,4 @@
-const CACHE = 'stalker2-zone-clock-v58';
+const CACHE = 'stalker2-zone-clock-v60';
 const ASSETS = [
   './',
   './index.html',
@@ -7,22 +7,7 @@ const ASSETS = [
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './assets/map-tiles/tile-0-0.webp',
-  './assets/map-tiles/tile-0-1.webp',
-  './assets/map-tiles/tile-0-2.webp',
-  './assets/map-tiles/tile-0-3.webp',
-  './assets/map-tiles/tile-1-0.webp',
-  './assets/map-tiles/tile-1-1.webp',
-  './assets/map-tiles/tile-1-2.webp',
-  './assets/map-tiles/tile-1-3.webp',
-  './assets/map-tiles/tile-2-0.webp',
-  './assets/map-tiles/tile-2-1.webp',
-  './assets/map-tiles/tile-2-2.webp',
-  './assets/map-tiles/tile-2-3.webp',
-  './assets/map-tiles/tile-3-0.webp',
-  './assets/map-tiles/tile-3-1.webp',
-  './assets/map-tiles/tile-3-2.webp',
-  './assets/map-tiles/tile-3-3.webp',
+  './assets/zone-map.png',
 ];
 
 self.addEventListener('install', event => {

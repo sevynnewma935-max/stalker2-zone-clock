@@ -70,7 +70,7 @@ mapMeasureHint: $('mapMeasureHint'),
     mapApplyCalibrationBtn: $('mapApplyCalibrationBtn'),
     mapResetCalibrationBtn: $('mapResetCalibrationBtn'),
     mapCalibrationMessage: $('mapCalibrationMessage'),
-    testBtn: $('testBtn'), closeTestBtn: $('closeTestBtn'), testDialog: $('testDialog'),
+    settingsTestBtn: $('settingsTestBtn'), closeTestBtn: $('closeTestBtn'), testDialog: $('testDialog'),
     testCurrentTime: $('testCurrentTime'), testTableBody: $('testTableBody'),
     dayCalibrationDetails: $('dayCalibrationDetails'),
     daylightMarksList: $('daylightMarksList'),
@@ -1252,12 +1252,13 @@ mapMeasureHint: $('mapMeasureHint'),
 
 
   function ensureHdZoneMap() {
-    // В v58 каждый тайл уже содержит 4-кратный HD-растр.
+    // v60: карта уже загружается напрямую из исходного PNG.
   }
 
   function maybeLoadHdZoneMap() {
-    // Дополнительная подмена изображения не требуется.
+    // Дополнительные слои или тайлы не используются.
   }
+
 
 
   function applyMapTransform() {
@@ -1302,7 +1303,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const imageY = (localY - mapPanY) / mapZoom;
 
     const minZoom = Math.max(.08, mapFitZoom * .75);
-    const maxZoom = 4;
+    const maxZoom = 8;
     const nextZoom = Math.min(maxZoom, Math.max(minZoom, mapZoom * factor));
 
     mapPanX = localX - imageX * nextZoom;
@@ -1378,7 +1379,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const localY = midpoint.y - rect.top;
 
     const minZoom = Math.max(.08, mapFitZoom * .75);
-    const maxZoom = 4;
+    const maxZoom = 8;
     const scaleFactor = distance / mapPinchState.startDistance;
     const nextZoom = Math.min(
       maxZoom,
@@ -1917,7 +1918,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v58.csv';
+    link.download = 'zone-clock-test-v60.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -1944,17 +1945,34 @@ mapMeasureHint: $('mapMeasureHint'),
     if (els.testMessage) els.testMessage.textContent = 'Таблица и отметки освещения очищены.';
   }
 
-  if (els.testBtn) {
-    els.testBtn.addEventListener('click', () => {
-      if (els.testCurrentTime) els.testCurrentTime.textContent = formatClock(gameSeconds);
-      if (els.dayCalibrationDetails) els.dayCalibrationDetails.open = false;
+  if (els.settingsTestBtn) {
+    els.settingsTestBtn.addEventListener('click', () => {
+      if (els.settingsDialog && els.settingsDialog.open) {
+        if (typeof els.settingsDialog.close === 'function') {
+          els.settingsDialog.close();
+        } else {
+          els.settingsDialog.removeAttribute('open');
+        }
+      }
+
+      if (els.testCurrentTime) {
+        els.testCurrentTime.textContent = formatClock(gameSeconds);
+      }
+
+      if (els.dayCalibrationDetails) {
+        els.dayCalibrationDetails.open = false;
+      }
+
       buildTestRows();
       renderDaylightMarks();
-      if (typeof els.testDialog.showModal === 'function') {
-        els.testDialog.showModal();
-      } else {
-        els.testDialog.setAttribute('open', '');
-      }
+
+      window.requestAnimationFrame(() => {
+        if (typeof els.testDialog.showModal === 'function') {
+          els.testDialog.showModal();
+        } else {
+          els.testDialog.setAttribute('open', '');
+        }
+      });
     });
   }
 
