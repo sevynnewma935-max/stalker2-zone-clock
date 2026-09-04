@@ -158,18 +158,28 @@
   <dialog id="mapDialog" class="map-dialog" aria-labelledby="mapDialogTitle">
     <div class="map-modal">
       <div class="map-modal-header">
-        <div>
-          <div class="eyebrow">ZONE CLOCK</div>
-          <h2 id="mapDialogTitle">КАРТА ЗОНЫ</h2>
+        <div class="map-brand-block">
+          <div class="map-brand-kicker">S.T.A.L.K.E.R. 2</div>
+          <h2 id="mapDialogTitle" class="map-brand-title">ZONE CLOCK</h2>
           <div class="map-zone-time-line">
             ИГРОВОЕ ВРЕМЯ <strong id="mapZoneTime">--:--</strong>
           </div>
         </div>
-        <button id="closeMapBtn" class="icon-btn small" type="button" aria-label="Закрыть карту" title="Закрыть">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/>
-          </svg>
-        </button>
+        <div class="map-header-actions">
+          <button id="mapFullscreenBtn" class="icon-btn small" type="button" aria-label="Развернуть карту на весь экран" title="На весь экран">
+            <svg class="map-fullscreen-icon map-fullscreen-icon-expand" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 9V4h5v2H6v3H4Zm11-5h5v5h-2V6h-3V4ZM4 15h2v3h3v2H4v-5Zm14 0h2v5h-5v-2h3v-3Z"/>
+            </svg>
+            <svg class="map-fullscreen-icon map-fullscreen-icon-collapse" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 4v5H4V7h3V4h2Zm6 0h2v3h3v2h-5V4ZM4 15h5v5H7v-3H4v-2Zm11 0h5v2h-3v3h-2v-5Z"/>
+            </svg>
+          </button>
+          <button id="closeMapBtn" class="icon-btn small" type="button" aria-label="Закрыть карту" title="Закрыть">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div class="map-toolbar">
@@ -213,7 +223,7 @@
         СВАЛКА → ЦЕМЕНТНЫЙ ЗАВОД → ГРАДИРНИ
       </div>
       <div id="mapArtifactVisitHint" class="map-artifact-visit-hint">
-        Точки артефактов: нажмите на точку, чтобы отметить её посещённой.
+        Артефакты: нажмите точку после сбора. До 2 суток — СОБРАН, 2–3 суток — ВОЗМОЖНО ПОЯВИЛСЯ, после 3 суток — ПОРА ПРОВЕРИТЬ.
       </div>
 
       <div id="mapViewport" class="map-viewport" aria-label="Интерактивная карта Зоны">
@@ -436,7 +446,7 @@
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v75</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v77</strong></div>
           <button id="updateAppBtn" class="btn update-app-btn" type="button">
             ОБНОВИТЬ ПРИЛОЖЕНИЕ
           </button>

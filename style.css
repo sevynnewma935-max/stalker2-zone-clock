@@ -2452,3 +2452,182 @@ button.zone-button-press:not(:disabled) {
 .map-artifact-visit-hint {
   grid-area: artifactHint;
 }
+
+
+/* PWA v76 — таймер повторного появления артефактов */
+.map-screen-overlay .map-artifact-status {
+  fill: #d9e1d8;
+  stroke: rgba(2, 8, 4, .97);
+  stroke-width: 3px;
+  paint-order: stroke;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 800;
+  letter-spacing: .015em;
+  pointer-events: none;
+}
+
+.map-screen-overlay .map-artifact-visit-point.artifact-collected {
+  fill: rgba(62, 67, 64, .96) !important;
+  stroke: #939b96 !important;
+  opacity: .72;
+}
+
+.map-screen-overlay .map-artifact-status.artifact-collected {
+  fill: #aab2ad;
+}
+
+.map-screen-overlay .map-artifact-visit-point.artifact-possible {
+  fill: rgba(117, 96, 22, .96) !important;
+  stroke: #e5c55b !important;
+  opacity: .95;
+}
+
+.map-screen-overlay .map-artifact-status.artifact-possible {
+  fill: #f0d77b;
+}
+
+.map-screen-overlay .map-artifact-visit-point.artifact-ready {
+  fill: rgba(25, 95, 35, .98) !important;
+  stroke: #56ef6b !important;
+  opacity: 1;
+}
+
+.map-screen-overlay .map-artifact-status.artifact-ready {
+  fill: #8dff9d;
+}
+
+
+/* PWA v77 — исправленное время и полноэкранная карта */
+.map-brand-block {
+  min-width: 0;
+}
+
+.map-brand-kicker {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .58rem;
+  line-height: 1.1;
+  letter-spacing: .16em;
+}
+
+.map-modal-header .map-brand-title {
+  margin: 3px 0 0;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.02rem;
+  line-height: 1.05;
+  letter-spacing: .13em;
+}
+
+.map-zone-time-line {
+  margin-top: 5px;
+  font-size: .57rem;
+}
+
+.map-zone-time-line strong {
+  color: var(--accent-2);
+  font-size: .72rem;
+  letter-spacing: .06em;
+}
+
+.map-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.map-fullscreen-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.map-fullscreen-icon-collapse {
+  display: none;
+}
+
+.map-dialog.map-fullscreen .map-fullscreen-icon-expand {
+  display: none;
+}
+
+.map-dialog.map-fullscreen .map-fullscreen-icon-collapse {
+  display: block;
+}
+
+.map-dialog.map-fullscreen {
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+.map-dialog.map-fullscreen::backdrop {
+  background: #000;
+  backdrop-filter: none;
+}
+
+.map-dialog.map-fullscreen .map-modal {
+  width: 100%;
+  height: 100%;
+  border: 0 !important;
+  border-radius: 0 !important;
+  grid-template-areas:
+    "header"
+    "map" !important;
+  grid-template-rows:
+    auto
+    minmax(0, 1fr) !important;
+}
+
+.map-dialog.map-fullscreen .map-modal-header {
+  grid-area: header;
+  min-height: 0;
+  padding:
+    max(8px, env(safe-area-inset-top))
+    max(10px, env(safe-area-inset-right))
+    8px
+    max(10px, env(safe-area-inset-left));
+  background: rgba(9, 18, 12, .97);
+}
+
+.map-dialog.map-fullscreen .map-toolbar,
+.map-dialog.map-fullscreen .map-info-strip,
+.map-dialog.map-fullscreen .map-preset-route-label,
+.map-dialog.map-fullscreen .map-artifact-visit-hint,
+.map-dialog.map-fullscreen .map-calibration {
+  display: none !important;
+}
+
+.map-dialog.map-fullscreen .map-viewport {
+  grid-area: map;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  border: 0 !important;
+}
+
+.map-dialog.map-fullscreen .map-measure-hint {
+  display: none !important;
+}
+
+.map-dialog.map-fullscreen .map-zone-time-line {
+  margin-top: 3px;
+  font-size: .56rem;
+}
+
+.map-dialog.map-fullscreen .map-zone-time-line strong {
+  font-size: .76rem;
+}
+
+@media (max-width: 560px) {
+  .map-modal-header {
+    padding: 10px 12px;
+  }
+
+  .map-modal-header .map-brand-title {
+    font-size: .94rem;
+  }
+}

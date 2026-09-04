@@ -59,6 +59,7 @@
     notificationIntervalSelect: $('notificationIntervalSelect'),
     zoneToast: $('zoneToast'),
     mapBtn: $('mapBtn'), closeMapBtn: $('closeMapBtn'), mapDialog: $('mapDialog'),
+    mapFullscreenBtn: $('mapFullscreenBtn'),
     mapViewport: $('mapViewport'), zoneMapTransform: $('zoneMapTransform'),
     zoneMapPreviewImage: $('zoneMapPreviewImage'),
     zoneMapImage: $('zoneMapImage'), mapOverlay: $('mapOverlay'),
@@ -401,6 +402,8 @@ mapMeasureHint: $('mapMeasureHint'),
     els.pauseBtn.disabled = !running;
     els.resumeBtn.disabled = running;
     renderEmission();
+    updateMapZoneTime();
+    updateArtifactVisitStatuses();
   }
 
   function stateObject() {
@@ -1245,6 +1248,7 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapTransformFrame = 0;
   let mapInteractionEndTimer = 0;
   let mapInteractionDepth = 0;
+  let mapFullscreenMode = false;
   let mapPresetRouteVisible =
     localStorage.getItem(MAP_PRESET_ROUTE_STORAGE_KEY) !== '0';
   let mapSelectedRouteKey =
@@ -1252,20 +1256,45 @@ mapMeasureHint: $('mapMeasureHint'),
   const MAP_PRESET_ROUTE_START_KEY =
     'stalker2-zone-clock-preset-route-start-v1';
   const MAP_VISITED_ARTIFACTS_KEY =
+    'stalker2-zone-clock-visited-artifacts-v2';
+  const MAP_VISITED_ARTIFACTS_LEGACY_KEY =
     'stalker2-zone-clock-visited-artifacts-v1';
   let mapPresetRouteStart =
     localStorage.getItem(MAP_PRESET_ROUTE_START_KEY) || 'svalka';
 
-  let mapVisitedArtifacts = (() => {
+  let mapArtifactVisits = (() => {
     try {
-      const parsed = JSON.parse(
-        localStorage.getItem(MAP_VISITED_ARTIFACTS_KEY) || '[]'
+      const current = JSON.parse(
+        localStorage.getItem(MAP_VISITED_ARTIFACTS_KEY) || '{}'
       );
-      return new Set(Array.isArray(parsed) ? parsed : []);
+
+      if (
+        current &&
+        typeof current === 'object' &&
+        !Array.isArray(current)
+      ) {
+        return current;
+      }
+
+      return {};
     } catch (_) {
-      return new Set();
+      return {};
     }
   })();
+
+  let mapLegacyVisitedArtifacts = (() => {
+    try {
+      const parsed = JSON.parse(
+        localStorage.getItem(MAP_VISITED_ARTIFACTS_LEGACY_KEY) || '[]'
+      );
+
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  })();
+
+  let mapLegacyVisitsMigrated = false;
 
   function formatMapNumber(value, digits = 2) {
     return Number(value).toLocaleString('ru-RU', {
@@ -1334,13 +1363,13 @@ mapMeasureHint: $('mapMeasureHint'),
 
   function updateMapZoneTime() {
     if (!els.mapZoneTime) return;
-    els.mapZoneTime.textContent = formatTime(gameSeconds);
+    els.mapZoneTime.textContent = formatClock(gameSeconds);
   }
 
   function saveVisitedArtifacts() {
     localStorage.setItem(
       MAP_VISITED_ARTIFACTS_KEY,
-      JSON.stringify([...mapVisitedArtifacts])
+      JSON.stringify(mapArtifactVisits)
     );
   }
 
@@ -1348,17 +1377,160 @@ mapMeasureHint: $('mapMeasureHint'),
     return `${routeKey}:${index}`;
   }
 
+  function migrateLegacyArtifactVisits() {
+    if (mapLegacyVisitsMigrated) return;
+    mapLegacyVisitsMigrated = true;
+
+    if (!mapLegacyVisitedArtifacts.length) return;
+
+    let changed = false;
+
+    mapLegacyVisitedArtifacts.forEach(key => {
+      if (!(key in mapArtifactVisits)) {
+        mapArtifactVisits[key] = absoluteGameSeconds;
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      saveVisitedArtifacts();
+    }
+
+    try {
+      localStorage.removeItem(MAP_VISITED_ARTIFACTS_LEGACY_KEY);
+    } catch (_) {}
+
+    mapLegacyVisitedArtifacts = [];
+  }
+
+  function artifactVisitTime(routeKey, index) {
+    const key = artifactVisitKey(routeKey, index);
+    const value = Number(mapArtifactVisits[key]);
+    return Number.isFinite(value) ? value : null;
+  }
+
+  function artifactElapsedSeconds(routeKey, index) {
+    const visitTime = artifactVisitTime(routeKey, index);
+
+    if (visitTime === null) return null;
+
+    return Math.max(0, absoluteGameSeconds - visitTime);
+  }
+
+  function artifactRespawnState(elapsedSeconds) {
+    if (!(elapsedSeconds >= 0)) {
+      return {
+        key: 'unvisited',
+        label: '',
+        shortLabel: ''
+      };
+    }
+
+    if (elapsedSeconds < 2 * DAY_SECONDS) {
+      return {
+        key: 'collected',
+        label: 'СОБРАН',
+        shortLabel: 'СОБРАН'
+      };
+    }
+
+    if (elapsedSeconds < 3 * DAY_SECONDS) {
+      return {
+        key: 'possible',
+        label: 'ВОЗМОЖНО ПОЯВИЛСЯ',
+        shortLabel: 'ВОЗМОЖНО'
+      };
+    }
+
+    return {
+      key: 'ready',
+      label: 'ПОРА ПРОВЕРИТЬ',
+      shortLabel: 'ПРОВЕРИТЬ'
+    };
+  }
+
+  function formatArtifactElapsed(seconds) {
+    const safe = Math.max(0, Math.floor(seconds));
+
+    const days = Math.floor(safe / DAY_SECONDS);
+    const hours = Math.floor((safe % DAY_SECONDS) / 3600);
+    const minutes = Math.floor((safe % 3600) / 60);
+
+    if (days > 0) {
+      return `${days}д ${hours}ч`;
+    }
+
+    if (hours > 0) {
+      return `${hours}ч ${minutes}м`;
+    }
+
+    return `${Math.max(0, minutes)}м`;
+  }
+
   function toggleArtifactVisited(routeKey, index) {
     const key = artifactVisitKey(routeKey, index);
 
-    if (mapVisitedArtifacts.has(key)) {
-      mapVisitedArtifacts.delete(key);
+    if (key in mapArtifactVisits) {
+      delete mapArtifactVisits[key];
     } else {
-      mapVisitedArtifacts.add(key);
+      mapArtifactVisits[key] = absoluteGameSeconds;
     }
 
     saveVisitedArtifacts();
     renderPresetRoute();
+  }
+
+  function updateArtifactVisitStatuses() {
+    migrateLegacyArtifactVisits();
+
+    if (!els.mapPresetRoutePoints) return;
+
+    const activeRoute = getPresetRoute();
+    const circles = els.mapPresetRoutePoints.querySelectorAll(
+      '.map-artifact-visit-point'
+    );
+    const statusLabels = els.mapPresetRoutePoints.querySelectorAll(
+      '.map-artifact-status'
+    );
+
+    circles.forEach((circle, index) => {
+      const elapsed = artifactElapsedSeconds(activeRoute.key, index);
+      const isVisited = elapsed !== null;
+      const state = artifactRespawnState(elapsed);
+
+      circle.classList.toggle('visited', isVisited);
+      circle.classList.toggle('artifact-collected', state.key === 'collected');
+      circle.classList.toggle('artifact-possible', state.key === 'possible');
+      circle.classList.toggle('artifact-ready', state.key === 'ready');
+
+      circle.setAttribute(
+        'aria-label',
+        isVisited
+          ? `Точка ${index + 1}: ${state.label}, прошло ${formatArtifactElapsed(elapsed)}`
+          : `Точка ${index + 1}, не посещена`
+      );
+
+      const label = statusLabels[index];
+
+      if (label) {
+        if (isVisited) {
+          label.textContent =
+            `${state.shortLabel} · ${formatArtifactElapsed(elapsed)}`;
+          label.style.display = '';
+          label.setAttribute(
+            'class',
+            `map-artifact-status artifact-${state.key}`
+          );
+        } else {
+          label.textContent = '';
+          label.style.display = 'none';
+          label.setAttribute(
+            'class',
+            'map-artifact-status'
+          );
+        }
+      }
+    });
   }
 
 
@@ -1521,6 +1693,10 @@ mapMeasureHint: $('mapMeasureHint'),
       '.map-preset-route-distance'
     );
 
+    const artifactStatusLabels = els.mapPresetRoutePoints.querySelectorAll(
+      '.map-artifact-status'
+    );
+
     const showDistanceLabels = Boolean(activeRoute.showCumulativeDistances);
 
     markerDefs.forEach((point, index) => {
@@ -1530,6 +1706,13 @@ mapMeasureHint: $('mapMeasureHint'),
       if (circle) {
         circle.setAttribute('cx', screen.x);
         circle.setAttribute('cy', screen.y);
+      }
+
+      const artifactStatusLabel = artifactStatusLabels[index];
+
+      if (artifactStatusLabel) {
+        artifactStatusLabel.setAttribute('x', screen.x + 8);
+        artifactStatusLabel.setAttribute('y', screen.y + 16);
       }
 
       const label = labels[index];
@@ -1574,13 +1757,14 @@ mapMeasureHint: $('mapMeasureHint'),
         'circle'
       );
 
-      const visitKey = artifactVisitKey(activeRoute.key, index);
-      const isVisited = mapVisitedArtifacts.has(visitKey);
+      const elapsed = artifactElapsedSeconds(activeRoute.key, index);
+      const isVisited = elapsed !== null;
+      const respawnState = artifactRespawnState(elapsed);
 
       circle.setAttribute('r', isRoadRoute ? '5.2' : '4.5');
       circle.setAttribute(
         'class',
-        `map-preset-route-point map-artifact-visit-point${isVisited ? ' visited' : ''}`
+        `map-preset-route-point map-artifact-visit-point${isVisited ? ` visited artifact-${respawnState.key}` : ''}`
       );
       circle.setAttribute('data-route-key', activeRoute.key);
       circle.setAttribute('data-point-index', String(index));
@@ -1589,7 +1773,7 @@ mapMeasureHint: $('mapMeasureHint'),
       circle.setAttribute(
         'aria-label',
         isVisited
-          ? `Точка ${index + 1}, посещена`
+          ? `Точка ${index + 1}: ${respawnState.label}, прошло ${formatArtifactElapsed(elapsed)}`
           : `Точка ${index + 1}, не посещена`
       );
 
@@ -1611,6 +1795,23 @@ mapMeasureHint: $('mapMeasureHint'),
       });
 
       els.mapPresetRoutePoints.appendChild(circle);
+
+      const statusText = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'text'
+      );
+
+      statusText.setAttribute(
+        'class',
+        `map-artifact-status${isVisited ? ` artifact-${respawnState.key}` : ''}`
+      );
+      statusText.setAttribute('font-size', '9.5');
+      statusText.style.display = isVisited ? '' : 'none';
+      statusText.textContent = isVisited
+        ? `${respawnState.shortLabel} · ${formatArtifactElapsed(elapsed)}`
+        : '';
+
+      els.mapPresetRoutePoints.appendChild(statusText);
 
       if (isRoadRoute && activeRoute.showCumulativeDistances) {
         const text = document.createElementNS(
@@ -1778,6 +1979,62 @@ mapMeasureHint: $('mapMeasureHint'),
     }, 80);
   }
 
+  function updateMapFullscreenUI() {
+    if (!els.mapDialog || !els.mapFullscreenBtn) return;
+
+    els.mapDialog.classList.toggle('map-fullscreen', mapFullscreenMode);
+    els.mapFullscreenBtn.classList.toggle('active', mapFullscreenMode);
+    els.mapFullscreenBtn.setAttribute(
+      'aria-label',
+      mapFullscreenMode
+        ? 'Выйти из полноэкранной карты'
+        : 'Развернуть карту на весь экран'
+    );
+    els.mapFullscreenBtn.title = mapFullscreenMode
+      ? 'Обычный размер'
+      : 'На весь экран';
+  }
+
+  function toggleMapFullscreen() {
+    if (!els.mapViewport || !els.mapDialog) return;
+
+    const oldRect = els.mapViewport.getBoundingClientRect();
+    const centerImageX = oldRect.width > 0
+      ? (oldRect.width / 2 - mapPanX) / mapZoom
+      : MAP_IMAGE_SIZE / 2;
+    const centerImageY = oldRect.height > 0
+      ? (oldRect.height / 2 - mapPanY) / mapZoom
+      : MAP_IMAGE_SIZE / 2;
+
+    mapFullscreenMode = !mapFullscreenMode;
+    updateMapFullscreenUI();
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const rect = els.mapViewport.getBoundingClientRect();
+        if (!(rect.width > 20 && rect.height > 20)) return;
+
+        if (els.mapOverlay) {
+          els.mapOverlay.setAttribute('width', String(rect.width));
+          els.mapOverlay.setAttribute('height', String(rect.height));
+        }
+
+        mapFitZoom = Math.min(
+          rect.width / MAP_IMAGE_SIZE,
+          rect.height / MAP_IMAGE_SIZE
+        );
+
+        const minZoom = Math.max(.08, mapFitZoom * .75);
+        mapZoom = Math.max(mapZoom, minZoom);
+        mapPanX = rect.width / 2 - centerImageX * mapZoom;
+        mapPanY = rect.height / 2 - centerImageY * mapZoom;
+
+        applyMapTransform(true);
+      });
+    });
+  }
+
+
   function fitZoneMap() {
     if (!els.mapViewport) return;
 
@@ -1920,6 +2177,9 @@ mapMeasureHint: $('mapMeasureHint'),
 
   if (els.mapBtn) {
     els.mapBtn.addEventListener('click', () => {
+      updateMapZoneTime();
+      updateMapFullscreenUI();
+
       if (typeof els.mapDialog.showModal === 'function') {
         els.mapDialog.showModal();
       } else {
@@ -1936,8 +2196,14 @@ mapMeasureHint: $('mapMeasureHint'),
     });
   }
 
+  if (els.mapFullscreenBtn) {
+    els.mapFullscreenBtn.addEventListener('click', toggleMapFullscreen);
+  }
+
   if (els.closeMapBtn) {
     els.closeMapBtn.addEventListener('click', () => {
+      mapFullscreenMode = false;
+      updateMapFullscreenUI();
       if (typeof els.mapDialog.close === 'function') els.mapDialog.close();
       else els.mapDialog.removeAttribute('open');
     });
@@ -1946,6 +2212,8 @@ mapMeasureHint: $('mapMeasureHint'),
   if (els.mapDialog) {
     els.mapDialog.addEventListener('click', event => {
       if (event.target === els.mapDialog) {
+        mapFullscreenMode = false;
+        updateMapFullscreenUI();
         if (typeof els.mapDialog.close === 'function') els.mapDialog.close();
         else els.mapDialog.removeAttribute('open');
       }
@@ -2482,7 +2750,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v75.csv';
+    link.download = 'zone-clock-test-v77.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
