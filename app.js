@@ -3,21 +3,32 @@
 
   const DAY_SECONDS = 86400;
   const MORNING_START = 5.5 * 3600;   // 05:30
-  const DAWN_RATE_END = 7 * 3600;      // 07:00
   const DAY_START = 10 * 3600;         // 10:00
   const EVENING_START = 18 * 3600;     // 18:00
-  const NIGHT_TRANSITION_START = 21 * 3600; // 21:00
-  const NIGHT_START = 21.5 * 3600;          // 21:30 — смена статуса ВЕЧЕР/НОЧЬ
-  const NIGHT_TRANSITION_END = 22 * 3600;   // 22:00
-  const DAY_RATE = ((16 * 3600) / (42 * 60)) * 0.604838710;
-  const EVENING_RATE = ((16 * 3600) / (42 * 60)) * 0.483870968;
-  const DAWN_RATE = 9.74;               // calibrated from 05:05–06:00 test
-  const NIGHT_RATE = ((8 * 3600) / (18 * 60)) * 0.754616477;
-  const NIGHT_TRANSITION_RATE = NIGHT_RATE * 10;
+  const NIGHT_START = 21.5 * 3600;     // 21:30
+
+  // Patch 2.0 — empirical calibration from a complete 24-hour test.
+  // 96 rate values, one for each 15-minute interval of Zone time.
+  const RATE_SLOT_SECONDS = 15 * 60;
+  const PATCH20_RATE_TABLE = [
+    21.560471, 21.560471, 21.560471, 21.560471, 21.560471, 21.560471, 21.560471, 21.560471,
+    21.560471, 21.560471, 21.560471, 21.560471, 21.560471, 21.560471, 21.560471, 21.560471,
+    21.560471, 21.560471, 21.560471, 20.123106, 18.865412, 16.769255, 11.017841, 9.740000,
+    9.740000, 9.740000, 11.238462, 11.238462, 12.175000, 12.629777, 13.824885, 13.824885,
+    13.824885, 13.824885, 13.824885, 13.824885, 13.824885, 13.824885, 13.824885, 13.824885,
+    13.824885, 13.824885, 13.824885, 13.824885, 13.824885, 13.824885, 13.824885, 13.824885,
+    13.824885, 13.824885, 13.824885, 13.824885, 12.960830, 13.824885, 13.824885, 13.824885,
+    13.824885, 13.824885, 13.824885, 13.824885, 13.824885, 13.824885, 13.824885, 13.824885,
+    13.824885, 13.824885, 13.824885, 13.824885, 13.824885, 13.824885, 13.824885, 13.824885,
+    13.598247, 13.824885, 13.824885, 13.824885, 12.761432, 11.849901, 10.368664, 9.758742,
+    9.758742, 10.368664, 11.059908, 12.761432, 20.737327, 20.737327, 20.371936, 23.041724,
+    21.560471, 21.560471, 21.560471, 21.560471, 21.560471, 21.560471, 21.560471, 21.560471,
+  ];
   const SLEEP_GAME_SECONDS = 8 * 3600;
   const STORAGE_KEY = 'stalker2-zone-clock-v1';
   const THEME_KEY = 'stalker2-zone-clock-theme';
   const TEST_STORAGE_KEY = 'stalker2-zone-clock-test-v1';
+  const NOTIFICATION_KEY = 'stalker2-zone-clock-notifications-v1';
 
   const $ = (id) => document.getElementById(id);
 
@@ -38,6 +49,9 @@
     themeColorMeta: $('themeColorMeta'),
     settingsBtn: $('settingsBtn'), closeSettingsBtn: $('closeSettingsBtn'),
     settingsDialog: $('settingsDialog'),
+    enableNotificationsBtn: $('enableNotificationsBtn'),
+    notificationStatus: $('notificationStatus'),
+    zoneToast: $('zoneToast'),
     testBtn: $('testBtn'), closeTestBtn: $('closeTestBtn'), testDialog: $('testDialog'),
     testCurrentTime: $('testCurrentTime'), testTableBody: $('testTableBody'),
     exportTestBtn: $('exportTestBtn'), clearTestBtn: $('clearTestBtn'),
@@ -168,12 +182,11 @@
     if (els.profileInput.value === 'custom') return DAY_SECONDS / (customMinutesValue() * 60);
 
     const v = wrap(value);
-    if (v < MORNING_START) return NIGHT_RATE;
-    if (v < DAWN_RATE_END) return DAWN_RATE;
-    if (v < EVENING_START) return DAY_RATE;
-    if (v < NIGHT_TRANSITION_START) return EVENING_RATE;
-    if (v < NIGHT_TRANSITION_END) return NIGHT_TRANSITION_RATE;
-    return NIGHT_RATE;
+    const slot = Math.min(
+      PATCH20_RATE_TABLE.length - 1,
+      Math.floor(v / RATE_SLOT_SECONDS)
+    );
+    return PATCH20_RATE_TABLE[slot];
   }
 
   function addGameDelta(delta) {
@@ -182,56 +195,53 @@
     gameSeconds = wrap(absoluteGameSeconds);
   }
 
-  // Patch 2.0 calibrated timing profile:
-  // night: 21:30–05:30, fine-tuned from 85 game min / 88 Zone Clock min;
-  // dawn transition: 05:30–07:00, calibrated separately;
-  // day: 07:00–21:30, fine-tuned from 60 game min / 62 Zone Clock min.
+  // Patch 2.0 calibrated from the full 00:00–24:00 CSV test.
+  // The clock changes rate every 15 minutes according to PATCH20_RATE_TABLE.
   function advance(realSeconds) {
     if (!(realSeconds > 0)) return;
 
+    const notificationStartAbsolute = absoluteGameSeconds;
+
     if (els.profileInput.value !== 'vanilla') {
       addGameDelta(realSeconds * rateAt(gameSeconds));
+      checkHourlyZoneNotification(notificationStartAbsolute, absoluteGameSeconds);
       return;
     }
 
     let left = Math.min(realSeconds, DAY_SECONDS);
     let guard = 0;
 
-    while (left > 0.0001 && guard++ < 30) {
+    while (left > 0.0001 && guard++ < 4000) {
       const v = wrap(gameSeconds);
       const rate = rateAt(v);
-      let gameToBoundary;
-
-      if (v < MORNING_START) {
-        gameToBoundary = MORNING_START - v;
-      } else if (v < DAWN_RATE_END) {
-        gameToBoundary = DAWN_RATE_END - v;
-      } else if (v < EVENING_START) {
-        gameToBoundary = EVENING_START - v;
-      } else if (v < NIGHT_TRANSITION_START) {
-        gameToBoundary = NIGHT_TRANSITION_START - v;
-      } else if (v < NIGHT_TRANSITION_END) {
-        gameToBoundary = NIGHT_TRANSITION_END - v;
-      } else {
-        gameToBoundary = (DAY_SECONDS - v) + MORNING_START;
-      }
+      const slot = Math.floor(v / RATE_SLOT_SECONDS);
+      const nextBoundary = Math.min(
+        DAY_SECONDS,
+        (slot + 1) * RATE_SLOT_SECONDS
+      );
+      const gameToBoundary = Math.max(0.001, nextBoundary - v);
 
       const realToBoundary = gameToBoundary / rate;
       const usedReal = Math.min(left, realToBoundary);
+
       addGameDelta(usedReal * rate);
       left -= usedReal;
 
-      if (usedReal >= realToBoundary && left > 0) addGameDelta(0.001);
+      if (usedReal >= realToBoundary && left > 0) {
+        addGameDelta(0.001);
+      }
     }
+
+    checkHourlyZoneNotification(notificationStartAbsolute, absoluteGameSeconds);
   }
 
   function nextDayPartBoundary(value) {
     const v = wrap(value);
-    if (v < MORNING_START) return { at: MORNING_START, label: 'До утра' };
+    if (v < MORNING_START) return { at: MORNING_START, label: 'Рассвет через' };
     if (v < DAY_START) return { at: DAY_START, label: 'До дня' };
-    if (v < EVENING_START) return { at: EVENING_START, label: 'До вечера' };
+    if (v < EVENING_START) return { at: EVENING_START, label: 'Закат через' };
     if (v < NIGHT_START) return { at: NIGHT_START, label: 'До ночи' };
-    return { at: DAY_SECONDS + MORNING_START, label: 'До утра' };
+    return { at: DAY_SECONDS + MORNING_START, label: 'Рассвет через' };
   }
 
   // All durations shown on the main screen use Zone/game time.
@@ -510,6 +520,7 @@
       if (sleepLabel) sleepLabel.textContent = 'ГОТОВО';
 
       els.message.textContent = `Сон: +8 часов. Сейчас день ${gameDay}, ${formatClock(gameSeconds)}.`;
+      syncNotificationHourMarker();
 
       window.setTimeout(() => {
         els.sleepBtn.classList.remove('sleep-confirmed');
@@ -539,6 +550,7 @@
       addGameDelta(Number(btn.dataset.shift));
       lastRealMs = Date.now();
       els.message.textContent = 'Время скорректировано.';
+    syncNotificationHourMarker();
       saveState(true);
       render();
     });
@@ -549,6 +561,7 @@
     addGameDelta(-DAY_SECONDS);
     lastRealMs = Date.now();
     els.message.textContent = 'День уменьшен на 1.';
+    syncNotificationHourMarker();
     saveState(true);
     render();
   });
@@ -558,6 +571,7 @@
     addGameDelta(DAY_SECONDS);
     lastRealMs = Date.now();
     els.message.textContent = 'День увеличен на 1.';
+    syncNotificationHourMarker();
     saveState(true);
     render();
   });
@@ -648,6 +662,181 @@
     }
   });
 
+
+
+  const ZONE_MESSAGES = [
+    'Совет: перед закатом проверь аптечки, патроны и ближайшее укрытие.',
+    'Байка Зоны: один сталкер три часа искал тайник, а потом понял, что сидел на нём.',
+    'В Зоне тишина редко означает безопасность. Иногда она просто означает, что тебя уже заметили.',
+    'Совет: если дорога кажется слишком спокойной, посмотри под ноги и ещё раз на детектор.',
+    'Костровая мудрость: лучший хабар — тот, с которым ты успел вернуться.',
+    'Сталкерский анекдот: «Почему ты идёшь первым?» — «Потому что сзади контролёр».',
+    'Не экономь последнюю аптечку ради красивой статистики. Зона статистику не читает.',
+    'Байка: новичок спросил, где безопасная дорога. Ветеран ответил: «Та, по которой уже вернулись».',
+    'Совет: перед входом в тёмное помещение посмотри, откуда будешь выходить.',
+    'Если мутанты внезапно побежали в одну сторону — не спеши радоваться. Лучше беги вместе с ними.',
+    'Короткая история: сталкер нашёл идеальный тайник. Через минуту выяснилось, что это чужая засада.',
+    'Совет: хороший болт дешевле плохого шага.',
+    'Костровая мудрость: в Зоне жадность весит больше любого рюкзака.',
+    'Анекдот: «У тебя детектор пищит». — «Знаю». — «Почему не идёшь?» — «Он пищит в обе стороны».',
+    'Перед дальней дорогой запомни ориентир. Туман любит переставлять знакомые места.',
+    'Байка: один сталкер не верил в приметы. Теперь в приметы верят его товарищи.',
+    'Совет: слышишь выстрелы впереди — сначала выясни, кто в кого стреляет.',
+    'В Зоне самое опасное слово — «быстро». Особенно в фразе «я быстро сбегаю».',
+    'Костровая мудрость: чужой костёр виден далеко. Чужая оптика — ещё дальше.',
+    'Анекдот: «Что лучше — броня или скорость?» — «Зависит от того, кто за тобой бежит».',
+    'Совет: артефакт не станет дешевле, если ты потеряешь здоровье по дороге к нему.',
+    'Байка: ветеран всегда носил два фонаря. Один для темноты, второй — когда первый начинал мигать.',
+    'Если радио замолчало одновременно у всех — это уже не проблема радио.',
+    'Короткая история: двое спорили, чей маршрут короче. Вернулся тот, кто выбрал длиннее.',
+    'Совет: перед выбросом спорить с небом бессмысленно. Ищи крышу.',
+    'Костровая мудрость: в Зоне план нужен хотя бы затем, чтобы знать, когда всё пошло не по плану.',
+    'Анекдот: «Почему ты не стреляешь?» — «Экономлю патроны». — «А мутант?» — «Тоже экономит».',
+    'Совет: проверь оружие после грязи, дождя и особенно после фразы «да оно и так нормально».',
+    'Байка: сталкер нашёл карту без единой ошибки. Потом заметил дату — до появления Зоны.',
+    'Не стой долго на открытом месте. Даже если пейзаж очень красивый.',
+    'Костровая мудрость: один лишний магазин весит меньше, чем одна плохая встреча.',
+    'Анекдот: «Есть безопасный способ пройти аномалию?» — «Есть. Обойти».',
+    'Совет: если товарищ внезапно замолчал, не кричи его имя на всю локацию.',
+    'Байка: новичок спросил цену опыта. Ветеран показал шрамы и сказал: «Оплата уже прошла».',
+    'Зона не любит расписаний, но любит тех, кто следит за временем.',
+    'Совет: вечером заранее выбери путь к укрытию. В темноте знакомые кусты становятся чужими.',
+    'Короткая история: сталкер услышал шаги позади. Обернулся — никого. Не обернулся второй раз.',
+    'Анекдот: «Ты видел артефакт?» — «Нет». — «А почему бежишь?» — «Потому что увидел то, что его охраняет».',
+    'Костровая мудрость: хороший проводник знает дорогу. Отличный — знает, когда по ней не идти.',
+    'Совет: после боя сначала слушай, потом собирай хабар.',
+    'Байка: один сталкер всегда бросал болт дважды. Говорил, первый раз Зона может пошутить.',
+    'Не забывай: самый громкий звук в лесу иногда — это тишина после него.',
+    'Анекдот: «Ты суеверный?» — «Нет. Но это место обойду с другой стороны».',
+    'Совет: если не уверен, что дверь безопасна, не стой прямо перед ней.',
+    'Костровая мудрость: Зона редко предупреждает дважды одинаково.',
+    'Байка: у костра все истории правдивые. Просто не все происходили с рассказчиком.',
+    'Совет: держи запас воды и не доверяй коротким маршрутам через болото.',
+    'Анекдот: «Как понять, что сталкер опытный?» — «Он не говорит, что здесь безопасно».'
+  ];
+
+  let lastNotifiedHourKey = null;
+  let toastTimer = null;
+
+  function notificationsEnabled() {
+    return localStorage.getItem(NOTIFICATION_KEY) === '1';
+  }
+
+  function updateNotificationSettingsUi() {
+    if (!els.notificationStatus || !els.enableNotificationsBtn) return;
+
+    if (!('Notification' in window)) {
+      els.notificationStatus.textContent = 'Не поддерживаются этим браузером';
+      els.enableNotificationsBtn.disabled = true;
+      return;
+    }
+
+    if (Notification.permission === 'granted' && notificationsEnabled()) {
+      els.notificationStatus.textContent = 'Включены';
+      els.enableNotificationsBtn.textContent = 'ВКЛЮЧЕНЫ';
+      els.enableNotificationsBtn.disabled = true;
+    } else if (Notification.permission === 'denied') {
+      els.notificationStatus.textContent = 'Запрещены в браузере';
+      els.enableNotificationsBtn.textContent = 'ЗАПРЕЩЕНЫ';
+      els.enableNotificationsBtn.disabled = true;
+    } else {
+      els.notificationStatus.textContent = 'Не включены';
+      els.enableNotificationsBtn.textContent = 'ВКЛЮЧИТЬ';
+      els.enableNotificationsBtn.disabled = false;
+    }
+  }
+
+  function pickZoneMessage(hourKey) {
+    const index = Math.abs(hourKey) % ZONE_MESSAGES.length;
+    return ZONE_MESSAGES[index];
+  }
+
+  function showZoneToast(timeText, message) {
+    if (!els.zoneToast) return;
+
+    const timeEl = els.zoneToast.querySelector('.zone-toast-time');
+    const textEl = els.zoneToast.querySelector('.zone-toast-text');
+
+    if (timeEl) timeEl.textContent = timeText;
+    if (textEl) textEl.textContent = message;
+
+    els.zoneToast.classList.remove('hidden', 'show');
+    requestAnimationFrame(() => els.zoneToast.classList.add('show'));
+
+    if (toastTimer) window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => {
+      els.zoneToast.classList.remove('show');
+      window.setTimeout(() => els.zoneToast.classList.add('hidden'), 260);
+    }, 7000);
+  }
+
+  function sendHourlyZoneNotification(hourKey) {
+    const hour = ((hourKey % 24) + 24) % 24;
+    const timeText = `${String(hour).padStart(2, '0')}:00`;
+    const message = pickZoneMessage(hourKey);
+
+    showZoneToast(timeText, message);
+
+    if (
+      notificationsEnabled() &&
+      'Notification' in window &&
+      Notification.permission === 'granted'
+    ) {
+      try {
+        new Notification(`ZONE CLOCK — ${timeText}`, {
+          body: message,
+          icon: './icons/icon-192.png',
+          badge: './icons/icon-192.png',
+          tag: `zone-hour-${hourKey}`,
+          renotify: true,
+          silent: false
+        });
+      } catch (_) {}
+    }
+  }
+
+  function syncNotificationHourMarker() {
+    lastNotifiedHourKey = Math.floor(absoluteGameSeconds / 3600);
+  }
+
+  function checkHourlyZoneNotification(previousAbsolute, currentAbsolute) {
+    if (!(currentAbsolute > previousAbsolute)) {
+      syncNotificationHourMarker();
+      return;
+    }
+
+    const previousHour = Math.floor(previousAbsolute / 3600);
+    const currentHour = Math.floor(currentAbsolute / 3600);
+
+    if (lastNotifiedHourKey === null) {
+      lastNotifiedHourKey = previousHour;
+    }
+
+    if (currentHour > previousHour && currentHour > lastNotifiedHourKey) {
+      // If a large jump happened, show only the most recent crossed hour.
+      sendHourlyZoneNotification(currentHour);
+      lastNotifiedHourKey = currentHour;
+    }
+  }
+
+  if (els.enableNotificationsBtn) {
+    els.enableNotificationsBtn.addEventListener('click', async () => {
+      if (!('Notification' in window)) {
+        updateNotificationSettingsUi();
+        return;
+      }
+
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          localStorage.setItem(NOTIFICATION_KEY, '1');
+          showZoneToast(formatClock(gameSeconds), 'Уведомления Zone Clock включены.');
+        }
+      } catch (_) {}
+
+      updateNotificationSettingsUi();
+    });
+  }
 
   function buildTestRows() {
     if (!els.testTableBody || els.testTableBody.children.length) return;
@@ -786,7 +975,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v39.csv';
+    link.download = 'zone-clock-test-v41.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -841,6 +1030,9 @@
 
   if (els.exportTestBtn) els.exportTestBtn.addEventListener('click', exportTestCsv);
   if (els.clearTestBtn) els.clearTestBtn.addEventListener('click', clearTestTable);
+
+  syncNotificationHourMarker();
+  updateNotificationSettingsUi();
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

@@ -1134,3 +1134,76 @@ body:has(.test-dialog[open]) {
     padding-right: 6px;
   }
 }
+
+
+/* PWA v41 — почасовые уведомления Зоны */
+.notification-settings {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.notification-title {
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .84rem;
+  font-weight: 800;
+}
+
+.notification-status,
+.notification-note {
+  margin-top: 4px;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .68rem;
+  line-height: 1.45;
+}
+
+.zone-toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 1200;
+  width: min(calc(100% - 24px), 520px);
+  padding: 13px 15px;
+  border: 1px solid color-mix(in srgb, var(--accent) 58%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--card) 96%, black 4%);
+  color: var(--text);
+  box-shadow: 0 16px 38px var(--shadow);
+  opacity: 0;
+  transform: translate(-50%, 14px);
+  transition: opacity .25s ease, transform .25s ease;
+  pointer-events: none;
+}
+
+.zone-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.zone-toast-time {
+  color: var(--accent-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+
+.zone-toast-text {
+  margin-top: 5px;
+  color: var(--text);
+  font-size: .80rem;
+  line-height: 1.42;
+}
+
+@media (max-width: 480px) {
+  .notification-settings {
+    grid-template-columns: 1fr;
+  }
+
+  .notification-settings .btn {
+    width: 100%;
+  }
+}

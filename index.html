@@ -236,7 +236,7 @@
           <div class="settings-heading">ПРОФИЛЬ ВРЕМЕНИ</div>
           <label>
             <select id="profileInput">
-              <option value="vanilla">Patch 2.0 — калиброванный</option>
+              <option value="vanilla">Patch 2.0 — калибровка по таблице 15 мин</option>
               <option value="uniform24">Равномерно ×24 — 60 мин/сутки</option>
               <option value="custom">Своя длительность суток</option>
             </select>
@@ -262,13 +262,30 @@
           </div>
         </div>
 
+        <div class="settings-group">
+          <div class="settings-heading">УВЕДОМЛЕНИЯ</div>
+          <div class="notification-settings">
+            <div>
+              <div class="notification-title">Каждый час Зоны</div>
+              <div id="notificationStatus" class="notification-status">Не включены</div>
+            </div>
+            <button id="enableNotificationsBtn" class="btn outline-accent" type="button">ВКЛЮЧИТЬ</button>
+          </div>
+          <div class="notification-note">Уведомление приходит при наступлении нового часа, пока Zone Clock открыт и часы идут.</div>
+        </div>
+
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v39</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v41</strong></div>
         </div>
       </div>
     </div>
   </dialog>
+
+  <div id="zoneToast" class="zone-toast hidden" role="status" aria-live="polite">
+    <div class="zone-toast-time"></div>
+    <div class="zone-toast-text"></div>
+  </div>
 
   <script src="./app.js" defer></script>
 </body>
