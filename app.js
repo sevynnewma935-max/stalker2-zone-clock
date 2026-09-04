@@ -4404,7 +4404,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v87.csv';
+    link.download = 'zone-clock-test-v88.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -4813,11 +4813,8 @@ mapMeasureHint: $('mapMeasureHint'),
 
         title.textContent =
           `${String(startHour).padStart(2, '0')}:` +
-          `${String(startMinute).padStart(2, '0')}–` +
-          `${String(endHour).padStart(2, '0')}:` +
-          `${String(endMinute).padStart(2, '0')} · ` +
-          `×${point.rate.toFixed(2)} · ` +
-          `${point.realSecondsPerInterval.toFixed(1)} реальных сек на 15 минут Зоны`;
+          `${String(startMinute).padStart(2, '0')} · ` +
+          `скорость времени ×${point.rate.toFixed(2)}`;
 
         circle.appendChild(title);
         svg.appendChild(circle);
@@ -4902,7 +4899,7 @@ mapMeasureHint: $('mapMeasureHint'),
         minPoint.rate;
 
       els.chronometrySummary.textContent =
-        `96 измерений по 15 минут Зоны. Диапазон коэффициента: ×${minPoint.rate.toFixed(2)}–×${maxPoint.rate.toFixed(2)} (${variation.toFixed(2)} раза между крайними режимами). Полные сутки Зоны: ${average.totalRealMinutes.toFixed(1)} реальных мин. На самом медленном интервале 15 минут Зоны занимают ${minReal.toFixed(1)} сек, на самом быстром — ${maxReal.toFixed(1)} сек.`;
+        `Наблюдаемая скорость времени меняется в диапазоне ×${minPoint.rate.toFixed(2)}–×${maxPoint.rate.toFixed(2)} (${variation.toFixed(2)} раза между крайними режимами). Полные сутки Зоны проходят примерно за ${average.totalRealMinutes.toFixed(1)} реальных мин. В наиболее медленной фазе ход времени заметно растягивается, а в наиболее быстрой — резко ускоряется.`;
     }
   }
 
