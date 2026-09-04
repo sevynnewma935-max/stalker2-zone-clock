@@ -1252,12 +1252,13 @@ mapMeasureHint: $('mapMeasureHint'),
 
 
   function ensureHdZoneMap() {
-    // v60: карта уже загружается напрямую из исходного PNG.
+    // v61: карта собирается из 64 тайлов исходного файла 16384×16384.
   }
 
   function maybeLoadHdZoneMap() {
-    // Дополнительные слои или тайлы не используются.
+    // Дополнительная подмена качества не требуется.
   }
+
 
 
 
@@ -1918,7 +1919,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v60.csv';
+    link.download = 'zone-clock-test-v61.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();

@@ -1954,3 +1954,53 @@ button.zone-button-press:not(:disabled) {
   width: 2048px;
   height: 2048px;
 }
+
+
+/* PWA v61 — карта из исходного файла 16384×16384 */
+.zone-map-transform {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2048px;
+  height: 2048px;
+  transform-origin: 0 0;
+  transition: none !important;
+  will-change: transform;
+}
+
+.zone-map-full-image,
+.zone-map-image-hidden {
+  display: none !important;
+}
+
+.zone-map-transform .zone-map-tile-layer {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 2048px !important;
+  height: 2048px !important;
+  display: block !important;
+  pointer-events: none !important;
+}
+
+.zone-map-transform .zone-map-tile-layer .map-tile {
+  position: absolute !important;
+  width: 256px !important;
+  height: 256px !important;
+  max-width: none !important;
+  max-height: none !important;
+  display: block !important;
+  object-fit: fill !important;
+  image-rendering: auto !important;
+  backface-visibility: visible !important;
+  transform: none !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.zone-map-transform .map-overlay {
+  position: absolute;
+  inset: 0;
+  width: 2048px;
+  height: 2048px;
+}
