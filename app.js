@@ -65,7 +65,7 @@
     mapClearBtn: $('mapClearBtn'), mapZoomOutBtn: $('mapZoomOutBtn'),
     mapZoomInBtn: $('mapZoomInBtn'), mapFitBtn: $('mapFitBtn'),
     mapDistance: $('mapDistance'), mapPointCount: $('mapPointCount'),
-    mapScaleLabel: $('mapScaleLabel'), mapMeasureHint: $('mapMeasureHint'),
+mapMeasureHint: $('mapMeasureHint'),
     mapKnownDistanceKm: $('mapKnownDistanceKm'),
     mapApplyCalibrationBtn: $('mapApplyCalibrationBtn'),
     mapResetCalibrationBtn: $('mapResetCalibrationBtn'),
@@ -1157,6 +1157,12 @@
   let mapMeasureMode = false;
   let mapMeasurePoints = [];
   let mapPointerState = null;
+  const mapActivePointers = new Map();
+  let mapPinchState = null;
+  let mapLastTapAt = 0;
+  let mapLastTapX = 0;
+  let mapLastTapY = 0;
+  let mapHdLoaded = false;
 
   function formatMapNumber(value, digits = 2) {
     return Number(value).toLocaleString('ru-RU', {
@@ -1194,10 +1200,6 @@
   function updateMapInfo() {
     if (els.mapDistance) els.mapDistance.textContent = formatMapDistance(mapRouteMeters());
     if (els.mapPointCount) els.mapPointCount.textContent = String(mapMeasurePoints.length);
-    if (els.mapScaleLabel) {
-      const knownKm = Number(els.mapKnownDistanceKm?.value) || 2.36;
-      els.mapScaleLabel.textContent = `${formatMapNumber(knownKm, 2)} км`;
-    }
 
     if (els.mapMeasureBtn) {
       els.mapMeasureBtn.classList.toggle('active', mapMeasureMode);
@@ -1213,7 +1215,7 @@
           `Маршрут: ${formatMapDistance(mapRouteMeters())}.`;
       } else {
         els.mapMeasureHint.textContent =
-          'Включите «ИЗМЕРИТЬ» и нажимайте на карту. Можно ставить несколько точек маршрута.';
+          'Увеличение: два пальца, кнопки +/− или колёсико. Для маршрута включите «ИЗМЕРИТЬ».';
       }
     }
   }
@@ -1248,12 +1250,51 @@
     updateMapInfo();
   }
 
+
+  function ensureHdZoneMap() {
+    if (
+      mapHdLoaded ||
+      !els.zoneMapImage ||
+      !els.zoneMapImage.dataset.hdSrc
+    ) return;
+
+    mapHdLoaded = true;
+
+    const hdSrc = els.zoneMapImage.dataset.hdSrc;
+    const preload = new Image();
+
+    preload.onload = () => {
+      // Swapping sources does not change logical map geometry:
+      // CSS size remains 2048×2048, overlay coordinates remain unchanged.
+      els.zoneMapImage.src = hdSrc;
+      els.zoneMapImage.classList.add('map-hd-active');
+    };
+
+    preload.onerror = () => {
+      mapHdLoaded = false;
+    };
+
+    preload.src = hdSrc;
+  }
+
+  function maybeLoadHdZoneMap() {
+    if (!(mapFitZoom > 0)) return;
+
+    const relativeZoom = mapZoom / mapFitZoom;
+
+    // Start HD loading once the user zooms beyond the overview.
+    if (relativeZoom >= 1.35) {
+      ensureHdZoneMap();
+    }
+  }
+
   function applyMapTransform() {
     if (!els.zoneMapTransform) return;
 
     els.zoneMapTransform.style.transform =
       `translate(${mapPanX}px, ${mapPanY}px) scale(${mapZoom})`;
 
+    maybeLoadHdZoneMap();
     renderMapMeasurement();
   }
 
@@ -1289,7 +1330,7 @@
     const imageY = (localY - mapPanY) / mapZoom;
 
     const minZoom = Math.max(.08, mapFitZoom * .75);
-    const maxZoom = 4.5;
+    const maxZoom = 8;
     const nextZoom = Math.min(maxZoom, Math.max(minZoom, mapZoom * factor));
 
     mapPanX = localX - imageX * nextZoom;
@@ -1313,6 +1354,70 @@
       x: Math.max(0, Math.min(MAP_IMAGE_SIZE, x)),
       y: Math.max(0, Math.min(MAP_IMAGE_SIZE, y))
     };
+  }
+
+
+  function pointerDistance(a, b) {
+    return Math.hypot(b.x - a.x, b.y - a.y);
+  }
+
+  function pointerMidpoint(a, b) {
+    return {
+      x: (a.x + b.x) / 2,
+      y: (a.y + b.y) / 2
+    };
+  }
+
+  function beginMapPinch() {
+    if (mapActivePointers.size < 2 || !els.mapViewport) {
+      mapPinchState = null;
+      return;
+    }
+
+    const points = Array.from(mapActivePointers.values()).slice(0, 2);
+    const midpoint = pointerMidpoint(points[0], points[1]);
+    const distance = pointerDistance(points[0], points[1]);
+
+    if (!(distance > 0)) return;
+
+    const rect = els.mapViewport.getBoundingClientRect();
+    const localX = midpoint.x - rect.left;
+    const localY = midpoint.y - rect.top;
+
+    mapPinchState = {
+      startDistance: distance,
+      startZoom: mapZoom,
+      imageX: (localX - mapPanX) / mapZoom,
+      imageY: (localY - mapPanY) / mapZoom
+    };
+  }
+
+  function updateMapPinch() {
+    if (!mapPinchState || mapActivePointers.size < 2 || !els.mapViewport) return;
+
+    const points = Array.from(mapActivePointers.values()).slice(0, 2);
+    const midpoint = pointerMidpoint(points[0], points[1]);
+    const distance = pointerDistance(points[0], points[1]);
+
+    if (!(distance > 0)) return;
+
+    const rect = els.mapViewport.getBoundingClientRect();
+    const localX = midpoint.x - rect.left;
+    const localY = midpoint.y - rect.top;
+
+    const minZoom = Math.max(.08, mapFitZoom * .75);
+    const maxZoom = 8;
+    const scaleFactor = distance / mapPinchState.startDistance;
+    const nextZoom = Math.min(
+      maxZoom,
+      Math.max(minZoom, mapPinchState.startZoom * scaleFactor)
+    );
+
+    mapPanX = localX - mapPinchState.imageX * nextZoom;
+    mapPanY = localY - mapPinchState.imageY * nextZoom;
+    mapZoom = nextZoom;
+
+    applyMapTransform();
   }
 
   function addMapMeasurePoint(clientX, clientY) {
@@ -1339,6 +1444,11 @@
       window.requestAnimationFrame(() => {
         fitZoneMap();
         updateMapInfo();
+
+        // Prepare HD map shortly after opening so zoom feels instant.
+        window.setTimeout(() => {
+          if (els.mapDialog && els.mapDialog.open) ensureHdZoneMap();
+        }, 1200);
       });
     });
   }
@@ -1396,7 +1506,20 @@
     }, { passive: false });
 
     els.mapViewport.addEventListener('pointerdown', event => {
-      if (event.button !== undefined && event.button !== 0) return;
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+      mapActivePointers.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY
+      });
+
+      els.mapViewport.setPointerCapture?.(event.pointerId);
+
+      if (mapActivePointers.size >= 2) {
+        mapPointerState = null;
+        beginMapPinch();
+        return;
+      }
 
       mapPointerState = {
         pointerId: event.pointerId,
@@ -1408,11 +1531,22 @@
         panY: mapPanY,
         moved: false
       };
-
-      els.mapViewport.setPointerCapture?.(event.pointerId);
     });
 
     els.mapViewport.addEventListener('pointermove', event => {
+      if (mapActivePointers.has(event.pointerId)) {
+        mapActivePointers.set(event.pointerId, {
+          x: event.clientX,
+          y: event.clientY
+        });
+      }
+
+      if (mapActivePointers.size >= 2) {
+        if (!mapPinchState) beginMapPinch();
+        updateMapPinch();
+        return;
+      }
+
       if (!mapPointerState || mapPointerState.pointerId !== event.pointerId) return;
 
       const dx = event.clientX - mapPointerState.startX;
@@ -1433,26 +1567,60 @@
     });
 
     els.mapViewport.addEventListener('pointerup', event => {
-      if (!mapPointerState || mapPointerState.pointerId !== event.pointerId) return;
+      const currentPointer = mapPointerState &&
+        mapPointerState.pointerId === event.pointerId
+        ? mapPointerState
+        : null;
 
-      const wasMoved = mapPointerState.moved;
+      mapActivePointers.delete(event.pointerId);
+
+      if (mapActivePointers.size < 2) {
+        mapPinchState = null;
+      }
+
+      if (!currentPointer) {
+        mapPointerState = null;
+        return;
+      }
+
+      const wasMoved = currentPointer.moved;
       mapPointerState = null;
 
-      if (!wasMoved && mapMeasureMode) {
-        addMapMeasurePoint(event.clientX, event.clientY);
+      if (!wasMoved) {
+        const now = performance.now();
+        const nearPreviousTap =
+          now - mapLastTapAt < 320 &&
+          Math.hypot(
+            event.clientX - mapLastTapX,
+            event.clientY - mapLastTapY
+          ) < 28;
+
+        if (nearPreviousTap) {
+          zoomZoneMap(1.7, event.clientX, event.clientY);
+          mapLastTapAt = 0;
+          return;
+        }
+
+        mapLastTapAt = now;
+        mapLastTapX = event.clientX;
+        mapLastTapY = event.clientY;
+
+        if (mapMeasureMode) {
+          addMapMeasurePoint(event.clientX, event.clientY);
+        }
       }
     });
 
-    els.mapViewport.addEventListener('pointercancel', () => {
+    els.mapViewport.addEventListener('pointercancel', event => {
+      mapActivePointers.delete(event.pointerId);
       mapPointerState = null;
+
+      if (mapActivePointers.size < 2) {
+        mapPinchState = null;
+      }
     });
   }
 
-  if (els.mapKnownDistanceKm) {
-    els.mapKnownDistanceKm.addEventListener('input', () => {
-      updateMapInfo();
-    });
-  }
 
   if (els.mapApplyCalibrationBtn) {
     els.mapApplyCalibrationBtn.addEventListener('click', () => {
@@ -1779,7 +1947,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v53.csv';
+    link.download = 'zone-clock-test-v56.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();

@@ -1,4 +1,4 @@
-const CACHE = 'stalker2-zone-clock-v53';
+const CACHE = 'stalker2-zone-clock-v56';
 const ASSETS = [
   './',
   './index.html',
@@ -7,7 +7,8 @@ const ASSETS = [
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './assets/zone-map.webp'
+  './assets/zone-map.webp',
+  './assets/zone-map-hd.webp'
 ];
 
 self.addEventListener('install', event => {

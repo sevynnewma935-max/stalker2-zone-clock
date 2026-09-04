@@ -188,22 +188,19 @@
           <span class="map-info-label">ТОЧЕК</span>
           <strong id="mapPointCount">0</strong>
         </div>
-        <div>
-          <span class="map-info-label">КАЛИБРОВКА</span>
-          <strong id="mapScaleLabel">2,36 км</strong>
-        </div>
+
       </div>
 
       <div id="mapViewport" class="map-viewport" aria-label="Интерактивная карта Зоны">
         <div id="zoneMapTransform" class="zone-map-transform">
-          <img id="zoneMapImage" src="./assets/zone-map.webp" alt="Карта Зоны S.T.A.L.K.E.R. 2" draggable="false">
+          <img id="zoneMapImage" src="./assets/zone-map.webp" data-low-src="./assets/zone-map.webp" data-hd-src="./assets/zone-map-hd.webp" alt="Карта Зоны S.T.A.L.K.E.R. 2" draggable="false">
           <svg id="mapOverlay" class="map-overlay" viewBox="0 0 2048 2048" aria-hidden="true">
             <polyline id="mapMeasureLine" points="" fill="none" vector-effect="non-scaling-stroke"></polyline>
             <g id="mapMeasurePoints"></g>
           </svg>
         </div>
         <div id="mapMeasureHint" class="map-measure-hint">
-          Включите «ИЗМЕРИТЬ» и нажимайте на карту. Можно ставить несколько точек маршрута.
+          Карту можно увеличивать двумя пальцами, кнопками +/− или колёсиком. Для маршрута включите «ИЗМЕРИТЬ».
         </div>
       </div>
 
@@ -393,7 +390,7 @@
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v53</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v56</strong></div>
         </div>
       </div>
     </div>

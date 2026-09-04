@@ -1570,7 +1570,7 @@ button.zone-button-press:not(:disabled) {
 
 .map-info-strip {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
   border-bottom: 1px solid var(--border);
   background: var(--border-soft);
@@ -1794,4 +1794,33 @@ button.zone-button-press:not(:disabled) {
   .map-calibration-actions {
     grid-template-columns: 1fr;
   }
+}
+
+
+/* PWA v54 — улучшенное увеличение карты */
+.zone-map-transform {
+  transition: transform .08s linear;
+}
+
+.map-viewport.map-pinching,
+.map-viewport:active {
+  cursor: grabbing;
+}
+
+@media (pointer: coarse) {
+  .map-measure-hint {
+    font-size: .66rem;
+  }
+}
+
+
+/* PWA v56 — HD map rendering */
+.zone-map-transform img {
+  image-rendering: auto;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.zone-map-transform img.map-hd-active {
+  image-rendering: auto;
 }
