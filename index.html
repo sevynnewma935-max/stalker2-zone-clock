@@ -266,17 +266,31 @@
           <div class="settings-heading">УВЕДОМЛЕНИЯ</div>
           <div class="notification-settings">
             <div>
-              <div class="notification-title">Каждый час Зоны</div>
+              <div class="notification-title">Сообщения Зоны</div>
               <div id="notificationStatus" class="notification-status">Не включены</div>
             </div>
             <button id="enableNotificationsBtn" class="btn outline-accent" type="button">ВКЛЮЧИТЬ</button>
           </div>
-          <div class="notification-note">Уведомление приходит при наступлении нового часа и может отображаться на экране блокировки. Разрешите уведомления для Zone Clock в системе.</div>
+
+          <label class="notification-interval-field">
+            <span>Интервал сообщений</span>
+            <select id="notificationIntervalSelect">
+              <option value="random">Рандомный — 1–6 ч, со сдвигом</option>
+              <option value="1">Каждый час</option>
+              <option value="2">Каждые 2 часа</option>
+              <option value="4">Каждые 4 часа</option>
+              <option value="8">Каждые 8 часов</option>
+              <option value="12">Каждые 12 часов</option>
+              <option value="24">Раз в день</option>
+            </select>
+          </label>
+
+          <div class="notification-note">Рассвет, день, закат и ночь сообщаются отдельно. За час до и час после этих событий обычные сообщения не приходят независимо от выбранного интервала.</div>
         </div>
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v44</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v48</strong></div>
         </div>
       </div>
     </div>

@@ -1239,3 +1239,23 @@ body:has(.test-dialog[open]) {
 .zone-toast-text {
   margin-top: 11px;
 }
+
+
+/* PWA v46 — выбор интервала уведомлений */
+.notification-interval-field {
+  display: grid;
+  gap: 7px;
+}
+
+.notification-interval-field > span {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .70rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.notification-interval-field select {
+  width: 100%;
+  min-height: 46px;
+}

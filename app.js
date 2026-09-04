@@ -29,6 +29,8 @@
   const THEME_KEY = 'stalker2-zone-clock-theme';
   const TEST_STORAGE_KEY = 'stalker2-zone-clock-test-v1';
   const NOTIFICATION_KEY = 'stalker2-zone-clock-notifications-v1';
+  const NOTIFICATION_NEXT_KEY = 'stalker2-zone-clock-next-message-v1';
+  const NOTIFICATION_INTERVAL_KEY = 'stalker2-zone-clock-message-interval-v1';
 
   const $ = (id) => document.getElementById(id);
 
@@ -51,6 +53,7 @@
     settingsDialog: $('settingsDialog'),
     enableNotificationsBtn: $('enableNotificationsBtn'),
     notificationStatus: $('notificationStatus'),
+    notificationIntervalSelect: $('notificationIntervalSelect'),
     zoneToast: $('zoneToast'),
     testBtn: $('testBtn'), closeTestBtn: $('closeTestBtn'), testDialog: $('testDialog'),
     testCurrentTime: $('testCurrentTime'), testTableBody: $('testTableBody'),
@@ -204,7 +207,7 @@
 
     if (els.profileInput.value !== 'vanilla') {
       addGameDelta(realSeconds * rateAt(gameSeconds));
-      checkHourlyZoneNotification(notificationStartAbsolute, absoluteGameSeconds);
+      checkZoneNotifications(notificationStartAbsolute, absoluteGameSeconds);
       return;
     }
 
@@ -232,7 +235,7 @@
       }
     }
 
-    checkHourlyZoneNotification(notificationStartAbsolute, absoluteGameSeconds);
+    checkZoneNotifications(notificationStartAbsolute, absoluteGameSeconds);
   }
 
   function nextDayPartBoundary(value) {
@@ -520,7 +523,7 @@
       if (sleepLabel) sleepLabel.textContent = 'ГОТОВО';
 
       els.message.textContent = `Сон: +8 часов. Сейчас день ${gameDay}, ${formatClock(gameSeconds)}.`;
-      syncNotificationHourMarker();
+      syncNotificationSchedule();
 
       window.setTimeout(() => {
         els.sleepBtn.classList.remove('sleep-confirmed');
@@ -550,7 +553,7 @@
       addGameDelta(Number(btn.dataset.shift));
       lastRealMs = Date.now();
       els.message.textContent = 'Время скорректировано.';
-    syncNotificationHourMarker();
+    syncNotificationSchedule();
       saveState(true);
       render();
     });
@@ -561,7 +564,7 @@
     addGameDelta(-DAY_SECONDS);
     lastRealMs = Date.now();
     els.message.textContent = 'День уменьшен на 1.';
-    syncNotificationHourMarker();
+    syncNotificationSchedule();
     saveState(true);
     render();
   });
@@ -571,7 +574,7 @@
     addGameDelta(DAY_SECONDS);
     lastRealMs = Date.now();
     els.message.textContent = 'День увеличен на 1.';
-    syncNotificationHourMarker();
+    syncNotificationSchedule();
     saveState(true);
     render();
   });
@@ -768,8 +771,32 @@
     "Зона не обязана быть честной. Проверяй даже знакомые маршруты.",
   ];
 
-  let lastNotifiedHourKey = null;
   let toastTimer = null;
+  let nextRegularNotificationAt = null;
+  let lastZoneMessageIndex = -1;
+
+  const ZONE_DAY_EVENTS = [
+    {
+      second: MORNING_START,
+      name: 'рассвет',
+      message: 'Наступил рассвет. Зона просыпается — проверь маршрут, снаряжение и то, что осталось за спиной.'
+    },
+    {
+      second: DAY_START,
+      name: 'день',
+      message: 'Наступил день. Видимость лучше, но открытые места от этого безопаснее не становятся.'
+    },
+    {
+      second: EVENING_START,
+      name: 'закат',
+      message: 'Наступил закат. Свет быстро уходит — самое время вспомнить, где ближайшее укрытие.'
+    },
+    {
+      second: NIGHT_START,
+      name: 'ночь',
+      message: 'Наступила ночь. Фонарь помогает видеть дорогу, но заодно помогает другим увидеть тебя.'
+    }
+  ];
 
   function notificationsEnabled() {
     return localStorage.getItem(NOTIFICATION_KEY) === '1';
@@ -799,8 +826,50 @@
     }
   }
 
-  function pickZoneMessage(hourKey) {
-    const index = Math.abs(hourKey) % ZONE_MESSAGES.length;
+  function selectedNotificationInterval() {
+    const allowed = new Set(['random', '1', '2', '4', '8', '12', '24']);
+    const stored = localStorage.getItem(NOTIFICATION_INTERVAL_KEY) || 'random';
+    return allowed.has(stored) ? stored : 'random';
+  }
+
+  function regularIntervalSeconds() {
+    const mode = selectedNotificationInterval();
+
+    if (mode === 'random') {
+      // Random cadence without exact whole-hour hits:
+      // choose 1–6 nominal hours, where each hour is 54–68 Zone minutes.
+      const hours = 1 + Math.floor(Math.random() * 6);
+      let totalMinutes = 0;
+
+      for (let i = 0; i < hours; i++) {
+        totalMinutes += 54 + Math.floor(Math.random() * 15);
+      }
+
+      return totalMinutes * 60;
+    }
+
+    return Number(mode) * 3600;
+  }
+
+  function postQuietOffsetSeconds() {
+    // Fixed modes resume immediately after a protected window.
+    // Random mode chooses a fresh 1–6 interval with 54–68 min per nominal hour.
+    if (selectedNotificationInterval() === 'random') {
+      return regularIntervalSeconds();
+    }
+
+    return 1;
+  }
+
+  function pickZoneMessage() {
+    if (!ZONE_MESSAGES.length) return '';
+
+    let index = Math.floor(Math.random() * ZONE_MESSAGES.length);
+    if (ZONE_MESSAGES.length > 1 && index === lastZoneMessageIndex) {
+      index = (index + 1 + Math.floor(Math.random() * (ZONE_MESSAGES.length - 1))) % ZONE_MESSAGES.length;
+    }
+
+    lastZoneMessageIndex = index;
     return ZONE_MESSAGES[index];
   }
 
@@ -823,11 +892,7 @@
     }, 7000);
   }
 
-  function sendHourlyZoneNotification(hourKey) {
-    const hour = ((hourKey % 24) + 24) % 24;
-    const timeText = `${String(hour).padStart(2, '0')}:00`;
-    const message = pickZoneMessage(hourKey);
-
+  function sendZoneNotification(timeText, message, tag) {
     showZoneToast(timeText, message);
 
     if (
@@ -843,15 +908,14 @@
             body: message,
             icon: './icons/icon-192.png',
             badge: './icons/icon-192.png',
-            tag: `zone-hour-${hourKey}`,
+            tag,
             renotify: true,
             requireInteraction: true,
             silent: false,
             timestamp: Date.now(),
             data: {
               url: './',
-              zoneTime: timeText,
-              hourKey
+              zoneTime: timeText
             }
           }
         ))
@@ -859,28 +923,182 @@
     }
   }
 
-  function syncNotificationHourMarker() {
-    lastNotifiedHourKey = Math.floor(absoluteGameSeconds / 3600);
+  function formatAbsoluteZoneTime(absoluteSeconds) {
+    const wrapped = ((absoluteSeconds % DAY_SECONDS) + DAY_SECONDS) % DAY_SECONDS;
+    return formatClock(wrapped);
   }
 
-  function checkHourlyZoneNotification(previousAbsolute, currentAbsolute) {
-    if (!(currentAbsolute > previousAbsolute)) {
-      syncNotificationHourMarker();
+  function quietWindowAt(absoluteSeconds) {
+    const dayStart = Math.floor(absoluteSeconds / DAY_SECONDS) * DAY_SECONDS;
+
+    for (const eventInfo of ZONE_DAY_EVENTS) {
+      const eventAbsolute = dayStart + eventInfo.second;
+      const start = eventAbsolute - 3600;
+      const end = eventAbsolute + 3600;
+
+      if (absoluteSeconds >= start && absoluteSeconds <= end) {
+        return { start, end, eventAbsolute, eventInfo };
+      }
+    }
+
+    return null;
+  }
+
+  function nextAllowedRegularTime(absoluteSeconds) {
+    let candidate = absoluteSeconds;
+    let guard = 0;
+
+    while (guard++ < 10) {
+      const quiet = quietWindowAt(candidate);
+      if (!quiet) return candidate;
+
+      candidate = quiet.end + postQuietOffsetSeconds();
+    }
+
+    return candidate;
+  }
+
+  function saveNextRegularNotification() {
+    if (Number.isFinite(nextRegularNotificationAt)) {
+      localStorage.setItem(
+        NOTIFICATION_NEXT_KEY,
+        String(Math.round(nextRegularNotificationAt))
+      );
+    }
+  }
+
+  function scheduleNextRegularNotification(fromAbsolute = absoluteGameSeconds) {
+    const candidate = fromAbsolute + regularIntervalSeconds();
+    nextRegularNotificationAt = nextAllowedRegularTime(candidate);
+    saveNextRegularNotification();
+  }
+
+  function restoreNotificationSchedule() {
+    const stored = Number(localStorage.getItem(NOTIFICATION_NEXT_KEY));
+
+    if (Number.isFinite(stored) && stored > absoluteGameSeconds) {
+      nextRegularNotificationAt = nextAllowedRegularTime(stored);
+      saveNextRegularNotification();
       return;
     }
 
-    const previousHour = Math.floor(previousAbsolute / 3600);
-    const currentHour = Math.floor(currentAbsolute / 3600);
+    scheduleNextRegularNotification(absoluteGameSeconds);
+  }
 
-    if (lastNotifiedHourKey === null) {
-      lastNotifiedHourKey = previousHour;
+  function syncNotificationSchedule() {
+    scheduleNextRegularNotification(absoluteGameSeconds);
+  }
+
+  function crossedDayEvents(previousAbsolute, currentAbsolute) {
+    const crossed = [];
+    const firstDay = Math.floor(previousAbsolute / DAY_SECONDS);
+    const lastDay = Math.floor(currentAbsolute / DAY_SECONDS);
+
+    for (let day = firstDay; day <= lastDay; day++) {
+      const base = day * DAY_SECONDS;
+
+      for (const eventInfo of ZONE_DAY_EVENTS) {
+        const at = base + eventInfo.second;
+        if (at > previousAbsolute && at <= currentAbsolute) {
+          crossed.push({ at, eventInfo });
+        }
+      }
     }
 
-    if (currentHour > previousHour && currentHour > lastNotifiedHourKey) {
-      // If a large jump happened, show only the most recent crossed hour.
-      sendHourlyZoneNotification(currentHour);
-      lastNotifiedHourKey = currentHour;
+    return crossed;
+  }
+
+  function checkZoneNotifications(previousAbsolute, currentAbsolute) {
+    if (!(currentAbsolute > previousAbsolute)) {
+      syncNotificationSchedule();
+      return;
     }
+
+    // Day-part events have priority over ordinary random messages.
+    const events = crossedDayEvents(previousAbsolute, currentAbsolute);
+
+    if (events.length) {
+      // Avoid a burst after a large catch-up: report the most recent event only.
+      const latest = events[events.length - 1];
+      const timeText = formatAbsoluteZoneTime(latest.at);
+
+      sendZoneNotification(
+        timeText,
+        latest.eventInfo.message,
+        `zone-event-${latest.eventInfo.name}-${Math.floor(latest.at)}`
+      );
+
+      // No ordinary messages until at least one hour after this event.
+      const quietEnd = latest.at + 3600;
+
+      if (
+        !Number.isFinite(nextRegularNotificationAt) ||
+        nextRegularNotificationAt <= currentAbsolute
+      ) {
+        scheduleNextRegularNotification(currentAbsolute);
+      } else if (nextRegularNotificationAt <= quietEnd) {
+        nextRegularNotificationAt = nextAllowedRegularTime(
+          quietEnd + postQuietOffsetSeconds()
+        );
+        saveNextRegularNotification();
+      }
+      return;
+    }
+
+    if (!Number.isFinite(nextRegularNotificationAt)) {
+      restoreNotificationSchedule();
+    }
+
+    if (currentAbsolute >= nextRegularNotificationAt) {
+      const quiet = quietWindowAt(currentAbsolute);
+
+      if (quiet) {
+        nextRegularNotificationAt = nextAllowedRegularTime(
+          quiet.end + postQuietOffsetSeconds()
+        );
+        saveNextRegularNotification();
+        return;
+      }
+
+      const timeText = formatAbsoluteZoneTime(currentAbsolute);
+      const message = pickZoneMessage();
+
+      sendZoneNotification(
+        timeText,
+        message,
+        `zone-message-${Math.floor(currentAbsolute)}`
+      );
+
+      scheduleNextRegularNotification(currentAbsolute);
+    }
+  }
+
+  if (els.notificationIntervalSelect) {
+    els.notificationIntervalSelect.value = selectedNotificationInterval();
+
+    els.notificationIntervalSelect.addEventListener('change', () => {
+      const value = els.notificationIntervalSelect.value;
+      const allowed = new Set(['random', '1', '2', '4', '8', '12', '24']);
+
+      if (!allowed.has(value)) {
+        els.notificationIntervalSelect.value = 'random';
+        localStorage.setItem(NOTIFICATION_INTERVAL_KEY, 'random');
+      } else {
+        localStorage.setItem(NOTIFICATION_INTERVAL_KEY, value);
+      }
+
+      syncNotificationSchedule();
+
+      const selectedLabel =
+        els.notificationIntervalSelect.options[
+          els.notificationIntervalSelect.selectedIndex
+        ]?.textContent || 'Рандомный';
+
+      showZoneToast(
+        formatClock(gameSeconds),
+        `Интервал сообщений: ${selectedLabel}.`
+      );
+    });
   }
 
   if (els.enableNotificationsBtn) {
@@ -894,6 +1112,7 @@
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
           localStorage.setItem(NOTIFICATION_KEY, '1');
+          syncNotificationSchedule();
           showZoneToast(formatClock(gameSeconds), 'Уведомления Zone Clock включены.');
         }
       } catch (_) {}
@@ -1039,7 +1258,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v44.csv';
+    link.download = 'zone-clock-test-v48.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -1095,7 +1314,7 @@
   if (els.exportTestBtn) els.exportTestBtn.addEventListener('click', exportTestCsv);
   if (els.clearTestBtn) els.clearTestBtn.addEventListener('click', clearTestTable);
 
-  syncNotificationHourMarker();
+  restoreNotificationSchedule();
   updateNotificationSettingsUi();
 
   if ('serviceWorker' in navigator) {
