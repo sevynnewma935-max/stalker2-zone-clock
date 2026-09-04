@@ -2375,3 +2375,80 @@ button.zone-button-press:not(:disabled) {
 .map-route-select-wrap[hidden] {
   display: none !important;
 }
+
+
+/* PWA v75 — время на карте и посещённые точки артефактов */
+.map-zone-time-line {
+  margin-top: 4px;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .58rem;
+  line-height: 1.2;
+  letter-spacing: .08em;
+}
+
+.map-zone-time-line strong {
+  color: #dce7d9;
+  font-size: .66rem;
+  font-weight: 700;
+}
+
+.map-artifact-visit-hint {
+  padding: 5px 12px 6px;
+  background: rgba(10, 20, 13, .88);
+  border-bottom: 1px solid rgba(39, 212, 68, .14);
+  color: var(--muted);
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .56rem;
+  line-height: 1.35;
+}
+
+.map-screen-overlay .map-artifact-visit-point {
+  pointer-events: auto !important;
+  cursor: pointer;
+  touch-action: manipulation;
+  outline: none;
+}
+
+.map-screen-overlay .map-artifact-visit-point.visited {
+  fill: rgba(58, 67, 61, .95) !important;
+  stroke: #8b9890 !important;
+  opacity: .62;
+}
+
+.map-screen-overlay .map-artifact-visit-point.visited:focus-visible,
+.map-screen-overlay .map-artifact-visit-point:focus-visible {
+  stroke: #ffffff !important;
+  stroke-width: 3px !important;
+}
+
+/* Слой с точками должен принимать нажатия, сама SVG-карта остаётся прозрачной. */
+.map-screen-overlay #mapPresetRoutePoints {
+  pointer-events: auto;
+}
+
+
+.map-modal {
+  grid-template-areas:
+    "header"
+    "toolbar"
+    "info"
+    "route"
+    "artifactHint"
+    "map"
+    "calibration" !important;
+
+  grid-template-rows:
+    auto
+    auto
+    auto
+    auto
+    auto
+    minmax(120px, 1fr)
+    auto !important;
+}
+
+.map-artifact-visit-hint {
+  grid-area: artifactHint;
+}

@@ -79,6 +79,9 @@
     mapPresetRouteMain: $('mapPresetRouteMain'),
     mapPresetRouteBranch: $('mapPresetRouteBranch'),
     mapPresetRoutePoints: $('mapPresetRoutePoints'),
+    mapArtifactVisitPoints: $('mapArtifactVisitPoints'),
+    mapArtifactVisitHint: $('mapArtifactVisitHint'),
+    mapZoneTime: $('mapZoneTime'),
     mapDistance: $('mapDistance'), mapPointCount: $('mapPointCount'),
 mapMeasureHint: $('mapMeasureHint'),
     mapKnownDistanceKm: $('mapKnownDistanceKm'),
@@ -1248,8 +1251,21 @@ mapMeasureHint: $('mapMeasureHint'),
     localStorage.getItem(MAP_PRESET_ROUTE_SELECTED_KEY) || 'garbage_cement_cooling';
   const MAP_PRESET_ROUTE_START_KEY =
     'stalker2-zone-clock-preset-route-start-v1';
+  const MAP_VISITED_ARTIFACTS_KEY =
+    'stalker2-zone-clock-visited-artifacts-v1';
   let mapPresetRouteStart =
     localStorage.getItem(MAP_PRESET_ROUTE_START_KEY) || 'svalka';
+
+  let mapVisitedArtifacts = (() => {
+    try {
+      const parsed = JSON.parse(
+        localStorage.getItem(MAP_VISITED_ARTIFACTS_KEY) || '[]'
+      );
+      return new Set(Array.isArray(parsed) ? parsed : []);
+    } catch (_) {
+      return new Set();
+    }
+  })();
 
   function formatMapNumber(value, digits = 2) {
     return Number(value).toLocaleString('ru-RU', {
@@ -1285,6 +1301,7 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function updateMapInfo() {
+    updateMapZoneTime();
     if (els.mapDistance) els.mapDistance.textContent = formatMapDistance(mapRouteMeters());
     if (els.mapPointCount) els.mapPointCount.textContent = String(mapMeasurePoints.length);
 
@@ -1314,6 +1331,37 @@ mapMeasureHint: $('mapMeasureHint'),
       y: mapPanY + point.y * mapZoom
     };
   }
+
+  function updateMapZoneTime() {
+    if (!els.mapZoneTime) return;
+    els.mapZoneTime.textContent = formatTime(gameSeconds);
+  }
+
+  function saveVisitedArtifacts() {
+    localStorage.setItem(
+      MAP_VISITED_ARTIFACTS_KEY,
+      JSON.stringify([...mapVisitedArtifacts])
+    );
+  }
+
+  function artifactVisitKey(routeKey, index) {
+    return `${routeKey}:${index}`;
+  }
+
+  function toggleArtifactVisited(routeKey, index) {
+    const key = artifactVisitKey(routeKey, index);
+
+    if (mapVisitedArtifacts.has(key)) {
+      mapVisitedArtifacts.delete(key);
+    } else {
+      mapVisitedArtifacts.add(key);
+    }
+
+    saveVisitedArtifacts();
+    renderPresetRoute();
+  }
+
+
 
   function getRouteStartLabel(startKey = mapPresetRouteStart) {
     return startKey === 'cement' ? 'ЦЕМЕНТНЫЙ ЗАВОД' : 'СВАЛКА';
@@ -1520,14 +1568,48 @@ mapMeasureHint: $('mapMeasureHint'),
 
     els.mapPresetRoutePoints.innerHTML = '';
 
-    markerDefs.forEach(() => {
+    markerDefs.forEach((point, index) => {
       const circle = document.createElementNS(
         'http://www.w3.org/2000/svg',
         'circle'
       );
 
+      const visitKey = artifactVisitKey(activeRoute.key, index);
+      const isVisited = mapVisitedArtifacts.has(visitKey);
+
       circle.setAttribute('r', isRoadRoute ? '5.2' : '4.5');
-      circle.setAttribute('class', 'map-preset-route-point');
+      circle.setAttribute(
+        'class',
+        `map-preset-route-point map-artifact-visit-point${isVisited ? ' visited' : ''}`
+      );
+      circle.setAttribute('data-route-key', activeRoute.key);
+      circle.setAttribute('data-point-index', String(index));
+      circle.setAttribute('tabindex', '0');
+      circle.setAttribute('role', 'button');
+      circle.setAttribute(
+        'aria-label',
+        isVisited
+          ? `Точка ${index + 1}, посещена`
+          : `Точка ${index + 1}, не посещена`
+      );
+
+      circle.addEventListener('pointerdown', event => {
+        event.stopPropagation();
+      });
+
+      circle.addEventListener('click', event => {
+        event.stopPropagation();
+        toggleArtifactVisited(activeRoute.key, index);
+      });
+
+      circle.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          event.stopPropagation();
+          toggleArtifactVisited(activeRoute.key, index);
+        }
+      });
+
       els.mapPresetRoutePoints.appendChild(circle);
 
       if (isRoadRoute && activeRoute.showCumulativeDistances) {
@@ -2400,7 +2482,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v73.csv';
+    link.download = 'zone-clock-test-v75.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();

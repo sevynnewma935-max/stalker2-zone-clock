@@ -161,6 +161,9 @@
         <div>
           <div class="eyebrow">ZONE CLOCK</div>
           <h2 id="mapDialogTitle">КАРТА ЗОНЫ</h2>
+          <div class="map-zone-time-line">
+            ИГРОВОЕ ВРЕМЯ <strong id="mapZoneTime">--:--</strong>
+          </div>
         </div>
         <button id="closeMapBtn" class="icon-btn small" type="button" aria-label="Закрыть карту" title="Закрыть">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -209,6 +212,9 @@
       <div id="mapPresetRouteLabel" class="map-preset-route-label">
         СВАЛКА → ЦЕМЕНТНЫЙ ЗАВОД → ГРАДИРНИ
       </div>
+      <div id="mapArtifactVisitHint" class="map-artifact-visit-hint">
+        Точки артефактов: нажмите на точку, чтобы отметить её посещённой.
+      </div>
 
       <div id="mapViewport" class="map-viewport" aria-label="Интерактивная карта Зоны">
         <div id="zoneMapTransform" class="zone-map-transform">
@@ -224,6 +230,7 @@
             <polyline id="mapPresetRouteMain" class="map-preset-route-line" points="" fill="none"></polyline>
             <polyline id="mapPresetRouteBranch" class="map-preset-route-line" points="" fill="none"></polyline>
             <g id="mapPresetRoutePoints"></g>
+            <g id="mapArtifactVisitPoints"></g>
           </g>
           <polyline id="mapMeasureLine" points="" fill="none"></polyline>
           <g id="mapMeasurePoints"></g>
@@ -429,7 +436,7 @@
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v73</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v75</strong></div>
           <button id="updateAppBtn" class="btn update-app-btn" type="button">
             ОБНОВИТЬ ПРИЛОЖЕНИЕ
           </button>
