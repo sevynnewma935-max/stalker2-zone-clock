@@ -176,6 +176,7 @@
         <button id="mapZoomOutBtn" class="btn map-zoom-btn" type="button" aria-label="Уменьшить карту">−</button>
         <button id="mapFitBtn" class="btn" type="button">ВСЯ КАРТА</button>
         <button id="mapZoomInBtn" class="btn map-zoom-btn" type="button" aria-label="Увеличить карту">+</button>
+        <button id="mapPresetRouteBtn" class="btn map-route-toggle active" type="button">МАРШРУТ: ВКЛ</button>
       </div>
 
       <div class="map-info-strip">
@@ -187,18 +188,26 @@
           <span class="map-info-label">ТОЧЕК</span>
           <strong id="mapPointCount">0</strong>
         </div>
+      </div>
 
+      <div id="mapPresetRouteLabel" class="map-preset-route-label">
+        СВАЛКА → ЦЕМЕНТНЫЙ ЗАВОД → ГРАДИРНИ
       </div>
 
       <div id="mapViewport" class="map-viewport" aria-label="Интерактивная карта Зоны">
         <div id="zoneMapTransform" class="zone-map-transform">
           <img id="zoneMapPreviewImage" class="zone-map-4096-image" src="./assets/zone-map-4096.jpg" alt="" aria-hidden="true" draggable="false">
           <img id="zoneMapImage" class="zone-map-8192-image" src="./assets/zone-map-8192.jpg" alt="Карта Зоны S.T.A.L.K.E.R. 2" draggable="false">
-          <svg id="mapOverlay" class="map-overlay" viewBox="0 0 2048 2048" aria-hidden="true">
-            <polyline id="mapMeasureLine" points="" fill="none" vector-effect="non-scaling-stroke"></polyline>
-            <g id="mapMeasurePoints"></g>
-          </svg>
         </div>
+        <svg id="mapOverlay" class="map-overlay map-screen-overlay" aria-hidden="true">
+          <g id="mapPresetRouteLayer" class="map-preset-route-layer">
+            <polyline id="mapPresetRouteMain" class="map-preset-route-line" points="" fill="none"></polyline>
+            <polyline id="mapPresetRouteBranch" class="map-preset-route-line" points="" fill="none"></polyline>
+            <g id="mapPresetRoutePoints"></g>
+          </g>
+          <polyline id="mapMeasureLine" points="" fill="none"></polyline>
+          <g id="mapMeasurePoints"></g>
+        </svg>
         <div id="mapMeasureHint" class="map-measure-hint">
           Карту можно увеличивать двумя пальцами, кнопками +/− или колёсиком. Для маршрута включите «ИЗМЕРИТЬ».
         </div>
@@ -400,7 +409,7 @@
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v64</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v66</strong></div>
           <button id="updateAppBtn" class="btn update-app-btn" type="button">
             ОБНОВИТЬ ПРИЛОЖЕНИЕ
           </button>

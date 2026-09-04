@@ -66,6 +66,12 @@
     mapMeasureBtn: $('mapMeasureBtn'), mapUndoBtn: $('mapUndoBtn'),
     mapClearBtn: $('mapClearBtn'), mapZoomOutBtn: $('mapZoomOutBtn'),
     mapZoomInBtn: $('mapZoomInBtn'), mapFitBtn: $('mapFitBtn'),
+    mapPresetRouteBtn: $('mapPresetRouteBtn'),
+    mapPresetRouteLabel: $('mapPresetRouteLabel'),
+    mapPresetRouteLayer: $('mapPresetRouteLayer'),
+    mapPresetRouteMain: $('mapPresetRouteMain'),
+    mapPresetRouteBranch: $('mapPresetRouteBranch'),
+    mapPresetRoutePoints: $('mapPresetRoutePoints'),
     mapDistance: $('mapDistance'), mapPointCount: $('mapPointCount'),
 mapMeasureHint: $('mapMeasureHint'),
     mapKnownDistanceKm: $('mapKnownDistanceKm'),
@@ -1145,6 +1151,32 @@ mapMeasureHint: $('mapMeasureHint'),
   const MAP_IMAGE_SIZE = 2048;
   const DEFAULT_MAP_METERS_PER_PIXEL = 6.5;
 
+  const MAP_PRESET_ROUTE_STORAGE_KEY =
+    'stalker2-zone-clock-preset-route-garbage-cement-cooling-v1';
+
+  const MAP_PRESET_ROUTE_MAIN = [
+    { x: 868.8, y: 1193.6 },
+    { x: 955.2, y: 1020.8 },
+    { x: 961.6, y: 939.2 },
+    { x: 1076.8, y: 974.4 },
+    { x: 1214.4, y: 1009.6 },
+    { x: 1192.0, y: 932.8 },
+    { x: 1257.6, y: 880.0 },
+    { x: 1302.4, y: 956.8 },
+    { x: 1248.0, y: 958.4 }
+  ];
+
+  const MAP_PRESET_ROUTE_BRANCH = [
+    { x: 868.8, y: 1193.6 },
+    { x: 913.6, y: 1249.6 },
+    { x: 1121.6, y: 1233.6 },
+    { x: 1256.0, y: 1177.6 },
+    { x: 1212.8, y: 1121.6 },
+    { x: 1110.4, y: 1108.8 },
+    { x: 1054.4, y: 1043.2 }
+  ];
+
+
   let mapMetersPerPixel = (() => {
     const stored = Number(localStorage.getItem(MAP_SCALE_STORAGE_KEY));
     return Number.isFinite(stored) && stored > 0.1 && stored < 50
@@ -1168,6 +1200,8 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapTransformFrame = 0;
   let mapInteractionEndTimer = 0;
   let mapInteractionDepth = 0;
+  let mapPresetRouteVisible =
+    localStorage.getItem(MAP_PRESET_ROUTE_STORAGE_KEY) !== '0';
 
   function formatMapNumber(value, digits = 2) {
     return Number(value).toLocaleString('ru-RU', {
@@ -1225,33 +1259,167 @@ mapMeasureHint: $('mapMeasureHint'),
     }
   }
 
-  function renderMapMeasurement() {
+
+  function routePointToScreen(point) {
+    return {
+      x: mapPanX + point.x * mapZoom,
+      y: mapPanY + point.y * mapZoom
+    };
+  }
+
+  function updatePresetRouteUI() {
+    if (els.mapPresetRouteBtn) {
+      els.mapPresetRouteBtn.textContent =
+        mapPresetRouteVisible ? 'МАРШРУТ: ВКЛ' : 'МАРШРУТ: ВЫКЛ';
+      els.mapPresetRouteBtn.classList.toggle('active', mapPresetRouteVisible);
+    }
+
+    if (els.mapPresetRouteLabel) {
+      els.mapPresetRouteLabel.hidden = !mapPresetRouteVisible;
+    }
+  }
+
+  function updatePresetRouteScreenGeometry() {
+    if (
+      !els.mapPresetRouteMain ||
+      !els.mapPresetRouteBranch ||
+      !els.mapPresetRoutePoints
+    ) return;
+
+    if (els.mapPresetRouteLayer) {
+      els.mapPresetRouteLayer.style.display =
+        mapPresetRouteVisible ? '' : 'none';
+    }
+
+    if (!mapPresetRouteVisible) return;
+
+    const mainScreen = MAP_PRESET_ROUTE_MAIN.map(routePointToScreen);
+    const branchScreen = MAP_PRESET_ROUTE_BRANCH.map(routePointToScreen);
+
+    els.mapPresetRouteMain.setAttribute(
+      'points',
+      mainScreen.map(point => `${point.x},${point.y}`).join(' ')
+    );
+
+    els.mapPresetRouteBranch.setAttribute(
+      'points',
+      branchScreen.map(point => `${point.x},${point.y}`).join(' ')
+    );
+
+    const allNodes = [
+      ...MAP_PRESET_ROUTE_MAIN,
+      ...MAP_PRESET_ROUTE_BRANCH.slice(1)
+    ];
+
+    const circles = els.mapPresetRoutePoints.querySelectorAll(
+      '.map-preset-route-point'
+    );
+
+    allNodes.forEach((point, index) => {
+      const screen = routePointToScreen(point);
+      const circle = circles[index];
+      if (circle) {
+        circle.setAttribute('cx', screen.x);
+        circle.setAttribute('cy', screen.y);
+      }
+    });
+  }
+
+  function renderPresetRoute() {
+    if (!els.mapPresetRoutePoints) return;
+
+    els.mapPresetRoutePoints.innerHTML = '';
+
+    const allNodes = [
+      ...MAP_PRESET_ROUTE_MAIN,
+      ...MAP_PRESET_ROUTE_BRANCH.slice(1)
+    ];
+
+    allNodes.forEach(() => {
+      const circle = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'circle'
+      );
+      circle.setAttribute('r', '4.5');
+      circle.setAttribute('class', 'map-preset-route-point');
+      els.mapPresetRoutePoints.appendChild(circle);
+    });
+
+    updatePresetRouteUI();
+    updatePresetRouteScreenGeometry();
+  }
+
+  function togglePresetRoute() {
+    mapPresetRouteVisible = !mapPresetRouteVisible;
+
+    localStorage.setItem(
+      MAP_PRESET_ROUTE_STORAGE_KEY,
+      mapPresetRouteVisible ? '1' : '0'
+    );
+
+    updatePresetRouteUI();
+    updatePresetRouteScreenGeometry();
+  }
+
+  function updateMapMeasurementScreenGeometry() {
     if (!els.mapMeasureLine || !els.mapMeasurePoints) return;
+
+    const screenPoints = mapMeasurePoints.map(point => ({
+      x: mapPanX + point.x * mapZoom,
+      y: mapPanY + point.y * mapZoom
+    }));
 
     els.mapMeasureLine.setAttribute(
       'points',
-      mapMeasurePoints.map(point => `${point.x},${point.y}`).join(' ')
+      screenPoints.map(point => `${point.x},${point.y}`).join(' ')
     );
+
+    const circles = els.mapMeasurePoints.querySelectorAll('.map-measure-point');
+    const labels = els.mapMeasurePoints.querySelectorAll('.map-measure-point-label');
+
+    screenPoints.forEach((point, index) => {
+      const circle = circles[index];
+      if (circle) {
+        circle.setAttribute('cx', point.x);
+        circle.setAttribute('cy', point.y);
+      }
+
+      const label = labels[index];
+      if (label) {
+        label.setAttribute('x', point.x + 11);
+        label.setAttribute('y', point.y - 10);
+      }
+    });
+
+    updatePresetRouteScreenGeometry();
+  }
+
+  function renderMapMeasurement() {
+    if (!els.mapMeasureLine || !els.mapMeasurePoints) return;
+
+    if (
+      els.mapPresetRoutePoints &&
+      !els.mapPresetRoutePoints.childElementCount
+    ) {
+      renderPresetRoute();
+    }
 
     els.mapMeasurePoints.innerHTML = '';
 
     mapMeasurePoints.forEach((point, index) => {
       const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('cx', point.x);
-      circle.setAttribute('cy', point.y);
-      circle.setAttribute('r', Math.max(7, 14 / Math.max(mapZoom, .2)));
+      circle.setAttribute('r', '6.5');
       circle.setAttribute('class', 'map-measure-point');
       els.mapMeasurePoints.appendChild(circle);
 
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('x', point.x + 15 / Math.max(mapZoom, .2));
-      text.setAttribute('y', point.y - 15 / Math.max(mapZoom, .2));
       text.setAttribute('class', 'map-measure-point-label');
-      text.setAttribute('font-size', Math.max(18, 28 / Math.max(mapZoom, .2)));
+      text.setAttribute('font-size', '13');
       text.textContent = String(index + 1);
       els.mapMeasurePoints.appendChild(text);
     });
 
+    updateMapMeasurementScreenGeometry();
     updateMapInfo();
   }
 
@@ -1282,6 +1450,8 @@ mapMeasureHint: $('mapMeasureHint'),
 
         if (renderMeasurement) {
           renderMapMeasurement();
+        } else {
+          updateMapMeasurementScreenGeometry();
         }
       });
     }
@@ -1323,6 +1493,11 @@ mapMeasureHint: $('mapMeasureHint'),
 
     const rect = els.mapViewport.getBoundingClientRect();
     if (!(rect.width > 20 && rect.height > 20)) return;
+
+    if (els.mapOverlay) {
+      els.mapOverlay.setAttribute('width', String(rect.width));
+      els.mapOverlay.setAttribute('height', String(rect.height));
+    }
 
     mapFitZoom = Math.min(
       rect.width / MAP_IMAGE_SIZE,
@@ -1507,6 +1682,10 @@ mapMeasureHint: $('mapMeasureHint'),
 
   if (els.mapZoomInBtn) {
     els.mapZoomInBtn.addEventListener('click', () => zoomZoneMap(1.35));
+  }
+
+  if (els.mapPresetRouteBtn) {
+    els.mapPresetRouteBtn.addEventListener('click', togglePresetRoute);
   }
 
   if (els.mapZoomOutBtn) {
@@ -1988,7 +2167,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v64.csv';
+    link.download = 'zone-clock-test-v66.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
