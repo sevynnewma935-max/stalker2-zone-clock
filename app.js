@@ -60,6 +60,7 @@
     zoneToast: $('zoneToast'),
     mapBtn: $('mapBtn'), closeMapBtn: $('closeMapBtn'), mapDialog: $('mapDialog'),
     mapViewport: $('mapViewport'), zoneMapTransform: $('zoneMapTransform'),
+    zoneMapPreviewImage: $('zoneMapPreviewImage'),
     zoneMapImage: $('zoneMapImage'), mapOverlay: $('mapOverlay'),
     mapMeasureLine: $('mapMeasureLine'), mapMeasurePoints: $('mapMeasurePoints'),
     mapMeasureBtn: $('mapMeasureBtn'), mapUndoBtn: $('mapUndoBtn'),
@@ -1164,6 +1165,9 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapLastTapX = 0;
   let mapLastTapY = 0;
   let mapHdLoaded = true;
+  let mapTransformFrame = 0;
+  let mapInteractionEndTimer = 0;
+  let mapInteractionDepth = 0;
 
   function formatMapNumber(value, digits = 2) {
     return Number(value).toLocaleString('ru-RU', {
@@ -1264,14 +1268,54 @@ mapMeasureHint: $('mapMeasureHint'),
 
 
 
-  function applyMapTransform() {
+  function applyMapTransform(renderMeasurement = false) {
     if (!els.zoneMapTransform) return;
 
-    els.zoneMapTransform.style.transform =
-      `translate(${mapPanX}px, ${mapPanY}px) scale(${mapZoom})`;
+    if (!mapTransformFrame) {
+      mapTransformFrame = window.requestAnimationFrame(() => {
+        mapTransformFrame = 0;
 
-    maybeLoadHdZoneMap();
-    renderMapMeasurement();
+        els.zoneMapTransform.style.transform =
+          `translate3d(${mapPanX}px, ${mapPanY}px, 0) scale(${mapZoom})`;
+
+        maybeLoadHdZoneMap();
+
+        if (renderMeasurement) {
+          renderMapMeasurement();
+        }
+      });
+    }
+  }
+
+  function beginMapInteraction() {
+    mapInteractionDepth += 1;
+
+    if (mapInteractionEndTimer) {
+      window.clearTimeout(mapInteractionEndTimer);
+      mapInteractionEndTimer = 0;
+    }
+
+    if (els.mapViewport) {
+      els.mapViewport.classList.add('map-interacting');
+    }
+  }
+
+  function endMapInteraction() {
+    mapInteractionDepth = Math.max(0, mapInteractionDepth - 1);
+
+    if (mapInteractionDepth > 0) return;
+
+    if (mapInteractionEndTimer) {
+      window.clearTimeout(mapInteractionEndTimer);
+    }
+
+    mapInteractionEndTimer = window.setTimeout(() => {
+      if (els.mapViewport) {
+        els.mapViewport.classList.remove('map-interacting');
+      }
+      renderMapMeasurement();
+      mapInteractionEndTimer = 0;
+    }, 80);
   }
 
   function fitZoneMap() {
@@ -1289,7 +1333,7 @@ mapMeasureHint: $('mapMeasureHint'),
     mapPanX = (rect.width - MAP_IMAGE_SIZE * mapZoom) / 2;
     mapPanY = (rect.height - MAP_IMAGE_SIZE * mapZoom) / 2;
 
-    applyMapTransform();
+    applyMapTransform(true);
   }
 
   function zoomZoneMap(factor, clientX = null, clientY = null) {
@@ -1313,7 +1357,7 @@ mapMeasureHint: $('mapMeasureHint'),
     mapPanY = localY - imageY * nextZoom;
     mapZoom = nextZoom;
 
-    applyMapTransform();
+    applyMapTransform(true);
   }
 
   function clientToMapPoint(clientX, clientY) {
@@ -1393,7 +1437,7 @@ mapMeasureHint: $('mapMeasureHint'),
     mapPanY = localY - mapPinchState.imageY * nextZoom;
     mapZoom = nextZoom;
 
-    applyMapTransform();
+    applyMapTransform(false);
   }
 
   function addMapMeasurePoint(clientX, clientY) {
@@ -1476,11 +1520,31 @@ mapMeasureHint: $('mapMeasureHint'),
   if (els.mapViewport) {
     els.mapViewport.addEventListener('wheel', event => {
       event.preventDefault();
-      zoomZoneMap(event.deltaY < 0 ? 1.18 : 1 / 1.18, event.clientX, event.clientY);
+
+      if (!els.mapViewport.classList.contains('map-interacting')) {
+        beginMapInteraction();
+      }
+
+      zoomZoneMap(
+        event.deltaY < 0 ? 1.18 : 1 / 1.18,
+        event.clientX,
+        event.clientY
+      );
+
+      if (mapInteractionEndTimer) {
+        window.clearTimeout(mapInteractionEndTimer);
+      }
+
+      mapInteractionEndTimer = window.setTimeout(() => {
+        mapInteractionDepth = 1;
+        endMapInteraction();
+      }, 140);
     }, { passive: false });
 
     els.mapViewport.addEventListener('pointerdown', event => {
       if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+      beginMapInteraction();
 
       mapActivePointers.set(event.pointerId, {
         x: event.clientX,
@@ -1533,7 +1597,7 @@ mapMeasureHint: $('mapMeasureHint'),
       if (mapPointerState.moved) {
         mapPanX = mapPointerState.panX + dx;
         mapPanY = mapPointerState.panY + dy;
-        applyMapTransform();
+        applyMapTransform(false);
       }
 
       mapPointerState.lastX = event.clientX;
@@ -1541,6 +1605,8 @@ mapMeasureHint: $('mapMeasureHint'),
     });
 
     els.mapViewport.addEventListener('pointerup', event => {
+      endMapInteraction();
+
       const currentPointer = mapPointerState &&
         mapPointerState.pointerId === event.pointerId
         ? mapPointerState
@@ -1586,6 +1652,7 @@ mapMeasureHint: $('mapMeasureHint'),
     });
 
     els.mapViewport.addEventListener('pointercancel', event => {
+      endMapInteraction();
       mapActivePointers.delete(event.pointerId);
       mapPointerState = null;
 
@@ -1921,7 +1988,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v63.csv';
+    link.download = 'zone-clock-test-v64.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();

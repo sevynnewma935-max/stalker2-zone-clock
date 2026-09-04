@@ -2072,3 +2072,42 @@ button.zone-button-press:not(:disabled) {
   width: 2048px;
   height: 2048px;
 }
+
+
+/* PWA v64 — плавное перемещение карты */
+.zone-map-transform {
+  will-change: transform;
+  transform-style: preserve-3d;
+}
+
+.zone-map-transform img.zone-map-4096-image,
+.zone-map-transform img.zone-map-8192-image {
+  position: absolute !important;
+  inset: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 2048px !important;
+  height: 2048px !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: fill !important;
+  image-rendering: auto !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.zone-map-transform img.zone-map-4096-image {
+  display: none !important;
+}
+
+.zone-map-transform img.zone-map-8192-image {
+  display: block !important;
+}
+
+.map-viewport.map-interacting .zone-map-transform img.zone-map-4096-image {
+  display: block !important;
+}
+
+.map-viewport.map-interacting .zone-map-transform img.zone-map-8192-image {
+  display: none !important;
+}

@@ -1,4 +1,4 @@
-const APP_CACHE = 'stalker2-zone-clock-v63';
+const APP_CACHE = 'stalker2-zone-clock-v64';
 const MAP_CACHE = 'stalker2-zone-map-8192-v1';
 
 const APP_ASSETS = [
@@ -12,7 +12,8 @@ const APP_ASSETS = [
 ];
 
 const MAP_ASSETS = [
-  './assets/zone-map-8192.jpg'
+  './assets/zone-map-8192.jpg',
+  './assets/zone-map-4096.jpg'
 ];
 
 self.addEventListener('install', event => {
