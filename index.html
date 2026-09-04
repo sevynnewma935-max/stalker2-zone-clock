@@ -35,6 +35,7 @@
 
       <div class="top-actions">
         <button id="installBtn" class="btn ghost hidden" type="button">Установить</button>
+        <button id="mapBtn" class="test-top-btn map-top-btn" type="button" aria-label="Открыть карту Зоны" title="Карта Зоны">КАРТА</button>
         <button id="testBtn" class="test-top-btn" type="button" aria-label="Открыть тест времени" title="Тест времени">ТЕСТ</button>
         <button id="settingsBtn" class="icon-btn" type="button" aria-label="Открыть настройки" title="Настройки">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -154,6 +155,83 @@
       <div id="message" class="message" aria-live="polite"></div>
     </section>
   </main>
+
+  <dialog id="mapDialog" class="map-dialog" aria-labelledby="mapDialogTitle">
+    <div class="map-modal">
+      <div class="map-modal-header">
+        <div>
+          <div class="eyebrow">ZONE CLOCK</div>
+          <h2 id="mapDialogTitle">КАРТА ЗОНЫ</h2>
+        </div>
+        <button id="closeMapBtn" class="icon-btn small" type="button" aria-label="Закрыть карту" title="Закрыть">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="map-toolbar">
+        <button id="mapMeasureBtn" class="btn primary" type="button">ИЗМЕРИТЬ</button>
+        <button id="mapUndoBtn" class="btn" type="button">− ТОЧКА</button>
+        <button id="mapClearBtn" class="btn" type="button">СБРОС</button>
+        <button id="mapZoomOutBtn" class="btn map-zoom-btn" type="button" aria-label="Уменьшить карту">−</button>
+        <button id="mapFitBtn" class="btn" type="button">ВСЯ КАРТА</button>
+        <button id="mapZoomInBtn" class="btn map-zoom-btn" type="button" aria-label="Увеличить карту">+</button>
+      </div>
+
+      <div class="map-info-strip">
+        <div>
+          <span class="map-info-label">РАССТОЯНИЕ</span>
+          <strong id="mapDistance">—</strong>
+        </div>
+        <div>
+          <span class="map-info-label">ТОЧЕК</span>
+          <strong id="mapPointCount">0</strong>
+        </div>
+        <div>
+          <span class="map-info-label">КАЛИБРОВКА</span>
+          <strong id="mapScaleLabel">2,36 км</strong>
+        </div>
+      </div>
+
+      <div id="mapViewport" class="map-viewport" aria-label="Интерактивная карта Зоны">
+        <div id="zoneMapTransform" class="zone-map-transform">
+          <img id="zoneMapImage" src="./assets/zone-map.webp" alt="Карта Зоны S.T.A.L.K.E.R. 2" draggable="false">
+          <svg id="mapOverlay" class="map-overlay" viewBox="0 0 2048 2048" aria-hidden="true">
+            <polyline id="mapMeasureLine" points="" fill="none" vector-effect="non-scaling-stroke"></polyline>
+            <g id="mapMeasurePoints"></g>
+          </svg>
+        </div>
+        <div id="mapMeasureHint" class="map-measure-hint">
+          Включите «ИЗМЕРИТЬ» и нажимайте на карту. Можно ставить несколько точек маршрута.
+        </div>
+      </div>
+
+      <details class="map-calibration">
+        <summary>
+          <span>КАЛИБРОВКА МАСШТАБА</span>
+          <span aria-hidden="true">⌄</span>
+        </summary>
+        <div class="map-calibration-body">
+          <p>Для точной калибровки повторите на карте известный маршрут, укажите его реальную длину в километрах и примените калибровку.</p>
+
+          <label>
+            <span>Известное расстояние, км</span>
+            <input id="mapKnownDistanceKm" type="number" inputmode="decimal" min="0.01" max="100" step="0.01" value="2.36">
+          </label>
+
+          <div class="map-calibration-actions">
+            <button id="mapApplyCalibrationBtn" class="btn primary" type="button">ПРИМЕНИТЬ ПО МАРШРУТУ</button>
+            <button id="mapResetCalibrationBtn" class="btn" type="button">СБРОСИТЬ КАЛИБРОВКУ</button>
+          </div>
+
+          <div id="mapCalibrationMessage" class="map-calibration-message">
+            Контрольный маршрут на второй картинке — 2,36 км.
+          </div>
+        </div>
+      </details>
+    </div>
+  </dialog>
 
   <dialog id="testDialog" class="test-dialog" aria-labelledby="testDialogTitle">
     <div class="test-modal">
@@ -315,7 +393,7 @@
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v50</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v53</strong></div>
         </div>
       </div>
     </div>

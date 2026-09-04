@@ -1491,3 +1491,307 @@ button.zone-button-press:not(:disabled) {
     transition: none;
   }
 }
+
+
+/* PWA v51 — карта Зоны */
+.map-top-btn {
+  min-width: 62px;
+}
+
+.map-dialog {
+  width: min(98vw, 1050px);
+  height: min(96dvh, 980px);
+  max-width: 1050px;
+  max-height: 980px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+}
+
+.map-dialog::backdrop {
+  background: rgba(0,0,0,.76);
+  backdrop-filter: blur(4px);
+}
+
+.map-modal {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: 0 26px 80px var(--shadow);
+}
+
+.map-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.map-modal-header h2 {
+  margin: .2rem 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.15rem;
+  letter-spacing: .11em;
+}
+
+.map-toolbar {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, auto));
+  gap: 7px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--card-2);
+}
+
+.map-toolbar .btn {
+  min-height: 39px;
+  padding: 7px 9px;
+  font-size: .65rem;
+}
+
+.map-toolbar .btn.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--primary-text);
+}
+
+.map-zoom-btn {
+  min-width: 42px;
+  font-size: 1.05rem !important;
+}
+
+.map-info-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  border-bottom: 1px solid var(--border);
+  background: var(--border-soft);
+}
+
+.map-info-strip > div {
+  min-width: 0;
+  padding: 8px 10px;
+  background: var(--card);
+  text-align: center;
+}
+
+.map-info-label {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .58rem;
+  letter-spacing: .08em;
+}
+
+.map-info-strip strong {
+  display: block;
+  overflow: hidden;
+  color: var(--accent-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-viewport {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background: #555850;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.map-viewport:active {
+  cursor: grabbing;
+}
+
+.zone-map-transform {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2048px;
+  height: 2048px;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.zone-map-transform img,
+.map-overlay {
+  position: absolute;
+  inset: 0;
+  width: 2048px;
+  height: 2048px;
+}
+
+.zone-map-transform img {
+  display: block;
+  pointer-events: none;
+}
+
+.map-overlay {
+  overflow: visible;
+  pointer-events: none;
+}
+
+#mapMeasureLine {
+  stroke: #ece57a;
+  stroke-width: 3px;
+  filter: drop-shadow(0 0 2px rgba(0,0,0,.9));
+}
+
+.map-measure-point {
+  fill: #ece57a;
+  stroke: #111;
+  stroke-width: 3px;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-measure-point-label {
+  fill: #fffbd0;
+  stroke: rgba(0,0,0,.95);
+  stroke-width: 4px;
+  paint-order: stroke;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+.map-measure-hint {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 8px 10px;
+  border: 1px solid rgba(230,230,190,.25);
+  border-radius: 6px;
+  background: rgba(10,12,10,.76);
+  color: #ecebdc;
+  backdrop-filter: blur(5px);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .64rem;
+  line-height: 1.4;
+  text-align: center;
+  pointer-events: none;
+}
+
+.map-calibration {
+  border-top: 1px solid var(--border);
+  background: var(--card-2);
+}
+
+.map-calibration > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--accent-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .67rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.map-calibration > summary::-webkit-details-marker {
+  display: none;
+}
+
+.map-calibration-body {
+  max-height: 260px;
+  overflow: auto;
+  padding: 0 14px 13px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.map-calibration-body p {
+  margin: 10px 0;
+  color: var(--muted);
+  font-size: .72rem;
+  line-height: 1.45;
+}
+
+.map-calibration-body label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: .69rem;
+}
+
+.map-calibration-body input {
+  min-height: 42px;
+}
+
+.map-calibration-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.map-calibration-message {
+  margin-top: 9px;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .64rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 650px) {
+  .map-dialog {
+    width: calc(100% - 8px);
+    height: calc(100dvh - 8px);
+    max-height: none;
+  }
+
+  .map-toolbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .map-toolbar .btn {
+    min-width: 0;
+  }
+
+  .map-info-strip strong {
+    font-size: .70rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .top-actions {
+    gap: 5px;
+  }
+
+  .map-top-btn,
+  .test-top-btn {
+    min-width: 50px;
+    height: 42px;
+    padding: 0 6px;
+    font-size: .62rem;
+  }
+
+  .top-actions .icon-btn {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+  }
+
+  .map-calibration-actions {
+    grid-template-columns: 1fr;
+  }
+}

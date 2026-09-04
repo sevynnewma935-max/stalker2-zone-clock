@@ -29,6 +29,7 @@
   const THEME_KEY = 'stalker2-zone-clock-theme';
   const TEST_STORAGE_KEY = 'stalker2-zone-clock-test-v1';
   const DAYLIGHT_TEST_STORAGE_KEY = 'stalker2-zone-clock-daylight-test-v1';
+  const MAP_SCALE_STORAGE_KEY = 'stalker2-zone-clock-map-scale-v1';
   const NOTIFICATION_KEY = 'stalker2-zone-clock-notifications-v1';
   const NOTIFICATION_NEXT_KEY = 'stalker2-zone-clock-next-message-v1';
   const NOTIFICATION_INTERVAL_KEY = 'stalker2-zone-clock-message-interval-v1';
@@ -56,6 +57,19 @@
     notificationStatus: $('notificationStatus'),
     notificationIntervalSelect: $('notificationIntervalSelect'),
     zoneToast: $('zoneToast'),
+    mapBtn: $('mapBtn'), closeMapBtn: $('closeMapBtn'), mapDialog: $('mapDialog'),
+    mapViewport: $('mapViewport'), zoneMapTransform: $('zoneMapTransform'),
+    zoneMapImage: $('zoneMapImage'), mapOverlay: $('mapOverlay'),
+    mapMeasureLine: $('mapMeasureLine'), mapMeasurePoints: $('mapMeasurePoints'),
+    mapMeasureBtn: $('mapMeasureBtn'), mapUndoBtn: $('mapUndoBtn'),
+    mapClearBtn: $('mapClearBtn'), mapZoomOutBtn: $('mapZoomOutBtn'),
+    mapZoomInBtn: $('mapZoomInBtn'), mapFitBtn: $('mapFitBtn'),
+    mapDistance: $('mapDistance'), mapPointCount: $('mapPointCount'),
+    mapScaleLabel: $('mapScaleLabel'), mapMeasureHint: $('mapMeasureHint'),
+    mapKnownDistanceKm: $('mapKnownDistanceKm'),
+    mapApplyCalibrationBtn: $('mapApplyCalibrationBtn'),
+    mapResetCalibrationBtn: $('mapResetCalibrationBtn'),
+    mapCalibrationMessage: $('mapCalibrationMessage'),
     testBtn: $('testBtn'), closeTestBtn: $('closeTestBtn'), testDialog: $('testDialog'),
     testCurrentTime: $('testCurrentTime'), testTableBody: $('testTableBody'),
     dayCalibrationDetails: $('dayCalibrationDetails'),
@@ -1125,6 +1139,368 @@
   }
 
 
+
+  const MAP_IMAGE_SIZE = 2048;
+  const DEFAULT_MAP_METERS_PER_PIXEL = 6.5;
+
+  let mapMetersPerPixel = (() => {
+    const stored = Number(localStorage.getItem(MAP_SCALE_STORAGE_KEY));
+    return Number.isFinite(stored) && stored > 0.1 && stored < 50
+      ? stored
+      : DEFAULT_MAP_METERS_PER_PIXEL;
+  })();
+
+  let mapZoom = 1;
+  let mapPanX = 0;
+  let mapPanY = 0;
+  let mapFitZoom = 1;
+  let mapMeasureMode = false;
+  let mapMeasurePoints = [];
+  let mapPointerState = null;
+
+  function formatMapNumber(value, digits = 2) {
+    return Number(value).toLocaleString('ru-RU', {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits
+    });
+  }
+
+  function formatMapDistance(meters) {
+    if (!(meters > 0)) return '—';
+
+    if (meters < 1000) {
+      return `${Math.round(meters)} м`;
+    }
+
+    return `${formatMapNumber(meters / 1000, 2)} км`;
+  }
+
+  function mapRoutePixelLength() {
+    let total = 0;
+
+    for (let i = 1; i < mapMeasurePoints.length; i++) {
+      const a = mapMeasurePoints[i - 1];
+      const b = mapMeasurePoints[i];
+      total += Math.hypot(b.x - a.x, b.y - a.y);
+    }
+
+    return total;
+  }
+
+  function mapRouteMeters() {
+    return mapRoutePixelLength() * mapMetersPerPixel;
+  }
+
+  function updateMapInfo() {
+    if (els.mapDistance) els.mapDistance.textContent = formatMapDistance(mapRouteMeters());
+    if (els.mapPointCount) els.mapPointCount.textContent = String(mapMeasurePoints.length);
+    if (els.mapScaleLabel) {
+      const knownKm = Number(els.mapKnownDistanceKm?.value) || 2.36;
+      els.mapScaleLabel.textContent = `${formatMapNumber(knownKm, 2)} км`;
+    }
+
+    if (els.mapMeasureBtn) {
+      els.mapMeasureBtn.classList.toggle('active', mapMeasureMode);
+      els.mapMeasureBtn.textContent = mapMeasureMode ? 'ИЗМЕРЕНИЕ: ВКЛ' : 'ИЗМЕРИТЬ';
+    }
+
+    if (els.mapMeasureHint) {
+      if (mapMeasureMode) {
+        els.mapMeasureHint.textContent =
+          'Нажимайте на карту для добавления точек. Перетаскивание двигает карту.';
+      } else if (mapMeasurePoints.length >= 2) {
+        els.mapMeasureHint.textContent =
+          `Маршрут: ${formatMapDistance(mapRouteMeters())}.`;
+      } else {
+        els.mapMeasureHint.textContent =
+          'Включите «ИЗМЕРИТЬ» и нажимайте на карту. Можно ставить несколько точек маршрута.';
+      }
+    }
+  }
+
+  function renderMapMeasurement() {
+    if (!els.mapMeasureLine || !els.mapMeasurePoints) return;
+
+    els.mapMeasureLine.setAttribute(
+      'points',
+      mapMeasurePoints.map(point => `${point.x},${point.y}`).join(' ')
+    );
+
+    els.mapMeasurePoints.innerHTML = '';
+
+    mapMeasurePoints.forEach((point, index) => {
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', point.x);
+      circle.setAttribute('cy', point.y);
+      circle.setAttribute('r', Math.max(7, 14 / Math.max(mapZoom, .2)));
+      circle.setAttribute('class', 'map-measure-point');
+      els.mapMeasurePoints.appendChild(circle);
+
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', point.x + 15 / Math.max(mapZoom, .2));
+      text.setAttribute('y', point.y - 15 / Math.max(mapZoom, .2));
+      text.setAttribute('class', 'map-measure-point-label');
+      text.setAttribute('font-size', Math.max(18, 28 / Math.max(mapZoom, .2)));
+      text.textContent = String(index + 1);
+      els.mapMeasurePoints.appendChild(text);
+    });
+
+    updateMapInfo();
+  }
+
+  function applyMapTransform() {
+    if (!els.zoneMapTransform) return;
+
+    els.zoneMapTransform.style.transform =
+      `translate(${mapPanX}px, ${mapPanY}px) scale(${mapZoom})`;
+
+    renderMapMeasurement();
+  }
+
+  function fitZoneMap() {
+    if (!els.mapViewport) return;
+
+    const rect = els.mapViewport.getBoundingClientRect();
+    if (!(rect.width > 20 && rect.height > 20)) return;
+
+    mapFitZoom = Math.min(
+      rect.width / MAP_IMAGE_SIZE,
+      rect.height / MAP_IMAGE_SIZE
+    );
+
+    mapZoom = mapFitZoom;
+    mapPanX = (rect.width - MAP_IMAGE_SIZE * mapZoom) / 2;
+    mapPanY = (rect.height - MAP_IMAGE_SIZE * mapZoom) / 2;
+
+    applyMapTransform();
+  }
+
+  function zoomZoneMap(factor, clientX = null, clientY = null) {
+    if (!els.mapViewport) return;
+
+    const rect = els.mapViewport.getBoundingClientRect();
+    const anchorX = clientX == null ? rect.left + rect.width / 2 : clientX;
+    const anchorY = clientY == null ? rect.top + rect.height / 2 : clientY;
+
+    const localX = anchorX - rect.left;
+    const localY = anchorY - rect.top;
+
+    const imageX = (localX - mapPanX) / mapZoom;
+    const imageY = (localY - mapPanY) / mapZoom;
+
+    const minZoom = Math.max(.08, mapFitZoom * .75);
+    const maxZoom = 4.5;
+    const nextZoom = Math.min(maxZoom, Math.max(minZoom, mapZoom * factor));
+
+    mapPanX = localX - imageX * nextZoom;
+    mapPanY = localY - imageY * nextZoom;
+    mapZoom = nextZoom;
+
+    applyMapTransform();
+  }
+
+  function clientToMapPoint(clientX, clientY) {
+    const rect = els.mapViewport.getBoundingClientRect();
+
+    const x = (clientX - rect.left - mapPanX) / mapZoom;
+    const y = (clientY - rect.top - mapPanY) / mapZoom;
+
+    if (x < 0 || y < 0 || x > MAP_IMAGE_SIZE || y > MAP_IMAGE_SIZE) {
+      return null;
+    }
+
+    return {
+      x: Math.max(0, Math.min(MAP_IMAGE_SIZE, x)),
+      y: Math.max(0, Math.min(MAP_IMAGE_SIZE, y))
+    };
+  }
+
+  function addMapMeasurePoint(clientX, clientY) {
+    const point = clientToMapPoint(clientX, clientY);
+    if (!point) return;
+
+    mapMeasurePoints.push(point);
+    renderMapMeasurement();
+  }
+
+  function clearMapMeasurement() {
+    mapMeasurePoints = [];
+    renderMapMeasurement();
+  }
+
+  if (els.mapBtn) {
+    els.mapBtn.addEventListener('click', () => {
+      if (typeof els.mapDialog.showModal === 'function') {
+        els.mapDialog.showModal();
+      } else {
+        els.mapDialog.setAttribute('open', '');
+      }
+
+      window.requestAnimationFrame(() => {
+        fitZoneMap();
+        updateMapInfo();
+      });
+    });
+  }
+
+  if (els.closeMapBtn) {
+    els.closeMapBtn.addEventListener('click', () => {
+      if (typeof els.mapDialog.close === 'function') els.mapDialog.close();
+      else els.mapDialog.removeAttribute('open');
+    });
+  }
+
+  if (els.mapDialog) {
+    els.mapDialog.addEventListener('click', event => {
+      if (event.target === els.mapDialog) {
+        if (typeof els.mapDialog.close === 'function') els.mapDialog.close();
+        else els.mapDialog.removeAttribute('open');
+      }
+    });
+  }
+
+  if (els.mapMeasureBtn) {
+    els.mapMeasureBtn.addEventListener('click', () => {
+      mapMeasureMode = !mapMeasureMode;
+      updateMapInfo();
+    });
+  }
+
+  if (els.mapUndoBtn) {
+    els.mapUndoBtn.addEventListener('click', () => {
+      mapMeasurePoints.pop();
+      renderMapMeasurement();
+    });
+  }
+
+  if (els.mapClearBtn) {
+    els.mapClearBtn.addEventListener('click', clearMapMeasurement);
+  }
+
+  if (els.mapZoomInBtn) {
+    els.mapZoomInBtn.addEventListener('click', () => zoomZoneMap(1.35));
+  }
+
+  if (els.mapZoomOutBtn) {
+    els.mapZoomOutBtn.addEventListener('click', () => zoomZoneMap(1 / 1.35));
+  }
+
+  if (els.mapFitBtn) {
+    els.mapFitBtn.addEventListener('click', fitZoneMap);
+  }
+
+  if (els.mapViewport) {
+    els.mapViewport.addEventListener('wheel', event => {
+      event.preventDefault();
+      zoomZoneMap(event.deltaY < 0 ? 1.18 : 1 / 1.18, event.clientX, event.clientY);
+    }, { passive: false });
+
+    els.mapViewport.addEventListener('pointerdown', event => {
+      if (event.button !== undefined && event.button !== 0) return;
+
+      mapPointerState = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        lastX: event.clientX,
+        lastY: event.clientY,
+        panX: mapPanX,
+        panY: mapPanY,
+        moved: false
+      };
+
+      els.mapViewport.setPointerCapture?.(event.pointerId);
+    });
+
+    els.mapViewport.addEventListener('pointermove', event => {
+      if (!mapPointerState || mapPointerState.pointerId !== event.pointerId) return;
+
+      const dx = event.clientX - mapPointerState.startX;
+      const dy = event.clientY - mapPointerState.startY;
+
+      if (Math.hypot(dx, dy) > 6) {
+        mapPointerState.moved = true;
+      }
+
+      if (mapPointerState.moved) {
+        mapPanX = mapPointerState.panX + dx;
+        mapPanY = mapPointerState.panY + dy;
+        applyMapTransform();
+      }
+
+      mapPointerState.lastX = event.clientX;
+      mapPointerState.lastY = event.clientY;
+    });
+
+    els.mapViewport.addEventListener('pointerup', event => {
+      if (!mapPointerState || mapPointerState.pointerId !== event.pointerId) return;
+
+      const wasMoved = mapPointerState.moved;
+      mapPointerState = null;
+
+      if (!wasMoved && mapMeasureMode) {
+        addMapMeasurePoint(event.clientX, event.clientY);
+      }
+    });
+
+    els.mapViewport.addEventListener('pointercancel', () => {
+      mapPointerState = null;
+    });
+  }
+
+  if (els.mapKnownDistanceKm) {
+    els.mapKnownDistanceKm.addEventListener('input', () => {
+      updateMapInfo();
+    });
+  }
+
+  if (els.mapApplyCalibrationBtn) {
+    els.mapApplyCalibrationBtn.addEventListener('click', () => {
+      const knownKm = Number(els.mapKnownDistanceKm?.value);
+      const pixelLength = mapRoutePixelLength();
+
+      if (!(knownKm > 0) || pixelLength < 10) {
+        if (els.mapCalibrationMessage) {
+          els.mapCalibrationMessage.textContent =
+            'Сначала постройте маршрут минимум из двух точек и укажите известное расстояние.';
+        }
+        return;
+      }
+
+      const calculated = knownKm * 1000 / pixelLength;
+
+      if (!(calculated > 0.1 && calculated < 50)) {
+        if (els.mapCalibrationMessage) {
+          els.mapCalibrationMessage.textContent =
+            'Получился необычный масштаб. Проверьте маршрут и известное расстояние.';
+        }
+        return;
+      }
+
+      mapMetersPerPixel = calculated;
+      localStorage.setItem(MAP_SCALE_STORAGE_KEY, String(mapMetersPerPixel));
+      renderMapMeasurement();
+
+      if (els.mapCalibrationMessage) {
+        els.mapCalibrationMessage.textContent =
+          `Калибровка сохранена по маршруту ${formatMapNumber(knownKm, 2)} км.`;
+      }
+    });
+  }
+
+  if (els.mapResetCalibrationBtn) {
+    els.mapResetCalibrationBtn.addEventListener('click', () => {
+      mapMetersPerPixel = DEFAULT_MAP_METERS_PER_PIXEL;
+      localStorage.setItem(MAP_SCALE_STORAGE_KEY, String(mapMetersPerPixel));
+      renderMapMeasurement();
+
+      if (els.mapCalibrationMessage) {
+        els.mapCalibrationMessage.textContent =
+          'Калибровка сброшена к исходной.';
+      }
+    });
+  }
+
   const DAYLIGHT_EVENT_LABELS = {
     dawn_start: 'Начался рассвет',
     daylight: 'Стало светло',
@@ -1403,7 +1779,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v50.csv';
+    link.download = 'zone-clock-test-v53.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
