@@ -1779,6 +1779,44 @@ mapMeasureHint: $('mapMeasureHint'),
     return `~${minutes} мин`;
   }
 
+
+  function formatJourneyZoneTime(seconds) {
+    const totalMinutes = Math.max(
+      1,
+      Math.round(seconds / 60)
+    );
+
+    const days = Math.floor(
+      totalMinutes / (24 * 60)
+    );
+
+    const restMinutes =
+      totalMinutes % (24 * 60);
+
+    const hours = Math.floor(
+      restMinutes / 60
+    );
+
+    const minutes =
+      restMinutes % 60;
+
+    const parts = [];
+
+    if (days > 0) {
+      parts.push(`${days} д`);
+    }
+
+    if (hours > 0 || days > 0) {
+      parts.push(`${hours} ч`);
+    }
+
+    if (minutes > 0 || !parts.length) {
+      parts.push(`${minutes} мин`);
+    }
+
+    return `~${parts.join(' ')}`;
+  }
+
   function routeTouchesNight(startAbsolute, endAbsolute) {
     if (!(endAbsolute >= startAbsolute)) return false;
 
@@ -1865,8 +1903,8 @@ mapMeasureHint: $('mapMeasureHint'),
 
     if (els.mapJourneyHudTime) {
       els.mapJourneyHudTime.textContent =
-        formatJourneyRealTime(
-          mapJourneyPlan.realSeconds
+        formatJourneyZoneTime(
+          mapJourneyPlan.zoneAdvanceSeconds
         );
     }
   }
@@ -1895,7 +1933,9 @@ mapMeasureHint: $('mapMeasureHint'),
 
     if (els.mapJourneyTime) {
       els.mapJourneyTime.textContent =
-        formatJourneyRealTime(plan.realSeconds);
+        formatJourneyZoneTime(
+          plan.zoneAdvanceSeconds
+        );
     }
 
     if (els.mapJourneyEmission) {
@@ -4364,7 +4404,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v83.csv';
+    link.download = 'zone-clock-test-v85.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -4495,32 +4535,39 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function buildChronometrySeries() {
-    const series = [
-      {
-        realMinutes: 0,
-        zoneHours: 0,
-        realHours: 0
-      }
-    ];
+    return PATCH20_RATE_TABLE.map(
+      (rate, index) => ({
+        index,
+        zoneMinutes: index * 15,
+        zoneTime:
+          `${String(
+            Math.floor(index / 4)
+          ).padStart(2, '0')}:` +
+          `${String(
+            (index % 4) * 15
+          ).padStart(2, '0')}`,
+        rate,
+        realSecondsPerInterval:
+          RATE_SLOT_SECONDS / rate
+      })
+    );
+  }
 
-    let realSeconds = 0;
-    let zoneSeconds = 0;
+  function chronometryEffectiveAverage() {
+    const totalRealSeconds =
+      PATCH20_RATE_TABLE.reduce(
+        (sum, rate) =>
+          sum + RATE_SLOT_SECONDS / rate,
+        0
+      );
 
-    PATCH20_RATE_TABLE.forEach(rate => {
-      const zoneDelta = RATE_SLOT_SECONDS;
-      const realDelta = zoneDelta / rate;
-
-      zoneSeconds += zoneDelta;
-      realSeconds += realDelta;
-
-      series.push({
-        realMinutes: realSeconds / 60,
-        zoneHours: zoneSeconds / 3600,
-        realHours: realSeconds / 3600
-      });
-    });
-
-    return series;
+    return {
+      totalRealSeconds,
+      totalRealMinutes:
+        totalRealSeconds / 60,
+      effectiveRate:
+        DAY_SECONDS / totalRealSeconds
+    };
   }
 
   function drawChronometryChart() {
@@ -4530,29 +4577,51 @@ mapMeasureHint: $('mapMeasureHint'),
     svg.innerHTML = '';
 
     const series = buildChronometrySeries();
+    const average =
+      chronometryEffectiveAverage();
 
     const ns = 'http://www.w3.org/2000/svg';
     const width = 760;
     const height = 400;
     const left = 68;
-    const right = 28;
-    const top = 38;
-    const bottom = 62;
+    const right = 24;
+    const top = 34;
+    const bottom = 58;
     const plotW = width - left - right;
     const plotH = height - top - bottom;
 
-    const totalRealMinutes =
-      series[series.length - 1].realMinutes;
+    const minRate =
+      Math.min(
+        ...series.map(point => point.rate)
+      );
 
-    const maxX =
-      Math.ceil(totalRealMinutes / 15) * 15;
-    const maxY = 24;
+    const maxRate =
+      Math.max(
+        ...series.map(point => point.rate)
+      );
 
-    const xFor = minutes =>
-      left + plotW * (minutes / maxX);
+    const yMin =
+      Math.max(
+        0,
+        Math.floor(minRate - 2)
+      );
 
-    const yFor = hours =>
-      top + plotH * (1 - hours / maxY);
+    const yMax =
+      Math.ceil(maxRate + 2);
+
+    const xFor = zoneMinutes =>
+      left +
+      plotW *
+        (zoneMinutes / (24 * 60));
+
+    const yFor = rate =>
+      top +
+      plotH *
+        (
+          1 -
+          (rate - yMin) /
+            (yMax - yMin)
+        );
 
     const make = (tag, attrs = {}) => {
       const node =
@@ -4585,62 +4654,69 @@ mapMeasureHint: $('mapMeasureHint'),
       return node;
     };
 
-    [0, 4, 8, 12, 16, 20, 24]
-      .forEach(hours => {
-        const y = yFor(hours);
-
-        svg.appendChild(
-          make('line', {
-            x1: left,
-            y1: y,
-            x2: left + plotW,
-            y2: y,
-            class: 'chronometry-grid'
-          })
-        );
-
-        addText(
-          left - 10,
-          y + 5,
-          `${hours} ч`,
-          'chronometry-axis-label',
-          'end'
-        );
-      });
-
-    const xStep = maxX <= 105 ? 15 : 30;
-
     for (
-      let minutes = 0;
-      minutes <= maxX;
-      minutes += xStep
+      let rate = 10;
+      rate <= 24;
+      rate += 2
     ) {
-      const x = xFor(minutes);
+      if (
+        rate < yMin ||
+        rate > yMax
+      ) {
+        continue;
+      }
+
+      const y = yFor(rate);
 
       svg.appendChild(
         make('line', {
-          x1: x,
-          y1: top,
-          x2: x,
-          y2: top + plotH,
-          class:
-            'chronometry-grid chronometry-grid-vertical'
+          x1: left,
+          y1: y,
+          x2: left + plotW,
+          y2: y,
+          class: 'chronometry-grid'
         })
       );
 
       addText(
-        x,
-        height - 28,
-        String(minutes),
+        left - 10,
+        y + 5,
+        `×${rate}`,
         'chronometry-axis-label',
-        'middle'
+        'end'
       );
     }
 
+    [0, 4, 8, 12, 16, 20, 24]
+      .forEach(hour => {
+        const x =
+          left +
+          plotW * (hour / 24);
+
+        svg.appendChild(
+          make('line', {
+            x1: x,
+            y1: top,
+            x2: x,
+            y2: top + plotH,
+            class:
+              'chronometry-grid chronometry-grid-vertical'
+          })
+        );
+
+        addText(
+          x,
+          height - 26,
+          `${String(hour).padStart(2, '0')}:00`,
+          'chronometry-axis-label',
+          'middle'
+        );
+      });
+
     addText(
       left + plotW / 2,
-      height - 6,
-      'реально прошло, минут',
+      height - 4,
+      'время Зоны',
       'chronometry-axis-title',
       'middle'
     );
@@ -4648,7 +4724,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const yTitle = addText(
       18,
       top + plotH / 2,
-      'накопленное время, часов',
+      'коэффициент скорости',
       'chronometry-axis-title',
       'middle'
     );
@@ -4658,40 +4734,37 @@ mapMeasureHint: $('mapMeasureHint'),
       `rotate(-90 18 ${top + plotH / 2})`
     );
 
-    const zonePoints = series.map(
-      point => [
-        xFor(point.realMinutes),
-        yFor(point.zoneHours)
-      ]
-    );
-
-    const realPoints = series.map(
-      point => [
-        xFor(point.realMinutes),
-        yFor(point.realHours)
-      ]
-    );
-
-    const gapPolygon = [
-      ...zonePoints,
-      ...realPoints.slice().reverse()
-    ]
-      .map(
-        ([x, y]) =>
-          `${x.toFixed(1)},${y.toFixed(1)}`
-      )
-      .join(' ');
+    const avgY =
+      yFor(average.effectiveRate);
 
     svg.appendChild(
-      make('polygon', {
-        points: gapPolygon,
-        class: 'chronometry-gap-series'
+      make('line', {
+        x1: left,
+        y1: avgY,
+        x2: left + plotW,
+        y2: avgY,
+        class: 'chronometry-real-series'
       })
     );
 
+    addText(
+      left + 8,
+      avgY - 8,
+      `среднее ×${average.effectiveRate.toFixed(2)}`,
+      'chronometry-average-label'
+    );
+
+    const measuredPoints =
+      series.map(point => [
+        xFor(
+          point.zoneMinutes + 7.5
+        ),
+        yFor(point.rate)
+      ]);
+
     svg.appendChild(
       make('polyline', {
-        points: zonePoints
+        points: measuredPoints
           .map(
             ([x, y]) =>
               `${x.toFixed(1)},${y.toFixed(1)}`
@@ -4701,72 +4774,135 @@ mapMeasureHint: $('mapMeasureHint'),
       })
     );
 
-    svg.appendChild(
-      make('polyline', {
-        points: realPoints
-          .map(
-            ([x, y]) =>
-              `${x.toFixed(1)},${y.toFixed(1)}`
-          )
-          .join(' '),
-        class: 'chronometry-real-series'
-      })
+    measuredPoints.forEach(
+      ([x, y], index) => {
+        const point = series[index];
+
+        const circle = make('circle', {
+          cx: x,
+          cy: y,
+          r: 2.8,
+          class:
+            'chronometry-measurement-dot'
+        });
+
+        const title =
+          document.createElementNS(
+            ns,
+            'title'
+          );
+
+        const endMinutes =
+          point.zoneMinutes + 15;
+
+        const startHour =
+          Math.floor(
+            point.zoneMinutes / 60
+          );
+
+        const startMinute =
+          point.zoneMinutes % 60;
+
+        const endHour =
+          Math.floor(
+            endMinutes / 60
+          ) % 24;
+
+        const endMinute =
+          endMinutes % 60;
+
+        title.textContent =
+          `${String(startHour).padStart(2, '0')}:` +
+          `${String(startMinute).padStart(2, '0')}–` +
+          `${String(endHour).padStart(2, '0')}:` +
+          `${String(endMinute).padStart(2, '0')} · ` +
+          `×${point.rate.toFixed(2)} · ` +
+          `${point.realSecondsPerInterval.toFixed(1)} реальных сек на 15 минут Зоны`;
+
+        circle.appendChild(title);
+        svg.appendChild(circle);
+      }
     );
 
-    const end = series[series.length - 1];
-    const endX = xFor(end.realMinutes);
-    const zoneY = yFor(end.zoneHours);
-    const realY = yFor(end.realHours);
+    const minPoint =
+      series.reduce(
+        (best, point) =>
+          point.rate < best.rate
+            ? point
+            : best,
+        series[0]
+      );
 
-    svg.appendChild(
-      make('circle', {
-        cx: endX,
-        cy: zoneY,
-        r: 5.5,
-        class: 'chronometry-zone-dot'
-      })
+    const maxPoint =
+      series.reduce(
+        (best, point) =>
+          point.rate > best.rate
+            ? point
+            : best,
+        series[0]
+      );
+
+    const markExtreme = (
+      point,
+      label,
+      className,
+      verticalOffset
+    ) => {
+      const x =
+        xFor(
+          point.zoneMinutes + 7.5
+        );
+
+      const y =
+        yFor(point.rate);
+
+      svg.appendChild(
+        make('circle', {
+          cx: x,
+          cy: y,
+          r: 5.2,
+          class: className
+        })
+      );
+
+      addText(
+        x,
+        y + verticalOffset,
+        `${label} ×${point.rate.toFixed(2)}`,
+        className + '-label',
+        'middle'
+      );
+    };
+
+    markExtreme(
+      minPoint,
+      'МИН',
+      'chronometry-min-dot',
+      22
     );
 
-    svg.appendChild(
-      make('circle', {
-        cx: endX,
-        cy: realY,
-        r: 4.5,
-        class: 'chronometry-real-dot'
-      })
-    );
-
-    addText(
-      endX - 10,
-      zoneY - 13,
-      '24 ч Зоны',
-      'chronometry-zone-end-label',
-      'end'
-    );
-
-    addText(
-      endX - 10,
-      realY - 12,
-      `${end.realHours.toFixed(1)} ч реального`,
-      'chronometry-real-end-label',
-      'end'
+    markExtreme(
+      maxPoint,
+      'МАКС',
+      'chronometry-max-dot',
+      -14
     );
 
     if (els.chronometrySummary) {
-      const roundedMinutes =
-        Math.round(end.realMinutes);
+      const minReal =
+        RATE_SLOT_SECONDS /
+        minPoint.rate;
 
-      const hours =
-        Math.floor(roundedMinutes / 60);
+      const maxReal =
+        RATE_SLOT_SECONDS /
+        maxPoint.rate;
 
-      const minutes =
-        roundedMinutes % 60;
-
-      const gap =
-        24 - end.realHours;
+      const variation =
+        maxPoint.rate /
+        minPoint.rate;
 
       els.chronometrySummary.textContent =
-        `24 часа Зоны по калибровке Patch 2.0 проходят примерно за ${hours} ч ${minutes} мин реального времени. К завершению цикла накопленное расхождение составляет около ${gap.toFixed(1)} часа.`;
+        `96 измерений по 15 минут Зоны. Диапазон коэффициента: ×${minPoint.rate.toFixed(2)}–×${maxPoint.rate.toFixed(2)} (${variation.toFixed(2)} раза между крайними режимами). Полные сутки Зоны: ${average.totalRealMinutes.toFixed(1)} реальных мин. На самом медленном интервале 15 минут Зоны занимают ${minReal.toFixed(1)} сек, на самом быстром — ${maxReal.toFixed(1)} сек.`;
     }
   }
 

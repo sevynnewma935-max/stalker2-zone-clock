@@ -3474,3 +3474,76 @@ button.zone-button-press:not(:disabled) {
   text-anchor: middle;
   font-size: 11px;
 }
+
+
+/* PWA v85 — реальный график 96 интервальных измерений */
+.chronometry-zone-series {
+  fill: none;
+  stroke: #c6d25b;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chronometry-real-series {
+  fill: none;
+  stroke: #98a29b;
+  stroke-width: 2;
+  stroke-dasharray: 9 7;
+}
+
+.chronometry-measurement-dot {
+  fill: #dbe871;
+  stroke: #152013;
+  stroke-width: 1.1;
+}
+
+.chronometry-average-label {
+  fill: #bdc6c0;
+  font-size: 12px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: #071009;
+  stroke-width: 3px;
+}
+
+.chronometry-min-dot {
+  fill: #78d8ff;
+  stroke: #061014;
+  stroke-width: 2;
+}
+
+.chronometry-max-dot {
+  fill: #f2d36d;
+  stroke: #151106;
+  stroke-width: 2;
+}
+
+.chronometry-min-dot-label,
+.chronometry-max-dot-label {
+  font-size: 12px;
+  font-weight: 900;
+  paint-order: stroke;
+  stroke: #071009;
+  stroke-width: 4px;
+}
+
+.chronometry-min-dot-label {
+  fill: #a6e7ff;
+}
+
+.chronometry-max-dot-label {
+  fill: #ffe591;
+}
+
+.chronometry-gap-fill {
+  height: 7px !important;
+  border: 0;
+  background:
+    radial-gradient(
+      circle at center,
+      #dbe871 0 2px,
+      transparent 2.4px
+    );
+  background-size: 7px 7px;
+}
