@@ -1252,12 +1252,11 @@ mapMeasureHint: $('mapMeasureHint'),
 
 
   function ensureHdZoneMap() {
-    // В v57 карта собирается из тайлов исходного PNG.
-    // Дополнительная HD-подмена больше не нужна.
+    // В v58 каждый тайл уже содержит 4-кратный HD-растр.
   }
 
   function maybeLoadHdZoneMap() {
-    // Пусто: карта уже показывается тайлами исходного качества.
+    // Дополнительная подмена изображения не требуется.
   }
 
 
@@ -1303,7 +1302,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const imageY = (localY - mapPanY) / mapZoom;
 
     const minZoom = Math.max(.08, mapFitZoom * .75);
-    const maxZoom = 8;
+    const maxZoom = 4;
     const nextZoom = Math.min(maxZoom, Math.max(minZoom, mapZoom * factor));
 
     mapPanX = localX - imageX * nextZoom;
@@ -1379,7 +1378,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const localY = midpoint.y - rect.top;
 
     const minZoom = Math.max(.08, mapFitZoom * .75);
-    const maxZoom = 8;
+    const maxZoom = 4;
     const scaleFactor = distance / mapPinchState.startDistance;
     const nextZoom = Math.min(
       maxZoom,
@@ -1918,7 +1917,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v57.csv';
+    link.download = 'zone-clock-test-v58.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();

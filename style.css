@@ -1626,7 +1626,6 @@ button.zone-button-press:not(:disabled) {
   will-change: transform;
 }
 
-.zone-map-transform img,
 .map-overlay {
   position: absolute;
   inset: 0;
@@ -1634,10 +1633,6 @@ button.zone-button-press:not(:disabled) {
   height: 2048px;
 }
 
-.zone-map-transform img {
-  display: block;
-  pointer-events: none;
-}
 
 .map-overlay {
   overflow: visible;
@@ -1863,3 +1858,39 @@ button.zone-button-press:not(:disabled) {
   backface-visibility: visible;
   transform: none;
 }
+
+
+/* PWA v58 — исправленная HD-тайловая карта */
+.zone-map-transform .zone-map-tile-layer {
+  position: absolute;
+  inset: 0;
+  width: 2048px;
+  height: 2048px;
+  pointer-events: none;
+}
+
+.zone-map-transform img.map-tile {
+  position: absolute !important;
+  inset: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 512px !important;
+  height: 512px !important;
+  max-width: none !important;
+  max-height: none !important;
+  display: block !important;
+  object-fit: fill !important;
+  image-rendering: auto;
+  pointer-events: none;
+  user-select: none;
+  backface-visibility: visible;
+  transform: none !important;
+}
+
+/* Не даём браузеру добавлять визуальные швы между соседними тайлами. */
+.zone-map-transform img.map-tile {
+  outline: 1px solid transparent;
+}
+
+/* HD-тайлы имеют 4-кратный запас разрешения.
+   Выше этого увеличения новых реальных деталей всё равно нет. */
