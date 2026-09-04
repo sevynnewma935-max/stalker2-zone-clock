@@ -1824,3 +1824,42 @@ button.zone-button-press:not(:disabled) {
 .zone-map-transform img.map-hd-active {
   image-rendering: auto;
 }
+
+
+/* PWA v57 — тайловая карта из исходного PNG */
+.zone-map-transform {
+  will-change: auto;
+  transition: none !important;
+}
+
+.zone-map-tile-layer,
+.map-overlay {
+  position: absolute;
+  inset: 0;
+  width: 2048px;
+  height: 2048px;
+}
+
+.zone-map-tile-layer {
+  pointer-events: none;
+}
+
+.map-tile {
+  position: absolute;
+  width: 512px;
+  height: 512px;
+  display: block;
+  object-fit: cover;
+  image-rendering: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.zone-map-image-hidden {
+  display: none !important;
+}
+
+.zone-map-transform img {
+  backface-visibility: visible;
+  transform: none;
+}

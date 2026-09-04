@@ -1162,7 +1162,7 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapLastTapAt = 0;
   let mapLastTapX = 0;
   let mapLastTapY = 0;
-  let mapHdLoaded = false;
+  let mapHdLoaded = true;
 
   function formatMapNumber(value, digits = 2) {
     return Number(value).toLocaleString('ru-RU', {
@@ -1252,41 +1252,14 @@ mapMeasureHint: $('mapMeasureHint'),
 
 
   function ensureHdZoneMap() {
-    if (
-      mapHdLoaded ||
-      !els.zoneMapImage ||
-      !els.zoneMapImage.dataset.hdSrc
-    ) return;
-
-    mapHdLoaded = true;
-
-    const hdSrc = els.zoneMapImage.dataset.hdSrc;
-    const preload = new Image();
-
-    preload.onload = () => {
-      // Swapping sources does not change logical map geometry:
-      // CSS size remains 2048×2048, overlay coordinates remain unchanged.
-      els.zoneMapImage.src = hdSrc;
-      els.zoneMapImage.classList.add('map-hd-active');
-    };
-
-    preload.onerror = () => {
-      mapHdLoaded = false;
-    };
-
-    preload.src = hdSrc;
+    // В v57 карта собирается из тайлов исходного PNG.
+    // Дополнительная HD-подмена больше не нужна.
   }
 
   function maybeLoadHdZoneMap() {
-    if (!(mapFitZoom > 0)) return;
-
-    const relativeZoom = mapZoom / mapFitZoom;
-
-    // Start HD loading once the user zooms beyond the overview.
-    if (relativeZoom >= 1.35) {
-      ensureHdZoneMap();
-    }
+    // Пусто: карта уже показывается тайлами исходного качества.
   }
+
 
   function applyMapTransform() {
     if (!els.zoneMapTransform) return;
@@ -1445,10 +1418,8 @@ mapMeasureHint: $('mapMeasureHint'),
         fitZoneMap();
         updateMapInfo();
 
-        // Prepare HD map shortly after opening so zoom feels instant.
-        window.setTimeout(() => {
-          if (els.mapDialog && els.mapDialog.open) ensureHdZoneMap();
-        }, 1200);
+        // В v57 карта уже состоит из тайлов исходного PNG,
+        // поэтому дополнительная подгрузка HD-слоя не требуется.
       });
     });
   }
@@ -1947,7 +1918,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v56.csv';
+    link.download = 'zone-clock-test-v57.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
