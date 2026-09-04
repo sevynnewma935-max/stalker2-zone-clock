@@ -1227,3 +1227,9 @@ body:has(.test-dialog[open]) {
     font-size: .72rem;
   }
 }
+
+
+/* PWA v43 — lock-screen notification note */
+.notification-note {
+  max-width: 48rem;
+}

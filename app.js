@@ -780,18 +780,29 @@
     if (
       notificationsEnabled() &&
       'Notification' in window &&
-      Notification.permission === 'granted'
+      Notification.permission === 'granted' &&
+      'serviceWorker' in navigator
     ) {
-      try {
-        new Notification(`ZONE CLOCK — ${timeText}`, {
-          body: message,
-          icon: './icons/icon-192.png',
-          badge: './icons/icon-192.png',
-          tag: `zone-hour-${hourKey}`,
-          renotify: true,
-          silent: false
-        });
-      } catch (_) {}
+      navigator.serviceWorker.ready
+        .then(registration => registration.showNotification(
+          `ZONE CLOCK — ${timeText}`,
+          {
+            body: message,
+            icon: './icons/icon-192.png',
+            badge: './icons/icon-192.png',
+            tag: `zone-hour-${hourKey}`,
+            renotify: true,
+            requireInteraction: true,
+            silent: false,
+            timestamp: Date.now(),
+            data: {
+              url: './',
+              zoneTime: timeText,
+              hourKey
+            }
+          }
+        ))
+        .catch(() => {});
     }
   }
 
@@ -975,7 +986,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v41.csv';
+    link.download = 'zone-clock-test-v43.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
