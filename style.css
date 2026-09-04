@@ -1207,3 +1207,23 @@ body:has(.test-dialog[open]) {
     width: 100%;
   }
 }
+
+
+/* PWA v42 — S.T.A.L.K.E.R. 2 по ширине как ZONE CLOCK */
+.brand-kicker-wide {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  font-size: clamp(.72rem, 2.3vw, .92rem);
+  letter-spacing: .34em;
+  transform-origin: left center;
+  white-space: nowrap;
+}
+
+/* На узких экранах чуть уменьшаем трекинг, чтобы не было обрезания */
+@media (max-width: 430px) {
+  .brand-kicker-wide {
+    letter-spacing: .27em;
+    font-size: .72rem;
+  }
+}
