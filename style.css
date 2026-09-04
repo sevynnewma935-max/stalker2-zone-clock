@@ -2004,3 +2004,71 @@ button.zone-button-press:not(:disabled) {
   width: 2048px;
   height: 2048px;
 }
+
+
+/* PWA v62 — ручное обновление приложения */
+.update-app-btn {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 12px;
+  justify-content: center;
+}
+
+.update-app-btn:disabled {
+  opacity: .64;
+  cursor: progress;
+}
+
+.update-app-status {
+  min-height: 1.2em;
+  margin-top: 8px;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .66rem;
+  line-height: 1.45;
+}
+
+
+/* PWA v63 — одна цельная карта 8192×8192 без тайлов */
+.zone-map-tile-layer,
+.map-tile,
+.zone-map-full-image,
+.zone-map-image-hidden {
+  display: none !important;
+}
+
+.zone-map-transform {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2048px;
+  height: 2048px;
+  transform-origin: 0 0;
+  transition: none !important;
+  will-change: transform;
+}
+
+.zone-map-transform img.zone-map-8192-image {
+  position: absolute !important;
+  inset: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 2048px !important;
+  height: 2048px !important;
+  max-width: none !important;
+  max-height: none !important;
+  display: block !important;
+  object-fit: fill !important;
+  image-rendering: auto !important;
+  backface-visibility: visible !important;
+  transform: none !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.zone-map-transform .map-overlay {
+  position: absolute;
+  inset: 0;
+  width: 2048px;
+  height: 2048px;
+}

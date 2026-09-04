@@ -53,6 +53,7 @@
     themeColorMeta: $('themeColorMeta'),
     settingsBtn: $('settingsBtn'), closeSettingsBtn: $('closeSettingsBtn'),
     settingsDialog: $('settingsDialog'),
+    updateAppBtn: $('updateAppBtn'), updateAppStatus: $('updateAppStatus'),
     enableNotificationsBtn: $('enableNotificationsBtn'),
     notificationStatus: $('notificationStatus'),
     notificationIntervalSelect: $('notificationIntervalSelect'),
@@ -1252,12 +1253,13 @@ mapMeasureHint: $('mapMeasureHint'),
 
 
   function ensureHdZoneMap() {
-    // v61: карта собирается из 64 тайлов исходного файла 16384×16384.
+    // v63: используется одна цельная карта 8192×8192.
   }
 
   function maybeLoadHdZoneMap() {
-    // Дополнительная подмена качества не требуется.
+    // Дополнительные HD-слои и тайлы не используются.
   }
+
 
 
 
@@ -1919,7 +1921,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v61.csv';
+    link.download = 'zone-clock-test-v63.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -1998,6 +2000,116 @@ mapMeasureHint: $('mapMeasureHint'),
 
   restoreNotificationSchedule();
   updateNotificationSettingsUi();
+
+
+  let appUpdateReloading = false;
+
+  function setUpdateAppStatus(text) {
+    if (els.updateAppStatus) {
+      els.updateAppStatus.textContent = text;
+    }
+  }
+
+  function finishAppUpdateReload() {
+    if (appUpdateReloading) return;
+    appUpdateReloading = true;
+
+    setUpdateAppStatus('Обновление установлено. Перезапускаю…');
+
+    window.setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('_zc_update', Date.now().toString());
+      window.location.replace(url.toString());
+    }, 450);
+  }
+
+  function watchUpdateWorker(worker) {
+    if (!worker) return;
+
+    const updateStatusFromWorker = () => {
+      if (worker.state === 'installing') {
+        setUpdateAppStatus('Скачиваю обновление…');
+      } else if (worker.state === 'installed') {
+        setUpdateAppStatus('Обновление загружено. Активирую…');
+        worker.postMessage({ type: 'SKIP_WAITING' });
+      } else if (worker.state === 'activating') {
+        setUpdateAppStatus('Активирую новую версию…');
+      } else if (worker.state === 'activated') {
+        finishAppUpdateReload();
+      } else if (worker.state === 'redundant') {
+        setUpdateAppStatus('Не удалось применить обновление.');
+      }
+    };
+
+    updateStatusFromWorker();
+    worker.addEventListener('statechange', updateStatusFromWorker);
+  }
+
+  async function updateApplicationNow() {
+    if (!els.updateAppBtn) return;
+
+    els.updateAppBtn.disabled = true;
+    setUpdateAppStatus('Проверяю обновления…');
+
+    try {
+      if (!('serviceWorker' in navigator)) {
+        setUpdateAppStatus('Service worker не поддерживается. Перезагружаю страницу…');
+        window.setTimeout(() => window.location.reload(), 500);
+        return;
+      }
+
+      let registration = await navigator.serviceWorker.getRegistration();
+
+      if (!registration) {
+        registration = await navigator.serviceWorker.register('./service-worker.js');
+      }
+
+      let updateFound = false;
+
+      const onUpdateFound = () => {
+        updateFound = true;
+        setUpdateAppStatus('Найдена новая версия…');
+        watchUpdateWorker(registration.installing);
+      };
+
+      registration.addEventListener('updatefound', onUpdateFound, { once: true });
+
+      navigator.serviceWorker.addEventListener(
+        'controllerchange',
+        finishAppUpdateReload,
+        { once: true }
+      );
+
+      if (registration.waiting) {
+        updateFound = true;
+        setUpdateAppStatus('Обновление уже загружено. Активирую…');
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      } else {
+        await registration.update();
+
+        if (registration.installing) {
+          updateFound = true;
+          watchUpdateWorker(registration.installing);
+        } else if (registration.waiting) {
+          updateFound = true;
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      }
+
+      if (!updateFound && !appUpdateReloading) {
+        setUpdateAppStatus('Уже установлена последняя версия.');
+        els.updateAppBtn.disabled = false;
+      }
+    } catch (error) {
+      console.error('Zone Clock update error:', error);
+      setUpdateAppStatus('Не удалось проверить обновление. Проверьте интернет.');
+      els.updateAppBtn.disabled = false;
+    }
+  }
+
+  if (els.updateAppBtn) {
+    els.updateAppBtn.addEventListener('click', updateApplicationNow);
+  }
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

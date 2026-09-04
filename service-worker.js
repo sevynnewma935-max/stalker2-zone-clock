@@ -1,132 +1,83 @@
-const CACHE = 'stalker2-zone-clock-v61';
-const ASSETS = [
+const APP_CACHE = 'stalker2-zone-clock-v63';
+const MAP_CACHE = 'stalker2-zone-map-8192-v1';
+
+const APP_ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
-  './icons/icon-512.png',
-  './assets/map-tiles-16384/tile-0-0.jpg',
-  './assets/map-tiles-16384/tile-0-1.jpg',
-  './assets/map-tiles-16384/tile-0-2.jpg',
-  './assets/map-tiles-16384/tile-0-3.jpg',
-  './assets/map-tiles-16384/tile-0-4.jpg',
-  './assets/map-tiles-16384/tile-0-5.jpg',
-  './assets/map-tiles-16384/tile-0-6.jpg',
-  './assets/map-tiles-16384/tile-0-7.jpg',
-  './assets/map-tiles-16384/tile-1-0.jpg',
-  './assets/map-tiles-16384/tile-1-1.jpg',
-  './assets/map-tiles-16384/tile-1-2.jpg',
-  './assets/map-tiles-16384/tile-1-3.jpg',
-  './assets/map-tiles-16384/tile-1-4.jpg',
-  './assets/map-tiles-16384/tile-1-5.jpg',
-  './assets/map-tiles-16384/tile-1-6.jpg',
-  './assets/map-tiles-16384/tile-1-7.jpg',
-  './assets/map-tiles-16384/tile-2-0.jpg',
-  './assets/map-tiles-16384/tile-2-1.jpg',
-  './assets/map-tiles-16384/tile-2-2.jpg',
-  './assets/map-tiles-16384/tile-2-3.jpg',
-  './assets/map-tiles-16384/tile-2-4.jpg',
-  './assets/map-tiles-16384/tile-2-5.jpg',
-  './assets/map-tiles-16384/tile-2-6.jpg',
-  './assets/map-tiles-16384/tile-2-7.jpg',
-  './assets/map-tiles-16384/tile-3-0.jpg',
-  './assets/map-tiles-16384/tile-3-1.jpg',
-  './assets/map-tiles-16384/tile-3-2.jpg',
-  './assets/map-tiles-16384/tile-3-3.jpg',
-  './assets/map-tiles-16384/tile-3-4.jpg',
-  './assets/map-tiles-16384/tile-3-5.jpg',
-  './assets/map-tiles-16384/tile-3-6.jpg',
-  './assets/map-tiles-16384/tile-3-7.jpg',
-  './assets/map-tiles-16384/tile-4-0.jpg',
-  './assets/map-tiles-16384/tile-4-1.jpg',
-  './assets/map-tiles-16384/tile-4-2.jpg',
-  './assets/map-tiles-16384/tile-4-3.jpg',
-  './assets/map-tiles-16384/tile-4-4.jpg',
-  './assets/map-tiles-16384/tile-4-5.jpg',
-  './assets/map-tiles-16384/tile-4-6.jpg',
-  './assets/map-tiles-16384/tile-4-7.jpg',
-  './assets/map-tiles-16384/tile-5-0.jpg',
-  './assets/map-tiles-16384/tile-5-1.jpg',
-  './assets/map-tiles-16384/tile-5-2.jpg',
-  './assets/map-tiles-16384/tile-5-3.jpg',
-  './assets/map-tiles-16384/tile-5-4.jpg',
-  './assets/map-tiles-16384/tile-5-5.jpg',
-  './assets/map-tiles-16384/tile-5-6.jpg',
-  './assets/map-tiles-16384/tile-5-7.jpg',
-  './assets/map-tiles-16384/tile-6-0.jpg',
-  './assets/map-tiles-16384/tile-6-1.jpg',
-  './assets/map-tiles-16384/tile-6-2.jpg',
-  './assets/map-tiles-16384/tile-6-3.jpg',
-  './assets/map-tiles-16384/tile-6-4.jpg',
-  './assets/map-tiles-16384/tile-6-5.jpg',
-  './assets/map-tiles-16384/tile-6-6.jpg',
-  './assets/map-tiles-16384/tile-6-7.jpg',
-  './assets/map-tiles-16384/tile-7-0.jpg',
-  './assets/map-tiles-16384/tile-7-1.jpg',
-  './assets/map-tiles-16384/tile-7-2.jpg',
-  './assets/map-tiles-16384/tile-7-3.jpg',
-  './assets/map-tiles-16384/tile-7-4.jpg',
-  './assets/map-tiles-16384/tile-7-5.jpg',
-  './assets/map-tiles-16384/tile-7-6.jpg',
-  './assets/map-tiles-16384/tile-7-7.jpg',
+  './icons/icon-512.png'
+];
+
+const MAP_ASSETS = [
+  './assets/zone-map-8192.jpg'
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
+  event.waitUntil(
+    Promise.all([
+      caches.open(APP_CACHE).then(cache => cache.addAll(APP_ASSETS)),
+      caches.open(MAP_CACHE).then(cache => cache.addAll(MAP_ASSETS))
+    ])
+  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))
-    )
+    caches.keys().then(keys => Promise.all(
+      keys
+        .filter(key =>
+          (key.startsWith('stalker2-zone-clock-') && key !== APP_CACHE) ||
+          (key.startsWith('stalker2-zone-map-') && key !== MAP_CACHE)
+        )
+        .map(key => caches.delete(key))
+    )).then(() => self.clients.claim())
   );
-  self.clients.claim();
+});
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  const isMap = url.pathname.endsWith('/assets/zone-map-8192.jpg');
+  const cacheName = isMap ? MAP_CACHE : APP_CACHE;
+
   event.respondWith(
-    caches.match(event.request).then(cached => {
+    caches.open(cacheName).then(async cache => {
+      const cached = await cache.match(event.request);
       if (cached) return cached;
-      return fetch(event.request)
-        .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE).then(cache => cache.put(event.request, copy));
-          return response;
-        })
-        .catch(() => caches.match('./index.html'));
+      try {
+        const response = await fetch(event.request);
+        if (response.ok) cache.put(event.request, response.clone());
+        return response;
+      } catch (_) {
+        if (!isMap) return cache.match('./index.html');
+        return Response.error();
+      }
     })
   );
 });
 
-
-// PWA v43 — persistent notification interaction.
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-
-  const targetUrl =
-    (event.notification.data && event.notification.data.url) || './';
-
+  const targetUrl = (event.notification.data && event.notification.data.url) || './';
   event.waitUntil(
-    clients.matchAll({
-      type: 'window',
-      includeUncontrolled: true
-    }).then(windowClients => {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
       for (const client of windowClients) {
         if ('focus' in client) {
           client.navigate(targetUrl).catch(() => {});
           return client.focus();
         }
       }
-
-      if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
-      }
-
+      if (clients.openWindow) return clients.openWindow(targetUrl);
       return undefined;
     })
   );
