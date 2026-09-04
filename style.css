@@ -3234,3 +3234,33 @@ button.zone-button-press:not(:disabled) {
   transform-origin: top left;
   will-change: transform, opacity;
 }
+
+
+/* PWA v82 — однозначное состояние точек артефактов */
+#mapPresetRoutePoints .map-artifact-visit-point:not(.visited) {
+  fill: rgba(20, 142, 40, .98) !important;
+  stroke: #63ff7a !important;
+  stroke-width: 2px !important;
+  opacity: 1 !important;
+}
+
+#mapPresetRoutePoints .map-artifact-visit-point.visited.artifact-collected {
+  fill: rgba(125, 132, 127, .90) !important;
+  stroke: #c2cbc4 !important;
+  opacity: .62 !important;
+}
+
+#mapPresetRoutePoints .map-artifact-visit-point.visited.artifact-possible {
+  fill: rgba(153, 125, 29, .96) !important;
+  stroke: #f0cf5f !important;
+  opacity: .96 !important;
+}
+
+/* После полного срока респауна точка снова считается доступной
+   для проверки и визуально возвращается в зелёное состояние. */
+#mapPresetRoutePoints .map-artifact-visit-point.visited.artifact-ready {
+  fill: rgba(20, 142, 40, .98) !important;
+  stroke: #63ff7a !important;
+  stroke-width: 2px !important;
+  opacity: 1 !important;
+}
