@@ -28,6 +28,7 @@
   const STORAGE_KEY = 'stalker2-zone-clock-v1';
   const THEME_KEY = 'stalker2-zone-clock-theme';
   const TEST_STORAGE_KEY = 'stalker2-zone-clock-test-v1';
+  const DAYLIGHT_TEST_STORAGE_KEY = 'stalker2-zone-clock-daylight-test-v1';
   const NOTIFICATION_KEY = 'stalker2-zone-clock-notifications-v1';
   const NOTIFICATION_NEXT_KEY = 'stalker2-zone-clock-next-message-v1';
   const NOTIFICATION_INTERVAL_KEY = 'stalker2-zone-clock-message-interval-v1';
@@ -57,6 +58,7 @@
     zoneToast: $('zoneToast'),
     testBtn: $('testBtn'), closeTestBtn: $('closeTestBtn'), testDialog: $('testDialog'),
     testCurrentTime: $('testCurrentTime'), testTableBody: $('testTableBody'),
+    daylightMarksList: $('daylightMarksList'),
     exportTestBtn: $('exportTestBtn'), clearTestBtn: $('clearTestBtn'),
     testMessage: $('testMessage')
   };
@@ -1121,6 +1123,108 @@
     });
   }
 
+
+  const DAYLIGHT_EVENT_LABELS = {
+    dawn_start: 'Начался рассвет',
+    daylight: 'Стало светло',
+    sunset_start: 'Начался закат',
+    dark: 'Стало темно'
+  };
+
+  function loadDaylightMarks() {
+    try {
+      const data = JSON.parse(localStorage.getItem(DAYLIGHT_TEST_STORAGE_KEY) || '[]');
+      return Array.isArray(data) ? data : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveDaylightMarks(marks) {
+    localStorage.setItem(DAYLIGHT_TEST_STORAGE_KEY, JSON.stringify(marks));
+  }
+
+  function renderDaylightMarks() {
+    if (!els.daylightMarksList) return;
+
+    const marks = loadDaylightMarks();
+
+    if (!marks.length) {
+      els.daylightMarksList.textContent = 'Отметок пока нет.';
+      return;
+    }
+
+    els.daylightMarksList.innerHTML = '';
+
+    const recent = marks.slice(-12).reverse();
+    recent.forEach(mark => {
+      const row = document.createElement('div');
+      row.className = 'daylight-mark-row';
+
+      const label = document.createElement('span');
+      label.className = 'daylight-mark-label';
+      label.textContent = DAYLIGHT_EVENT_LABELS[mark.type] || mark.type;
+
+      const value = document.createElement('span');
+      value.className = 'daylight-mark-value';
+      value.textContent = `День ${mark.day} · ${mark.time}`;
+
+      row.append(label, value);
+      els.daylightMarksList.appendChild(row);
+    });
+
+    if (marks.length > 12) {
+      const more = document.createElement('div');
+      more.className = 'daylight-mark-more';
+      more.textContent = `Ещё ${marks.length - 12} отметок сохранено`;
+      els.daylightMarksList.appendChild(more);
+    }
+  }
+
+  function addDaylightMark(type) {
+    updateNow();
+
+    const marks = loadDaylightMarks();
+    const time = formatClock(gameSeconds);
+    const day = gameDay;
+
+    marks.push({
+      type,
+      label: DAYLIGHT_EVENT_LABELS[type] || type,
+      day,
+      time,
+      absoluteGameSeconds: Math.round(absoluteGameSeconds),
+      capturedAt: new Date().toISOString()
+    });
+
+    saveDaylightMarks(marks);
+    renderDaylightMarks();
+
+    if (els.testCurrentTime) {
+      els.testCurrentTime.textContent = time;
+    }
+
+    if (els.testMessage) {
+      els.testMessage.textContent =
+        `${DAYLIGHT_EVENT_LABELS[type]}: День ${day}, ${time}.`;
+    }
+  }
+
+  document.querySelectorAll('[data-daylight-event]').forEach(button => {
+    button.addEventListener('click', () => {
+      addDaylightMark(button.dataset.daylightEvent);
+
+      button.classList.add('captured');
+      const original = button.textContent;
+      button.textContent = 'ЗАПИСАНО';
+
+      window.setTimeout(() => {
+        button.classList.remove('captured');
+        button.textContent = original;
+      }, 650);
+    });
+  });
+
   function buildTestRows() {
     if (!els.testTableBody || els.testTableBody.children.length) return;
 
@@ -1250,6 +1354,21 @@
       rows.push([label, data[label] || '']);
     }
 
+    const daylightMarks = loadDaylightMarks();
+    rows.push([]);
+    rows.push(['СОБЫТИЯ ОСВЕЩЕНИЯ']);
+    rows.push(['Событие', 'День', 'Время Зоны', 'Абсолютное время, сек', 'Дата записи']);
+
+    daylightMarks.forEach(mark => {
+      rows.push([
+        DAYLIGHT_EVENT_LABELS[mark.type] || mark.type,
+        mark.day,
+        mark.time,
+        mark.absoluteGameSeconds,
+        mark.capturedAt || ''
+      ]);
+    });
+
     const csv = '\uFEFF' + rows
       .map(row => row.map(csvEscape).join(';'))
       .join('\r\n');
@@ -1258,7 +1377,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v48.csv';
+    link.download = 'zone-clock-test-v49.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -1280,13 +1399,16 @@
     }
 
     localStorage.removeItem(TEST_STORAGE_KEY);
-    if (els.testMessage) els.testMessage.textContent = 'Таблица очищена.';
+    localStorage.removeItem(DAYLIGHT_TEST_STORAGE_KEY);
+    renderDaylightMarks();
+    if (els.testMessage) els.testMessage.textContent = 'Таблица и отметки освещения очищены.';
   }
 
   if (els.testBtn) {
     els.testBtn.addEventListener('click', () => {
       if (els.testCurrentTime) els.testCurrentTime.textContent = formatClock(gameSeconds);
       buildTestRows();
+      renderDaylightMarks();
       if (typeof els.testDialog.showModal === 'function') {
         els.testDialog.showModal();
       } else {

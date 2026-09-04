@@ -176,6 +176,20 @@
         <div class="test-help">
           Слева — время в игре. Справа вписывайте время, которое показывает ZONE CLOCK в тот же момент.
         </div>
+
+        <div class="daylight-test-block">
+          <div class="daylight-test-title">ОСВЕЩЕНИЕ</div>
+          <div class="daylight-test-buttons">
+            <button class="daylight-mark-btn" type="button" data-daylight-event="dawn_start">НАЧАЛСЯ РАССВЕТ</button>
+            <button class="daylight-mark-btn" type="button" data-daylight-event="daylight">СТАЛО СВЕТЛО</button>
+            <button class="daylight-mark-btn" type="button" data-daylight-event="sunset_start">НАЧАЛСЯ ЗАКАТ</button>
+            <button class="daylight-mark-btn" type="button" data-daylight-event="dark">СТАЛО ТЕМНО</button>
+          </div>
+          <div id="daylightMarksList" class="daylight-marks-list">
+            Отметок пока нет.
+          </div>
+        </div>
+
         <div class="test-actions">
           <button id="exportTestBtn" class="btn primary" type="button">ЭКСПОРТ CSV</button>
           <button id="clearTestBtn" class="btn" type="button">Очистить</button>
@@ -290,7 +304,7 @@
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v48</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v49</strong></div>
         </div>
       </div>
     </div>
