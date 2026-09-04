@@ -1152,28 +1152,26 @@ mapMeasureHint: $('mapMeasureHint'),
   const DEFAULT_MAP_METERS_PER_PIXEL = 6.5;
 
   const MAP_PRESET_ROUTE_STORAGE_KEY =
-    'stalker2-zone-clock-preset-route-garbage-cement-cooling-v1';
+    'stalker2-zone-clock-preset-route-rostok-redforest-yanov-jupiter-chemical-v1';
 
   const MAP_PRESET_ROUTE_MAIN = [
-    { x: 868.8, y: 1193.6 },
-    { x: 955.2, y: 1020.8 },
-    { x: 961.6, y: 939.2 },
-    { x: 1076.8, y: 974.4 },
-    { x: 1214.4, y: 1009.6 },
-    { x: 1192.0, y: 932.8 },
-    { x: 1257.6, y: 880.0 },
-    { x: 1302.4, y: 956.8 },
-    { x: 1248.0, y: 958.4 }
+    { x: 660.0, y: 620.0 },
+    { x: 1085.0, y: 595.0 },
+    { x: 1035.0, y: 760.0 },
+    { x: 1435.0, y: 920.0 },
+    { x: 1380.0, y: 1120.0 },
+    { x: 1185.0, y: 1210.0 },
+    { x: 1070.0, y: 1380.0 },
+    { x: 920.0, y: 1130.0 },
+    { x: 850.0, y: 980.0 },
+    { x: 890.0, y: 850.0 },
+    { x: 640.0, y: 860.0 },
+    { x: 660.0, y: 620.0 }
   ];
 
   const MAP_PRESET_ROUTE_BRANCH = [
-    { x: 868.8, y: 1193.6 },
-    { x: 913.6, y: 1249.6 },
-    { x: 1121.6, y: 1233.6 },
-    { x: 1256.0, y: 1177.6 },
-    { x: 1212.8, y: 1121.6 },
-    { x: 1110.4, y: 1108.8 },
-    { x: 1054.4, y: 1043.2 }
+    { x: 660.0, y: 620.0 },
+    { x: 660.0, y: 620.0 }
   ];
 
 
@@ -1308,7 +1306,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
     const allNodes = [
       ...MAP_PRESET_ROUTE_MAIN,
-      ...MAP_PRESET_ROUTE_BRANCH.slice(1)
+      ...MAP_PRESET_ROUTE_BRANCH.slice(1).filter((point, idx, arr) => !(idx === 0 && point.x === MAP_PRESET_ROUTE_MAIN[MAP_PRESET_ROUTE_MAIN.length - 1].x && point.y === MAP_PRESET_ROUTE_MAIN[MAP_PRESET_ROUTE_MAIN.length - 1].y))
     ];
 
     const circles = els.mapPresetRoutePoints.querySelectorAll(
@@ -1332,7 +1330,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
     const allNodes = [
       ...MAP_PRESET_ROUTE_MAIN,
-      ...MAP_PRESET_ROUTE_BRANCH.slice(1)
+      ...MAP_PRESET_ROUTE_BRANCH.slice(1).filter((point, idx, arr) => !(idx === 0 && point.x === MAP_PRESET_ROUTE_MAIN[MAP_PRESET_ROUTE_MAIN.length - 1].x && point.y === MAP_PRESET_ROUTE_MAIN[MAP_PRESET_ROUTE_MAIN.length - 1].y))
     ];
 
     allNodes.forEach(() => {
@@ -2167,7 +2165,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v68.csv';
+    link.download = 'zone-clock-test-v69.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
