@@ -58,6 +58,7 @@
     zoneToast: $('zoneToast'),
     testBtn: $('testBtn'), closeTestBtn: $('closeTestBtn'), testDialog: $('testDialog'),
     testCurrentTime: $('testCurrentTime'), testTableBody: $('testTableBody'),
+    dayCalibrationDetails: $('dayCalibrationDetails'),
     daylightMarksList: $('daylightMarksList'),
     exportTestBtn: $('exportTestBtn'), clearTestBtn: $('clearTestBtn'),
     testMessage: $('testMessage')
@@ -1225,6 +1226,31 @@
     });
   });
 
+
+  function animateButtonPress(button) {
+    if (!button || button.disabled) return;
+
+    button.classList.remove('zone-button-press');
+    // Restart the keyframe animation even on rapid repeated taps.
+    void button.offsetWidth;
+    button.classList.add('zone-button-press');
+
+    window.setTimeout(() => {
+      button.classList.remove('zone-button-press');
+    }, 240);
+  }
+
+  document.addEventListener('pointerdown', event => {
+    const button = event.target.closest('button');
+    if (button) animateButtonPress(button);
+  }, { passive: true });
+
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const button = event.target.closest && event.target.closest('button');
+    if (button) animateButtonPress(button);
+  });
+
   function buildTestRows() {
     if (!els.testTableBody || els.testTableBody.children.length) return;
 
@@ -1377,7 +1403,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v49.csv';
+    link.download = 'zone-clock-test-v50.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -1407,6 +1433,7 @@
   if (els.testBtn) {
     els.testBtn.addEventListener('click', () => {
       if (els.testCurrentTime) els.testCurrentTime.textContent = formatClock(gameSeconds);
+      if (els.dayCalibrationDetails) els.dayCalibrationDetails.open = false;
       buildTestRows();
       renderDaylightMarks();
       if (typeof els.testDialog.showModal === 'function') {

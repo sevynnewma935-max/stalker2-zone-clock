@@ -1353,3 +1353,141 @@ body:has(.test-dialog[open]) {
     gap: 2px;
   }
 }
+
+
+/* PWA v50 — TEST: table hidden in "КАЛИБРОВКА СУТОК" */
+.test-modal {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.test-content {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.test-content .test-toolbar {
+  border-bottom: 0;
+}
+
+.test-content .daylight-test-block {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.day-calibration-details {
+  margin: 0 18px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--card-2) 72%, var(--card));
+  overflow: hidden;
+}
+
+.day-calibration-details > summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--accent-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  user-select: none;
+}
+
+.day-calibration-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.day-calibration-details > summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+.day-calibration-arrow {
+  display: inline-block;
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform .22s ease;
+}
+
+.day-calibration-details[open] .day-calibration-arrow {
+  transform: rotate(180deg);
+}
+
+.day-calibration-body {
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.day-calibration-body .test-help {
+  padding: 11px 2px 10px;
+}
+
+.day-calibration-body .test-table-wrap {
+  max-height: 54vh;
+  overflow: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+}
+
+@media (max-width: 560px) {
+  .day-calibration-details {
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+
+  .day-calibration-body {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .day-calibration-body .test-table-wrap {
+    max-height: 58vh;
+  }
+}
+
+/* PWA v50 — press feedback for every button */
+button {
+  transform-origin: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button.zone-button-press:not(:disabled) {
+  animation: zoneButtonPressV50 .24s cubic-bezier(.22,.8,.32,1);
+}
+
+@keyframes zoneButtonPressV50 {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  38% {
+    transform: scale(.94);
+    filter: brightness(1.24);
+  }
+  72% {
+    transform: scale(1.015);
+    filter: brightness(1.08);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.zone-button-press:not(:disabled) {
+    animation-duration: .01ms;
+  }
+
+  .day-calibration-arrow {
+    transition: none;
+  }
+}
