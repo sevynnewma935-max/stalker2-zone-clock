@@ -184,6 +184,13 @@
             <option value="rostok_redforest_yanov_jupiter_chemical">РОСТОК → РЫЖИЙ ЛЕС → ЯНОВ → ЮПИТЕР → ХИМЗАВОД</option>
           </select>
         </label>
+        <label id="mapRouteStartWrap" class="map-route-select-wrap" for="mapRouteStartSelect">
+          <span>НАЧАЛО МАРШРУТА</span>
+          <select id="mapRouteStartSelect" class="map-route-select">
+            <option value="svalka">СВАЛКА</option>
+            <option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>
+          </select>
+        </label>
       </div>
 
       <div class="map-info-strip">
@@ -205,6 +212,9 @@
         <div id="zoneMapTransform" class="zone-map-transform">
           <img id="zoneMapPreviewImage" class="zone-map-4096-image" src="./assets/zone-map-4096.jpg" alt="" aria-hidden="true" draggable="false">
           <img id="zoneMapImage" class="zone-map-8192-image" src="./assets/zone-map-8192.jpg" alt="Карта Зоны S.T.A.L.K.E.R. 2" draggable="false">
+          <svg class="map-road-route-svg" viewBox="0 0 2048 2048" aria-hidden="true">
+            <path id="mapRoadRoutePath" class="map-road-route-path" d=""></path>
+          </svg>
         </div>
         <svg id="mapOverlay" class="map-overlay map-screen-overlay" aria-hidden="true">
           <g id="mapPresetRouteLayer" class="map-preset-route-layer">
@@ -416,7 +426,7 @@
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v71</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v72</strong></div>
           <button id="updateAppBtn" class="btn update-app-btn" type="button">
             ОБНОВИТЬ ПРИЛОЖЕНИЕ
           </button>

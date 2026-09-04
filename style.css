@@ -2326,3 +2326,42 @@ button.zone-button-press:not(:disabled) {
 
 /* hidden у названия маршрута больше не влияет на позицию самой карты,
    потому что mapViewport закреплён в именованной области "map". */
+
+
+/* PWA v72 — дорожный маршрут и расстояния от выбранного старта */
+.map-road-route-svg {
+  position: absolute;
+  inset: 0;
+  width: 2048px;
+  height: 2048px;
+  z-index: 3;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.map-road-route-path {
+  fill: none;
+  stroke: #27d444;
+  stroke-width: 2.5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  filter:
+    drop-shadow(0 0 1px rgba(0, 0, 0, .95))
+    drop-shadow(0 0 2px rgba(39, 212, 68, .35));
+}
+
+.map-screen-overlay .map-preset-route-distance {
+  fill: #e9ffe9;
+  stroke: rgba(4, 10, 5, .96);
+  stroke-width: 3px;
+  paint-order: stroke;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 900;
+  letter-spacing: .01em;
+  pointer-events: none;
+}
+
+.map-route-select-wrap[hidden] {
+  display: none !important;
+}
