@@ -67,6 +67,7 @@
     mapClearBtn: $('mapClearBtn'), mapZoomOutBtn: $('mapZoomOutBtn'),
     mapZoomInBtn: $('mapZoomInBtn'), mapFitBtn: $('mapFitBtn'),
     mapPresetRouteBtn: $('mapPresetRouteBtn'),
+    mapRouteSelect: $('mapRouteSelect'),
     mapPresetRouteLabel: $('mapPresetRouteLabel'),
     mapPresetRouteLayer: $('mapPresetRouteLayer'),
     mapPresetRouteMain: $('mapPresetRouteMain'),
@@ -1152,55 +1153,103 @@ mapMeasureHint: $('mapMeasureHint'),
   const DEFAULT_MAP_METERS_PER_PIXEL = 6.5;
 
   const MAP_PRESET_ROUTE_STORAGE_KEY =
-    'stalker2-zone-clock-preset-route-rostok-redforest-yanov-jupiter-chemical-v1';
+    'stalker2-zone-clock-preset-route-visible-v2';
+  const MAP_PRESET_ROUTE_SELECTED_KEY =
+    'stalker2-zone-clock-preset-route-selected-v2';
 
-  const MAP_PRESET_ROUTE_MAIN = [
-    { x: 660.0, y: 620.0 },
-    { x: 760.0, y: 618.0 },
-    { x: 880.0, y: 612.0 },
-    { x: 980.0, y: 605.0 },
-    { x: 1085.0, y: 595.0 },
-    { x: 1078.0, y: 670.0 },
-    { x: 1060.0, y: 730.0 },
-    { x: 1035.0, y: 760.0 },
-    { x: 1085.0, y: 790.0 },
-    { x: 1160.0, y: 830.0 },
-    { x: 1260.0, y: 880.0 },
-    { x: 1350.0, y: 915.0 },
-    { x: 1435.0, y: 920.0 },
-    { x: 1420.0, y: 1010.0 },
-    { x: 1405.0, y: 1075.0 },
-    { x: 1380.0, y: 1120.0 },
-    { x: 1320.0, y: 1140.0 },
-    { x: 1260.0, y: 1170.0 },
-    { x: 1220.0, y: 1190.0 },
-    { x: 1185.0, y: 1210.0 },
-    { x: 1145.0, y: 1270.0 },
-    { x: 1110.0, y: 1330.0 },
-    { x: 1070.0, y: 1380.0 },
-    { x: 1030.0, y: 1320.0 },
-    { x: 990.0, y: 1250.0 },
-    { x: 950.0, y: 1190.0 },
-    { x: 920.0, y: 1130.0 },
-    { x: 900.0, y: 1080.0 },
-    { x: 875.0, y: 1030.0 },
-    { x: 850.0, y: 980.0 },
-    { x: 860.0, y: 935.0 },
-    { x: 875.0, y: 890.0 },
-    { x: 890.0, y: 850.0 },
-    { x: 810.0, y: 850.0 },
-    { x: 730.0, y: 855.0 },
-    { x: 640.0, y: 860.0 },
-    { x: 640.0, y: 800.0 },
-    { x: 645.0, y: 740.0 },
-    { x: 650.0, y: 680.0 },
-    { x: 660.0, y: 620.0 }
-  ];
+  const MAP_PRESET_ROUTES = {
+    garbage_cement_cooling: {
+      key: 'garbage_cement_cooling',
+      label: 'СВАЛКА → ЦЕМЕНТНЫЙ ЗАВОД → ГРАДИРНИ',
+      main: [
+        { x: 868.8, y: 1193.6 },
+        { x: 955.2, y: 1020.8 },
+        { x: 961.6, y: 939.2 },
+        { x: 1076.8, y: 974.4 },
+        { x: 1214.4, y: 1009.6 },
+        { x: 1192.0, y: 932.8 },
+        { x: 1257.6, y: 880.0 },
+        { x: 1302.4, y: 956.8 },
+        { x: 1248.0, y: 958.4 }
+      ],
+      branch: [
+        { x: 868.8, y: 1193.6 },
+        { x: 913.6, y: 1249.6 },
+        { x: 1121.6, y: 1233.6 },
+        { x: 1256.0, y: 1177.6 },
+        { x: 1212.8, y: 1121.6 },
+        { x: 1110.4, y: 1108.8 },
+        { x: 1054.4, y: 1043.2 }
+      ]
+    },
+    rostok_redforest_yanov_jupiter_chemical: {
+      key: 'rostok_redforest_yanov_jupiter_chemical',
+      label: 'РОСТОК → РЫЖИЙ ЛЕС → ЯНОВ → ЮПИТЕР → ХИМЗАВОД',
+      main: [
+        { x: 660.0, y: 620.0 },
+        { x: 760.0, y: 618.0 },
+        { x: 880.0, y: 612.0 },
+        { x: 980.0, y: 605.0 },
+        { x: 1085.0, y: 595.0 },
+        { x: 1078.0, y: 670.0 },
+        { x: 1060.0, y: 730.0 },
+        { x: 1035.0, y: 760.0 },
+        { x: 1085.0, y: 790.0 },
+        { x: 1160.0, y: 830.0 },
+        { x: 1260.0, y: 880.0 },
+        { x: 1350.0, y: 915.0 },
+        { x: 1435.0, y: 920.0 },
+        { x: 1420.0, y: 1010.0 },
+        { x: 1405.0, y: 1075.0 },
+        { x: 1380.0, y: 1120.0 },
+        { x: 1320.0, y: 1140.0 },
+        { x: 1260.0, y: 1170.0 },
+        { x: 1220.0, y: 1190.0 },
+        { x: 1185.0, y: 1210.0 },
+        { x: 1145.0, y: 1270.0 },
+        { x: 1110.0, y: 1330.0 },
+        { x: 1070.0, y: 1380.0 },
+        { x: 1030.0, y: 1320.0 },
+        { x: 990.0, y: 1250.0 },
+        { x: 950.0, y: 1190.0 },
+        { x: 920.0, y: 1130.0 },
+        { x: 900.0, y: 1080.0 },
+        { x: 875.0, y: 1030.0 },
+        { x: 850.0, y: 980.0 },
+        { x: 860.0, y: 935.0 },
+        { x: 875.0, y: 890.0 },
+        { x: 890.0, y: 850.0 },
+        { x: 810.0, y: 850.0 },
+        { x: 730.0, y: 855.0 },
+        { x: 640.0, y: 860.0 },
+        { x: 640.0, y: 800.0 },
+        { x: 645.0, y: 740.0 },
+        { x: 650.0, y: 680.0 },
+        { x: 660.0, y: 620.0 }
+      ],
+      branch: [
+        { x: 660.0, y: 620.0 },
+        { x: 660.0, y: 620.0 }
+      ]
+    }
+  };
 
-  const MAP_PRESET_ROUTE_BRANCH = [
-    { x: 660.0, y: 620.0 },
-    { x: 660.0, y: 620.0 }
-  ];
+  function getPresetRoute(routeKey = mapSelectedRouteKey) {
+    return (
+      MAP_PRESET_ROUTES[routeKey] ||
+      MAP_PRESET_ROUTES.garbage_cement_cooling
+    );
+  }
+
+  function getPresetRouteNodes(route) {
+    const safeRoute = route || getPresetRoute();
+    const branch = (safeRoute.branch || []).slice(1).filter((point, idx) => {
+      if (idx !== 0) return true;
+      const lastMain = safeRoute.main[safeRoute.main.length - 1];
+      return !(point.x === lastMain.x && point.y === lastMain.y);
+    });
+    return [...safeRoute.main, ...branch];
+  }
 
 
   let mapMetersPerPixel = (() => {
@@ -1228,6 +1277,8 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapInteractionDepth = 0;
   let mapPresetRouteVisible =
     localStorage.getItem(MAP_PRESET_ROUTE_STORAGE_KEY) !== '0';
+  let mapSelectedRouteKey =
+    localStorage.getItem(MAP_PRESET_ROUTE_SELECTED_KEY) || 'garbage_cement_cooling';
 
   function formatMapNumber(value, digits = 2) {
     return Number(value).toLocaleString('ru-RU', {
@@ -1294,14 +1345,21 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function updatePresetRouteUI() {
+    const activeRoute = getPresetRoute();
+
     if (els.mapPresetRouteBtn) {
       els.mapPresetRouteBtn.textContent =
         mapPresetRouteVisible ? 'МАРШРУТ: ВКЛ' : 'МАРШРУТ: ВЫКЛ';
       els.mapPresetRouteBtn.classList.toggle('active', mapPresetRouteVisible);
     }
 
+    if (els.mapRouteSelect) {
+      els.mapRouteSelect.value = activeRoute.key;
+    }
+
     if (els.mapPresetRouteLabel) {
       els.mapPresetRouteLabel.hidden = !mapPresetRouteVisible;
+      els.mapPresetRouteLabel.textContent = activeRoute.label;
     }
   }
 
@@ -1319,8 +1377,9 @@ mapMeasureHint: $('mapMeasureHint'),
 
     if (!mapPresetRouteVisible) return;
 
-    const mainScreen = MAP_PRESET_ROUTE_MAIN.map(routePointToScreen);
-    const branchScreen = MAP_PRESET_ROUTE_BRANCH.map(routePointToScreen);
+    const activeRoute = getPresetRoute();
+    const mainScreen = activeRoute.main.map(routePointToScreen);
+    const branchScreen = activeRoute.branch.map(routePointToScreen);
 
     els.mapPresetRouteMain.setAttribute(
       'points',
@@ -1332,10 +1391,7 @@ mapMeasureHint: $('mapMeasureHint'),
       branchScreen.map(point => `${point.x},${point.y}`).join(' ')
     );
 
-    const allNodes = [
-      ...MAP_PRESET_ROUTE_MAIN,
-      ...MAP_PRESET_ROUTE_BRANCH.slice(1).filter((point, idx, arr) => !(idx === 0 && point.x === MAP_PRESET_ROUTE_MAIN[MAP_PRESET_ROUTE_MAIN.length - 1].x && point.y === MAP_PRESET_ROUTE_MAIN[MAP_PRESET_ROUTE_MAIN.length - 1].y))
-    ];
+    const allNodes = getPresetRouteNodes(activeRoute);
 
     const circles = els.mapPresetRoutePoints.querySelectorAll(
       '.map-preset-route-point'
@@ -1356,10 +1412,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
     els.mapPresetRoutePoints.innerHTML = '';
 
-    const allNodes = [
-      ...MAP_PRESET_ROUTE_MAIN,
-      ...MAP_PRESET_ROUTE_BRANCH.slice(1).filter((point, idx, arr) => !(idx === 0 && point.x === MAP_PRESET_ROUTE_MAIN[MAP_PRESET_ROUTE_MAIN.length - 1].x && point.y === MAP_PRESET_ROUTE_MAIN[MAP_PRESET_ROUTE_MAIN.length - 1].y))
-    ];
+    const allNodes = getPresetRouteNodes();
 
     allNodes.forEach(() => {
       const circle = document.createElementNS(
@@ -1385,6 +1438,13 @@ mapMeasureHint: $('mapMeasureHint'),
 
     updatePresetRouteUI();
     updatePresetRouteScreenGeometry();
+  }
+
+  function changePresetRoute(routeKey) {
+    if (!MAP_PRESET_ROUTES[routeKey]) return;
+    mapSelectedRouteKey = routeKey;
+    localStorage.setItem(MAP_PRESET_ROUTE_SELECTED_KEY, mapSelectedRouteKey);
+    renderPresetRoute();
   }
 
   function updateMapMeasurementScreenGeometry() {
@@ -1712,6 +1772,12 @@ mapMeasureHint: $('mapMeasureHint'),
 
   if (els.mapPresetRouteBtn) {
     els.mapPresetRouteBtn.addEventListener('click', togglePresetRoute);
+  }
+
+  if (els.mapRouteSelect) {
+    els.mapRouteSelect.addEventListener('change', (event) => {
+      changePresetRoute(event.target.value);
+    });
   }
 
   if (els.mapZoomOutBtn) {
@@ -2193,7 +2259,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v70.csv';
+    link.download = 'zone-clock-test-v71.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();

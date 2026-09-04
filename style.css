@@ -2164,6 +2164,33 @@ button.zone-button-press:not(:disabled) {
   color: #d8ffd9;
 }
 
+
+.map-route-select-wrap {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: .56rem;
+  letter-spacing: .08em;
+}
+
+.map-route-select-wrap span {
+  padding-left: 2px;
+}
+
+.map-route-select {
+  width: 100%;
+  min-height: 39px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: rgba(8, 18, 12, .92);
+  color: var(--primary-text);
+  padding: 8px 12px;
+  font: inherit;
+  font-size: .68rem;
+  letter-spacing: .04em;
+}
+
 .map-preset-route-label {
   padding: 7px 12px 8px;
   border-top: 1px solid rgba(216, 255, 217, .12);

@@ -177,6 +177,13 @@
         <button id="mapFitBtn" class="btn" type="button">ВСЯ КАРТА</button>
         <button id="mapZoomInBtn" class="btn map-zoom-btn" type="button" aria-label="Увеличить карту">+</button>
         <button id="mapPresetRouteBtn" class="btn map-route-toggle active" type="button">МАРШРУТ: ВКЛ</button>
+        <label class="map-route-select-wrap" for="mapRouteSelect">
+          <span>ВЫБОР МАРШРУТА</span>
+          <select id="mapRouteSelect" class="map-route-select">
+            <option value="garbage_cement_cooling">СВАЛКА → ЦЕМЕНТНЫЙ ЗАВОД → ГРАДИРНИ</option>
+            <option value="rostok_redforest_yanov_jupiter_chemical">РОСТОК → РЫЖИЙ ЛЕС → ЯНОВ → ЮПИТЕР → ХИМЗАВОД</option>
+          </select>
+        </label>
       </div>
 
       <div class="map-info-strip">
@@ -191,7 +198,7 @@
       </div>
 
       <div id="mapPresetRouteLabel" class="map-preset-route-label">
-        РОСТОК → РЫЖИЙ ЛЕС → ЯНОВ → ЮПИТЕР → ХИМЗАВОД
+        СВАЛКА → ЦЕМЕНТНЫЙ ЗАВОД → ГРАДИРНИ
       </div>
 
       <div id="mapViewport" class="map-viewport" aria-label="Интерактивная карта Зоны">
@@ -409,7 +416,7 @@
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v70</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v71</strong></div>
           <button id="updateAppBtn" class="btn update-app-btn" type="button">
             ОБНОВИТЬ ПРИЛОЖЕНИЕ
           </button>
