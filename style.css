@@ -2191,6 +2191,15 @@ button.zone-button-press:not(:disabled) {
   letter-spacing: .04em;
 }
 
+.map-route-selected-value {
+  min-height: 1.05rem;
+  padding: 0 2px;
+  color: #c7f4bf;
+  font-size: .62rem;
+  line-height: 1.2;
+  letter-spacing: .04em;
+}
+
 .map-preset-route-label {
   padding: 7px 12px 8px;
   border-top: 1px solid rgba(216, 255, 217, .12);
@@ -2330,6 +2339,7 @@ button.zone-button-press:not(:disabled) {
 
 /* PWA v72 — дорожный маршрут и расстояния от выбранного старта */
 .map-road-route-svg {
+  display: none !important;
   position: absolute;
   inset: 0;
   width: 2048px;

@@ -183,6 +183,7 @@
             <option value="garbage_cement_cooling">СВАЛКА → ЦЕМЕНТНЫЙ ЗАВОД → ГРАДИРНИ</option>
             <option value="rostok_redforest_yanov_jupiter_chemical">РОСТОК → РЫЖИЙ ЛЕС → ЯНОВ → ЮПИТЕР → ХИМЗАВОД</option>
           </select>
+          <div id="mapRouteSelectValue" class="map-route-selected-value"></div>
         </label>
         <label id="mapRouteStartWrap" class="map-route-select-wrap" for="mapRouteStartSelect">
           <span>НАЧАЛО МАРШРУТА</span>
@@ -190,6 +191,7 @@
             <option value="svalka">СВАЛКА</option>
             <option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>
           </select>
+          <div id="mapRouteStartValue" class="map-route-selected-value"></div>
         </label>
       </div>
 
@@ -218,6 +220,7 @@
         </div>
         <svg id="mapOverlay" class="map-overlay map-screen-overlay" aria-hidden="true">
           <g id="mapPresetRouteLayer" class="map-preset-route-layer">
+            <path id="mapPresetRoadPath" class="map-preset-route-line map-preset-road-path" d=""></path>
             <polyline id="mapPresetRouteMain" class="map-preset-route-line" points="" fill="none"></polyline>
             <polyline id="mapPresetRouteBranch" class="map-preset-route-line" points="" fill="none"></polyline>
             <g id="mapPresetRoutePoints"></g>
@@ -426,7 +429,7 @@
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v72</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v73</strong></div>
           <button id="updateAppBtn" class="btn update-app-btn" type="button">
             ОБНОВИТЬ ПРИЛОЖЕНИЕ
           </button>
