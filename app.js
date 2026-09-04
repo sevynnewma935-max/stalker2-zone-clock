@@ -29,6 +29,8 @@
   const THEME_KEY = 'stalker2-zone-clock-theme';
   const TEST_STORAGE_KEY = 'stalker2-zone-clock-test-v1';
   const DAYLIGHT_TEST_STORAGE_KEY = 'stalker2-zone-clock-daylight-test-v1';
+  const MOVEMENT_TEST_STORAGE_KEY = 'stalker2-zone-clock-movement-test-v1';
+  const MOVEMENT_TEST_ACTIVE_KEY = 'stalker2-zone-clock-movement-test-active-v1';
   const MAP_SCALE_STORAGE_KEY = 'stalker2-zone-clock-map-scale-v1';
   const NOTIFICATION_KEY = 'stalker2-zone-clock-notifications-v1';
   const NOTIFICATION_NEXT_KEY = 'stalker2-zone-clock-next-message-v1';
@@ -112,6 +114,16 @@ mapMeasureHint: $('mapMeasureHint'),
     dayCalibrationDetails: $('dayCalibrationDetails'),
     daylightMarksList: $('daylightMarksList'),
     exportTestBtn: $('exportTestBtn'), clearTestBtn: $('clearTestBtn'),
+    movementTestDistance: $('movementTestDistance'),
+    movementTestStatus: $('movementTestStatus'),
+    showMovementTestRouteBtn: $('showMovementTestRouteBtn'),
+    mapMovementTestLayer: $('mapMovementTestLayer'),
+    mapMovementTestLine: $('mapMovementTestLine'),
+    mapMovementTestStart: $('mapMovementTestStart'),
+    mapMovementTestEnd: $('mapMovementTestEnd'),
+    mapMovementTestStartLabel: $('mapMovementTestStartLabel'),
+    mapMovementTestEndLabel: $('mapMovementTestEndLabel'),
+    mapMovementTestDistanceLabel: $('mapMovementTestDistanceLabel'),
     testMessage: $('testMessage')
   };
 
@@ -1182,6 +1194,26 @@ mapMeasureHint: $('mapMeasureHint'),
   const MAP_IMAGE_SIZE = 2048;
   const DEFAULT_MAP_METERS_PER_PIXEL = 6.5;
 
+  // Контрольный тестовый отрезок для замера скорости перемещения.
+  // Логические координаты карты Zone Clock 2048 × 2048.
+  const MOVEMENT_TEST_START = {
+    x: 1262.0,
+    y: 934.5,
+    label: 'Мост у Цементного завода'
+  };
+
+  const MOVEMENT_TEST_END = {
+    x: 785.0,
+    y: 948.5,
+    label: 'SWYD-East Checkpoint, Железный лес'
+  };
+
+  const MOVEMENT_TEST_MODES = {
+    slow: 'МЕДЛЕННЫЙ ШАГ',
+    fast: 'БЫСТРЫЙ ШАГ',
+    run: 'БЕГ'
+  };
+
   const MAP_PRESET_ROUTE_STORAGE_KEY =
     'stalker2-zone-clock-preset-route-visible-v2';
   const MAP_PRESET_ROUTE_SELECTED_KEY =
@@ -1274,6 +1306,7 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapInteractionEndTimer = 0;
   let mapInteractionDepth = 0;
   let mapFullscreenMode = false;
+  let mapMovementTestVisible = false;
   let mapJourneyActive = false;
   let mapJourneyPlan = null;
   let mapJourneySequence = [];
@@ -2734,6 +2767,7 @@ mapMeasureHint: $('mapMeasureHint'),
     });
 
     updatePresetRouteScreenGeometry();
+    updateMovementTestScreenGeometry();
   }
 
   function renderMapMeasurement() {
@@ -2795,6 +2829,8 @@ mapMeasureHint: $('mapMeasureHint'),
         } else {
           updateMapMeasurementScreenGeometry();
         }
+
+        updateMovementTestScreenGeometry();
       });
     }
   }
@@ -3445,6 +3481,8 @@ mapMeasureHint: $('mapMeasureHint'),
       mapMetersPerPixel = calculated;
       localStorage.setItem(MAP_SCALE_STORAGE_KEY, String(mapMetersPerPixel));
       updatePresetRouteScreenGeometry();
+      updateMovementTestUi();
+      updateMovementTestScreenGeometry();
       renderMapMeasurement();
 
       if (els.mapCalibrationMessage) {
@@ -3458,6 +3496,8 @@ mapMeasureHint: $('mapMeasureHint'),
     els.mapResetCalibrationBtn.addEventListener('click', () => {
       mapMetersPerPixel = DEFAULT_MAP_METERS_PER_PIXEL;
       localStorage.setItem(MAP_SCALE_STORAGE_KEY, String(mapMetersPerPixel));
+      updateMovementTestUi();
+      updateMovementTestScreenGeometry();
       renderMapMeasurement();
 
       if (els.mapCalibrationMessage) {
@@ -3466,6 +3506,547 @@ mapMeasureHint: $('mapMeasureHint'),
       }
     });
   }
+
+
+  function movementTestDistanceMeters() {
+    return Math.hypot(
+      MOVEMENT_TEST_END.x - MOVEMENT_TEST_START.x,
+      MOVEMENT_TEST_END.y - MOVEMENT_TEST_START.y
+    ) * mapMetersPerPixel;
+  }
+
+  function formatMovementElapsed(seconds) {
+    const safe = Math.max(0, Math.round(seconds));
+    const minutes = Math.floor(safe / 60);
+    const secs = safe % 60;
+
+    if (minutes >= 60) {
+      const hours = Math.floor(minutes / 60);
+      const restMinutes = minutes % 60;
+      return `${hours}:${String(restMinutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+
+  function loadMovementTests() {
+    try {
+      const data = JSON.parse(
+        localStorage.getItem(MOVEMENT_TEST_STORAGE_KEY) || '{}'
+      );
+
+      return data && typeof data === 'object'
+        ? data
+        : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function saveMovementTests(data) {
+    localStorage.setItem(
+      MOVEMENT_TEST_STORAGE_KEY,
+      JSON.stringify(data)
+    );
+  }
+
+  function loadActiveMovementTest() {
+    try {
+      const data = JSON.parse(
+        localStorage.getItem(MOVEMENT_TEST_ACTIVE_KEY) || 'null'
+      );
+
+      if (
+        !data ||
+        !MOVEMENT_TEST_MODES[data.mode] ||
+        !(Number(data.startedAtMs) > 0)
+      ) {
+        return null;
+      }
+
+      return data;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function saveActiveMovementTest(data) {
+    if (!data) {
+      localStorage.removeItem(
+        MOVEMENT_TEST_ACTIVE_KEY
+      );
+      return;
+    }
+
+    localStorage.setItem(
+      MOVEMENT_TEST_ACTIVE_KEY,
+      JSON.stringify(data)
+    );
+  }
+
+  function movementModeRuns(mode) {
+    const data = loadMovementTests();
+    const runs = data[mode];
+    return Array.isArray(runs) ? runs : [];
+  }
+
+  function movementModeAverage(mode) {
+    const runs = movementModeRuns(mode);
+
+    if (!runs.length) return null;
+
+    const valid = runs.filter(run =>
+      Number.isFinite(Number(run.speedKmh)) &&
+      Number(run.speedKmh) > 0
+    );
+
+    if (!valid.length) return null;
+
+    const speedKmh =
+      valid.reduce(
+        (sum, run) =>
+          sum + Number(run.speedKmh),
+        0
+      ) / valid.length;
+
+    const realSeconds =
+      valid.reduce(
+        (sum, run) =>
+          sum + Number(run.realSeconds),
+        0
+      ) / valid.length;
+
+    return {
+      count: valid.length,
+      speedKmh,
+      realSeconds
+    };
+  }
+
+  function updateMovementTestUi() {
+    const distanceMeters =
+      movementTestDistanceMeters();
+
+    if (els.movementTestDistance) {
+      els.movementTestDistance.textContent =
+        formatMapDistance(distanceMeters);
+    }
+
+    const active = loadActiveMovementTest();
+
+    document.querySelectorAll(
+      '[data-movement-mode]'
+    ).forEach(card => {
+      const mode =
+        card.dataset.movementMode;
+
+      const result =
+        card.querySelector(
+          `[data-movement-result="${mode}"]`
+        );
+
+      const action =
+        card.querySelector(
+          `[data-movement-action="${mode}"]`
+        );
+
+      const average =
+        movementModeAverage(mode);
+
+      if (result) {
+        if (average) {
+          result.textContent =
+            `Среднее: ${average.speedKmh.toFixed(2)} км/ч · ${formatMovementElapsed(average.realSeconds)} · замеров ${average.count}`;
+        } else {
+          result.textContent =
+            'Нет замеров';
+        }
+      }
+
+      if (action) {
+        const isThisActive =
+          active &&
+          active.mode === mode;
+
+        const otherActive =
+          active &&
+          active.mode !== mode;
+
+        action.textContent =
+          isThisActive
+            ? 'ФИНИШ'
+            : 'СТАРТ';
+
+        action.classList.toggle(
+          'danger',
+          Boolean(isThisActive)
+        );
+
+        action.disabled =
+          Boolean(otherActive);
+      }
+    });
+
+    if (els.movementTestStatus) {
+      if (active) {
+        els.movementTestStatus.textContent =
+          `${MOVEMENT_TEST_MODES[active.mode]}: замер идёт. На SWYD-East Checkpoint нажмите «ФИНИШ».`;
+      } else {
+        els.movementTestStatus.textContent =
+          'Выберите темп и начните замер у моста.';
+      }
+    }
+  }
+
+  function updateMovementLiveTimers() {
+    const active =
+      loadActiveMovementTest();
+
+    document.querySelectorAll(
+      '[data-movement-live]'
+    ).forEach(node => {
+      const mode =
+        node.dataset.movementLive;
+
+      if (
+        active &&
+        active.mode === mode
+      ) {
+        const elapsed =
+          Math.max(
+            0,
+            (
+              Date.now() -
+              Number(active.startedAtMs)
+            ) / 1000
+          );
+
+        node.textContent =
+          formatMovementElapsed(elapsed);
+      } else {
+        const runs =
+          movementModeRuns(mode);
+
+        const latest =
+          runs.length
+            ? runs[runs.length - 1]
+            : null;
+
+        node.textContent =
+          latest
+            ? formatMovementElapsed(
+                Number(latest.realSeconds) || 0
+              )
+            : '00:00';
+      }
+    });
+  }
+
+  function startMovementTest(mode) {
+    if (!MOVEMENT_TEST_MODES[mode]) return;
+
+    updateNow();
+
+    const active = loadActiveMovementTest();
+
+    if (
+      active &&
+      active.mode !== mode
+    ) {
+      return;
+    }
+
+    if (!active) {
+      saveActiveMovementTest({
+        mode,
+        startedAtMs: Date.now(),
+        startAbsoluteGameSeconds:
+          Math.round(absoluteGameSeconds),
+        startDay: gameDay,
+        startTime: formatClock(gameSeconds),
+        distanceMeters:
+          movementTestDistanceMeters()
+      });
+
+      updateMovementTestUi();
+      updateMovementLiveTimers();
+
+      if (els.testMessage) {
+        els.testMessage.textContent =
+          `${MOVEMENT_TEST_MODES[mode]}: старт записан. Идите от моста до SWYD-East Checkpoint.`;
+      }
+
+      return;
+    }
+
+    finishMovementTest(mode);
+  }
+
+  function finishMovementTest(mode) {
+    const active = loadActiveMovementTest();
+
+    if (
+      !active ||
+      active.mode !== mode
+    ) {
+      return;
+    }
+
+    updateNow();
+
+    const finishedAtMs = Date.now();
+
+    const realSeconds =
+      Math.max(
+        0.1,
+        (
+          finishedAtMs -
+          Number(active.startedAtMs)
+        ) / 1000
+      );
+
+    const endAbsoluteGameSeconds =
+      Math.round(absoluteGameSeconds);
+
+    const zoneSeconds =
+      Math.max(
+        0,
+        endAbsoluteGameSeconds -
+        Number(
+          active.startAbsoluteGameSeconds
+        )
+      );
+
+    const distanceMeters =
+      Number(active.distanceMeters) > 0
+        ? Number(active.distanceMeters)
+        : movementTestDistanceMeters();
+
+    const speedKmh =
+      (
+        distanceMeters / 1000
+      ) /
+      (
+        realSeconds / 3600
+      );
+
+    const data = loadMovementTests();
+
+    if (!Array.isArray(data[mode])) {
+      data[mode] = [];
+    }
+
+    data[mode].push({
+      mode,
+      modeLabel:
+        MOVEMENT_TEST_MODES[mode],
+      startedAtMs:
+        Number(active.startedAtMs),
+      finishedAtMs,
+      realSeconds:
+        Math.round(realSeconds * 10) / 10,
+      zoneSeconds,
+      distanceMeters:
+        Math.round(distanceMeters),
+      speedKmh:
+        Math.round(speedKmh * 100) / 100,
+      startDay:
+        active.startDay,
+      startTime:
+        active.startTime,
+      endDay:
+        gameDay,
+      endTime:
+        formatClock(gameSeconds),
+      capturedAt:
+        new Date().toISOString()
+    });
+
+    // Keep the latest 20 attempts for each pace.
+    data[mode] =
+      data[mode].slice(-20);
+
+    saveMovementTests(data);
+    saveActiveMovementTest(null);
+
+    updateMovementTestUi();
+    updateMovementLiveTimers();
+
+    if (els.testMessage) {
+      els.testMessage.textContent =
+        `${MOVEMENT_TEST_MODES[mode]}: ${formatMovementElapsed(realSeconds)}, ${speedKmh.toFixed(2)} км/ч.`;
+    }
+  }
+
+  document.querySelectorAll(
+    '[data-movement-action]'
+  ).forEach(button => {
+    button.addEventListener(
+      'click',
+      () => {
+        startMovementTest(
+          button.dataset.movementAction
+        );
+      }
+    );
+  });
+
+  function updateMovementTestScreenGeometry() {
+    if (
+      !els.mapMovementTestLayer ||
+      !els.mapMovementTestLine ||
+      !els.mapMovementTestStart ||
+      !els.mapMovementTestEnd
+    ) {
+      return;
+    }
+
+    els.mapMovementTestLayer.style.display =
+      mapMovementTestVisible
+        ? ''
+        : 'none';
+
+    if (!mapMovementTestVisible) {
+      return;
+    }
+
+    const start =
+      routePointToScreen(
+        MOVEMENT_TEST_START
+      );
+
+    const end =
+      routePointToScreen(
+        MOVEMENT_TEST_END
+      );
+
+    els.mapMovementTestLine.setAttribute(
+      'points',
+      `${start.x},${start.y} ${end.x},${end.y}`
+    );
+
+    els.mapMovementTestStart.setAttribute(
+      'cx',
+      start.x
+    );
+    els.mapMovementTestStart.setAttribute(
+      'cy',
+      start.y
+    );
+
+    els.mapMovementTestEnd.setAttribute(
+      'cx',
+      end.x
+    );
+    els.mapMovementTestEnd.setAttribute(
+      'cy',
+      end.y
+    );
+
+    if (els.mapMovementTestStartLabel) {
+      els.mapMovementTestStartLabel.setAttribute(
+        'x',
+        start.x + 10
+      );
+      els.mapMovementTestStartLabel.setAttribute(
+        'y',
+        start.y - 10
+      );
+    }
+
+    if (els.mapMovementTestEndLabel) {
+      els.mapMovementTestEndLabel.setAttribute(
+        'x',
+        end.x + 10
+      );
+      els.mapMovementTestEndLabel.setAttribute(
+        'y',
+        end.y - 10
+      );
+    }
+
+    if (els.mapMovementTestDistanceLabel) {
+      els.mapMovementTestDistanceLabel.setAttribute(
+        'x',
+        (start.x + end.x) / 2
+      );
+      els.mapMovementTestDistanceLabel.setAttribute(
+        'y',
+        (start.y + end.y) / 2 - 10
+      );
+      els.mapMovementTestDistanceLabel.textContent =
+        formatMapDistance(
+          movementTestDistanceMeters()
+        );
+    }
+  }
+
+  function openMovementTestRouteOnMap() {
+    mapMovementTestVisible = true;
+
+    if (
+      els.testDialog &&
+      els.testDialog.open
+    ) {
+      if (
+        typeof els.testDialog.close ===
+        'function'
+      ) {
+        els.testDialog.close();
+      } else {
+        els.testDialog.removeAttribute(
+          'open'
+        );
+      }
+    }
+
+    updateMapZoneTime();
+    updateMapFullscreenUI();
+
+    const openMap = () => {
+      if (
+        typeof els.mapDialog.showModal ===
+        'function'
+      ) {
+        if (!els.mapDialog.open) {
+          els.mapDialog.showModal();
+        }
+      } else {
+        els.mapDialog.setAttribute(
+          'open',
+          ''
+        );
+      }
+
+      window.requestAnimationFrame(() => {
+        fitZoneMap();
+
+        window.setTimeout(() => {
+          focusJourneyPoints(
+            [
+              MOVEMENT_TEST_START,
+              MOVEMENT_TEST_END
+            ],
+            850
+          );
+          updateMovementTestScreenGeometry();
+        }, 120);
+      });
+    };
+
+    window.requestAnimationFrame(openMap);
+  }
+
+  if (els.showMovementTestRouteBtn) {
+    els.showMovementTestRouteBtn.addEventListener(
+      'click',
+      openMovementTestRouteOnMap
+    );
+  }
+
+  window.setInterval(() => {
+    updateMovementLiveTimers();
+  }, 500);
 
   const DAYLIGHT_EVENT_LABELS = {
     dawn_start: 'Начался рассвет',
@@ -3722,6 +4303,44 @@ mapMeasureHint: $('mapMeasureHint'),
       rows.push([label, data[label] || '']);
     }
 
+    const movementTests = loadMovementTests();
+
+    rows.push([]);
+    rows.push(['ТЕСТ СКОРОСТИ ПЕРЕДВИЖЕНИЯ']);
+    rows.push([
+      'Темп',
+      'Расстояние, м',
+      'Реальное время, сек',
+      'Время Зоны, сек',
+      'Скорость, км/ч',
+      'Старт: день',
+      'Старт: время',
+      'Финиш: день',
+      'Финиш: время',
+      'Дата записи'
+    ]);
+
+    ['slow', 'fast', 'run'].forEach(mode => {
+      const runs = Array.isArray(movementTests[mode])
+        ? movementTests[mode]
+        : [];
+
+      runs.forEach(run => {
+        rows.push([
+          MOVEMENT_TEST_MODES[mode],
+          run.distanceMeters || '',
+          run.realSeconds || '',
+          run.zoneSeconds || '',
+          run.speedKmh || '',
+          run.startDay || '',
+          run.startTime || '',
+          run.endDay || '',
+          run.endTime || '',
+          run.capturedAt || ''
+        ]);
+      });
+    });
+
     const daylightMarks = loadDaylightMarks();
     rows.push([]);
     rows.push(['СОБЫТИЯ ОСВЕЩЕНИЯ']);
@@ -3745,7 +4364,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v82.csv';
+    link.download = 'zone-clock-test-v83.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -3768,8 +4387,12 @@ mapMeasureHint: $('mapMeasureHint'),
 
     localStorage.removeItem(TEST_STORAGE_KEY);
     localStorage.removeItem(DAYLIGHT_TEST_STORAGE_KEY);
+    localStorage.removeItem(MOVEMENT_TEST_STORAGE_KEY);
+    localStorage.removeItem(MOVEMENT_TEST_ACTIVE_KEY);
     renderDaylightMarks();
-    if (els.testMessage) els.testMessage.textContent = 'Таблица и отметки освещения очищены.';
+    updateMovementTestUi();
+    updateMovementLiveTimers();
+    if (els.testMessage) els.testMessage.textContent = 'Тесты времени, движения и отметки освещения очищены.';
   }
 
   if (els.settingsTestBtn) {
@@ -3792,6 +4415,8 @@ mapMeasureHint: $('mapMeasureHint'),
 
       buildTestRows();
       renderDaylightMarks();
+      updateMovementTestUi();
+      updateMovementLiveTimers();
 
       window.requestAnimationFrame(() => {
         if (typeof els.testDialog.showModal === 'function') {

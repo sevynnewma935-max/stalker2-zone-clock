@@ -3264,3 +3264,213 @@ button.zone-button-press:not(:disabled) {
   stroke-width: 2px !important;
   opacity: 1 !important;
 }
+
+
+/* PWA v83 — тест скорости передвижения */
+.movement-test-block {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(198, 210, 91, .28);
+  border-radius: 14px;
+  background: rgba(198, 210, 91, .055);
+}
+
+.movement-test-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.movement-test-route {
+  margin-top: 5px;
+  color: var(--text);
+  font-size: .7rem;
+  line-height: 1.4;
+  letter-spacing: .04em;
+}
+
+.movement-map-btn {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding-inline: 10px;
+  font-size: .6rem;
+}
+
+.movement-test-distance-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: rgba(5, 12, 8, .45);
+}
+
+.movement-test-distance-row span {
+  color: var(--muted);
+  font-size: .58rem;
+  letter-spacing: .08em;
+}
+
+.movement-test-distance-row strong {
+  color: #dce98b;
+  font-size: .88rem;
+  white-space: nowrap;
+}
+
+.movement-test-help {
+  color: var(--muted);
+  font-size: .68rem;
+  line-height: 1.5;
+}
+
+.movement-test-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.movement-test-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 11px 9px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: rgba(4, 10, 7, .62);
+}
+
+.movement-test-mode-title {
+  color: var(--text);
+  min-height: 2.2em;
+  font-size: .62rem;
+  line-height: 1.2;
+  letter-spacing: .06em;
+}
+
+.movement-live-time {
+  color: #dce98b;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  font-size: 1.08rem;
+  font-weight: 800;
+}
+
+.movement-test-result {
+  min-height: 3.2em;
+  color: var(--muted);
+  font-size: .58rem;
+  line-height: 1.35;
+}
+
+.movement-test-action {
+  width: 100%;
+  min-height: 40px;
+  padding-inline: 6px;
+  font-size: .66rem;
+}
+
+.movement-test-action.danger {
+  border-color: rgba(230, 110, 84, .72);
+  background: rgba(160, 54, 34, .38);
+  color: #ffe0d6;
+}
+
+.movement-test-status {
+  color: #c9d5c7;
+  font-size: .66rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 560px) {
+  .movement-test-head {
+    display: grid;
+  }
+
+  .movement-map-btn {
+    width: 100%;
+  }
+
+  .movement-test-modes {
+    grid-template-columns: 1fr;
+  }
+
+  .movement-test-card {
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto;
+    align-items: center;
+  }
+
+  .movement-test-mode-title,
+  .movement-test-result {
+    grid-column: 1;
+  }
+
+  .movement-live-time {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .movement-test-action {
+    grid-column: 2;
+    grid-row: 2 / span 2;
+    width: 92px;
+  }
+}
+
+/* Отдельный тестовый путь на карте */
+.map-movement-test-layer {
+  pointer-events: none;
+}
+
+.map-movement-test-line {
+  stroke: #66d8ff;
+  stroke-width: 3px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 10 7;
+  filter:
+    drop-shadow(0 0 1px rgba(0,0,0,.95))
+    drop-shadow(0 0 2px rgba(102,216,255,.45));
+}
+
+.map-movement-test-point {
+  fill: #0d1a18;
+  stroke: #66d8ff;
+  stroke-width: 2.5px;
+}
+
+.map-movement-test-point.end {
+  stroke: #9fffa7;
+}
+
+.map-movement-test-label,
+.map-movement-test-distance-label {
+  fill: #e8fbff;
+  stroke: rgba(3, 8, 8, .96);
+  stroke-width: 3px;
+  paint-order: stroke;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .02em;
+}
+
+.map-movement-test-distance-label {
+  fill: #a9efff;
+  text-anchor: middle;
+  font-size: 11px;
+}

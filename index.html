@@ -241,6 +241,14 @@
           </svg>
         </div>
         <svg id="mapOverlay" class="map-overlay map-screen-overlay" aria-hidden="true">
+          <g id="mapMovementTestLayer" class="map-movement-test-layer" style="display:none">
+            <polyline id="mapMovementTestLine" class="map-movement-test-line" points="" fill="none"></polyline>
+            <circle id="mapMovementTestStart" class="map-movement-test-point start" r="6"></circle>
+            <circle id="mapMovementTestEnd" class="map-movement-test-point end" r="6"></circle>
+            <text id="mapMovementTestStartLabel" class="map-movement-test-label">МОСТ</text>
+            <text id="mapMovementTestEndLabel" class="map-movement-test-label">SWYD-EAST</text>
+            <text id="mapMovementTestDistanceLabel" class="map-movement-test-distance-label"></text>
+          </g>
           <g id="mapPresetRouteLayer" class="map-preset-route-layer">
             <path id="mapPresetRoadPath" class="map-preset-route-line map-preset-road-path" d=""></path>
             <polyline id="mapPresetRouteMain" class="map-preset-route-line" points="" fill="none"></polyline>
@@ -408,6 +416,56 @@
       </div>
 
       <div class="test-content">
+        <section class="movement-test-block">
+          <div class="movement-test-head">
+            <div>
+              <div class="daylight-test-title">ТЕСТ СКОРОСТИ ПЕРЕДВИЖЕНИЯ</div>
+              <div class="movement-test-route">
+                МОСТ У ЦЕМЕНТНОГО ЗАВОДА → SWYD-EAST CHECKPOINT, ЖЕЛЕЗНЫЙ ЛЕС
+              </div>
+            </div>
+            <button id="showMovementTestRouteBtn" class="btn movement-map-btn" type="button">
+              ПОКАЗАТЬ НА КАРТЕ
+            </button>
+          </div>
+
+          <div class="movement-test-distance-row">
+            <span>КОНТРОЛЬНОЕ РАССТОЯНИЕ</span>
+            <strong id="movementTestDistance">—</strong>
+          </div>
+
+          <div class="movement-test-help">
+            Встаньте у контрольной точки на мосту, выберите темп и нажмите «СТАРТ». Переключитесь в игру и двигайтесь до SWYD-East Checkpoint без остановок. На финише вернитесь в Zone Clock и нажмите «ФИНИШ».
+          </div>
+
+          <div class="movement-test-modes">
+            <div class="movement-test-card" data-movement-mode="slow">
+              <div class="movement-test-mode-title">МЕДЛЕННЫЙ ШАГ</div>
+              <div class="movement-live-time" data-movement-live="slow">00:00</div>
+              <div class="movement-test-result" data-movement-result="slow">Нет замеров</div>
+              <button class="btn primary movement-test-action" data-movement-action="slow" type="button">СТАРТ</button>
+            </div>
+
+            <div class="movement-test-card" data-movement-mode="fast">
+              <div class="movement-test-mode-title">БЫСТРЫЙ ШАГ</div>
+              <div class="movement-live-time" data-movement-live="fast">00:00</div>
+              <div class="movement-test-result" data-movement-result="fast">Нет замеров</div>
+              <button class="btn primary movement-test-action" data-movement-action="fast" type="button">СТАРТ</button>
+            </div>
+
+            <div class="movement-test-card" data-movement-mode="run">
+              <div class="movement-test-mode-title">БЕГ</div>
+              <div class="movement-live-time" data-movement-live="run">00:00</div>
+              <div class="movement-test-result" data-movement-result="run">Нет замеров</div>
+              <button class="btn primary movement-test-action" data-movement-action="run" type="button">СТАРТ</button>
+            </div>
+          </div>
+
+          <div id="movementTestStatus" class="movement-test-status">
+            Выберите темп и начните замер у моста.
+          </div>
+        </section>
+
         <div class="test-toolbar">
           <div class="daylight-test-block">
             <div class="daylight-test-title">ОСВЕЩЕНИЕ</div>
@@ -570,7 +628,7 @@
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v82</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v83</strong></div>
           <button id="updateAppBtn" class="btn update-app-btn" type="button">
             ОБНОВИТЬ ПРИЛОЖЕНИЕ
           </button>
