@@ -1233,3 +1233,9 @@ body:has(.test-dialog[open]) {
 .notification-note {
   max-width: 48rem;
 }
+
+
+/* PWA v44 — отбивка между временем и текстом уведомления */
+.zone-toast-text {
+  margin-top: 11px;
+}
