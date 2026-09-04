@@ -102,8 +102,11 @@ mapMeasureHint: $('mapMeasureHint'),
     mapJourneyTime: $('mapJourneyTime'),
     mapJourneyEmission: $('mapJourneyEmission'),
     mapJourneyNight: $('mapJourneyNight'),
-    timeFlowInfoDetails: $('timeFlowInfoDetails'),
-    timeFlowChart: $('timeFlowChart'),
+    openChronometryBtn: $('openChronometryBtn'),
+    chronometryDialog: $('chronometryDialog'),
+    closeChronometryBtn: $('closeChronometryBtn'),
+    chronometryChart: $('chronometryChart'),
+    chronometrySummary: $('chronometrySummary'),
     settingsTestBtn: $('settingsTestBtn'), closeTestBtn: $('closeTestBtn'), testDialog: $('testDialog'),
     testCurrentTime: $('testCurrentTime'), testTableBody: $('testTableBody'),
     dayCalibrationDetails: $('dayCalibrationDetails'),
@@ -2626,27 +2629,118 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function toggleMapFullscreen() {
-    if (!els.mapViewport || !els.mapDialog) return;
+    if (!els.mapViewport || !els.mapDialog) {
+      return;
+    }
 
-    const oldRect = els.mapViewport.getBoundingClientRect();
-    const centerImageX = oldRect.width > 0
-      ? (oldRect.width / 2 - mapPanX) / mapZoom
-      : MAP_IMAGE_SIZE / 2;
-    const centerImageY = oldRect.height > 0
-      ? (oldRect.height / 2 - mapPanY) / mapZoom
-      : MAP_IMAGE_SIZE / 2;
+    const oldDialogRect =
+      els.mapDialog.getBoundingClientRect();
 
-    mapFullscreenMode = !mapFullscreenMode;
+    const oldMapRect =
+      els.mapViewport.getBoundingClientRect();
+
+    const centerImageX =
+      oldMapRect.width > 0
+        ? (
+            oldMapRect.width / 2 -
+            mapPanX
+          ) / mapZoom
+        : MAP_IMAGE_SIZE / 2;
+
+    const centerImageY =
+      oldMapRect.height > 0
+        ? (
+            oldMapRect.height / 2 -
+            mapPanY
+          ) / mapZoom
+        : MAP_IMAGE_SIZE / 2;
+
+    mapFullscreenMode =
+      !mapFullscreenMode;
+
     updateMapFullscreenUI();
 
     window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        const rect = els.mapViewport.getBoundingClientRect();
-        if (!(rect.width > 20 && rect.height > 20)) return;
+      const newDialogRect =
+        els.mapDialog.getBoundingClientRect();
+
+      const dx =
+        oldDialogRect.left -
+        newDialogRect.left;
+
+      const dy =
+        oldDialogRect.top -
+        newDialogRect.top;
+
+      const sx =
+        newDialogRect.width > 0
+          ? oldDialogRect.width /
+            newDialogRect.width
+          : 1;
+
+      const sy =
+        newDialogRect.height > 0
+          ? oldDialogRect.height /
+            newDialogRect.height
+          : 1;
+
+      const reduceMotion =
+        window.matchMedia &&
+        window.matchMedia(
+          '(prefers-reduced-motion: reduce)'
+        ).matches;
+
+      if (
+        !reduceMotion &&
+        typeof els.mapDialog.animate ===
+          'function'
+      ) {
+        els.mapDialog.animate(
+          [
+            {
+              transformOrigin:
+                'top left',
+              transform:
+                `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`,
+              opacity: 0.96
+            },
+            {
+              transformOrigin:
+                'top left',
+              transform:
+                'translate(0, 0) scale(1, 1)',
+              opacity: 1
+            }
+          ],
+          {
+            duration: 560,
+            easing:
+              'cubic-bezier(.20,.76,.18,1)',
+            fill: 'both'
+          }
+        );
+      }
+
+      window.setTimeout(() => {
+        const rect =
+          els.mapViewport.getBoundingClientRect();
+
+        if (
+          !(rect.width > 20 &&
+            rect.height > 20)
+        ) {
+          return;
+        }
 
         if (els.mapOverlay) {
-          els.mapOverlay.setAttribute('width', String(rect.width));
-          els.mapOverlay.setAttribute('height', String(rect.height));
+          els.mapOverlay.setAttribute(
+            'width',
+            String(rect.width)
+          );
+          els.mapOverlay.setAttribute(
+            'height',
+            String(rect.height)
+          );
         }
 
         mapFitZoom = Math.min(
@@ -2654,13 +2748,28 @@ mapMeasureHint: $('mapMeasureHint'),
           rect.height / MAP_IMAGE_SIZE
         );
 
-        const minZoom = Math.max(.08, mapFitZoom * .75);
-        mapZoom = Math.max(mapZoom, minZoom);
-        mapPanX = rect.width / 2 - centerImageX * mapZoom;
-        mapPanY = rect.height / 2 - centerImageY * mapZoom;
+        const minZoom =
+          Math.max(
+            .08,
+            mapFitZoom * .75
+          );
+
+        mapZoom =
+          Math.max(
+            mapZoom,
+            minZoom
+          );
+
+        mapPanX =
+          rect.width / 2 -
+          centerImageX * mapZoom;
+
+        mapPanY =
+          rect.height / 2 -
+          centerImageY * mapZoom;
 
         applyMapTransform(true);
-      });
+      }, reduceMotion ? 0 : 500);
     });
   }
 
@@ -3416,7 +3525,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v79.csv';
+    link.download = 'zone-clock-test-v80.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -3540,41 +3649,76 @@ mapMeasureHint: $('mapMeasureHint'),
     worker.addEventListener('statechange', updateStatusFromWorker);
   }
 
-  function drawTimeFlowChart() {
-    if (!els.timeFlowChart) return;
+  function buildChronometrySeries() {
+    const series = [
+      {
+        realMinutes: 0,
+        zoneHours: 0,
+        realHours: 0
+      }
+    ];
 
-    const svg = els.timeFlowChart;
+    let realSeconds = 0;
+    let zoneSeconds = 0;
+
+    PATCH20_RATE_TABLE.forEach(rate => {
+      const zoneDelta = RATE_SLOT_SECONDS;
+      const realDelta = zoneDelta / rate;
+
+      zoneSeconds += zoneDelta;
+      realSeconds += realDelta;
+
+      series.push({
+        realMinutes: realSeconds / 60,
+        zoneHours: zoneSeconds / 3600,
+        realHours: realSeconds / 3600
+      });
+    });
+
+    return series;
+  }
+
+  function drawChronometryChart() {
+    if (!els.chronometryChart) return;
+
+    const svg = els.chronometryChart;
     svg.innerHTML = '';
 
+    const series = buildChronometrySeries();
+
     const ns = 'http://www.w3.org/2000/svg';
-    const width = 360;
-    const height = 180;
-    const left = 34;
-    const right = 10;
-    const top = 12;
-    const bottom = 28;
+    const width = 760;
+    const height = 400;
+    const left = 68;
+    const right = 28;
+    const top = 38;
+    const bottom = 62;
     const plotW = width - left - right;
     const plotH = height - top - bottom;
-    const maxRate = 25;
 
-    const addLine = (
-      x1,
-      y1,
-      x2,
-      y2,
-      className
-    ) => {
-      const line =
-        document.createElementNS(ns, 'line');
-      line.setAttribute('x1', x1);
-      line.setAttribute('y1', y1);
-      line.setAttribute('x2', x2);
-      line.setAttribute('y2', y2);
-      line.setAttribute(
-        'class',
-        className
+    const totalRealMinutes =
+      series[series.length - 1].realMinutes;
+
+    const maxX =
+      Math.ceil(totalRealMinutes / 15) * 15;
+    const maxY = 24;
+
+    const xFor = minutes =>
+      left + plotW * (minutes / maxX);
+
+    const yFor = hours =>
+      top + plotH * (1 - hours / maxY);
+
+    const make = (tag, attrs = {}) => {
+      const node =
+        document.createElementNS(ns, tag);
+
+      Object.entries(attrs).forEach(
+        ([key, value]) =>
+          node.setAttribute(key, value)
       );
-      svg.appendChild(line);
+
+      return node;
     };
 
     const addText = (
@@ -3584,119 +3728,202 @@ mapMeasureHint: $('mapMeasureHint'),
       className,
       anchor = 'start'
     ) => {
-      const label =
-        document.createElementNS(ns, 'text');
-      label.setAttribute('x', x);
-      label.setAttribute('y', y);
-      label.setAttribute(
-        'text-anchor',
-        anchor
-      );
-      label.setAttribute(
-        'class',
-        className
-      );
-      label.textContent = text;
-      svg.appendChild(label);
+      const node = make('text', {
+        x,
+        y,
+        class: className,
+        'text-anchor': anchor
+      });
+
+      node.textContent = text;
+      svg.appendChild(node);
+      return node;
     };
 
-    [1, 10, 20].forEach(rate => {
-      const y =
-        top + plotH * (1 - rate / maxRate);
+    [0, 4, 8, 12, 16, 20, 24]
+      .forEach(hours => {
+        const y = yFor(hours);
 
-      addLine(
-        left,
-        y,
-        left + plotW,
-        y,
-        'time-chart-grid'
+        svg.appendChild(
+          make('line', {
+            x1: left,
+            y1: y,
+            x2: left + plotW,
+            y2: y,
+            class: 'chronometry-grid'
+          })
+        );
+
+        addText(
+          left - 10,
+          y + 5,
+          `${hours} ч`,
+          'chronometry-axis-label',
+          'end'
+        );
+      });
+
+    const xStep = maxX <= 105 ? 15 : 30;
+
+    for (
+      let minutes = 0;
+      minutes <= maxX;
+      minutes += xStep
+    ) {
+      const x = xFor(minutes);
+
+      svg.appendChild(
+        make('line', {
+          x1: x,
+          y1: top,
+          x2: x,
+          y2: top + plotH,
+          class:
+            'chronometry-grid chronometry-grid-vertical'
+        })
       );
 
       addText(
-        left - 6,
-        y + 3,
-        `×${rate}`,
-        'time-chart-label',
-        'end'
-      );
-    });
-
-    [0, 6, 12, 18, 24].forEach(hour => {
-      const x =
-        left + plotW * (hour / 24);
-
-      addLine(
         x,
-        top,
-        x,
-        top + plotH,
-        'time-chart-grid vertical'
-      );
-
-      addText(
-        x,
-        height - 8,
-        String(hour).padStart(2, '0'),
-        'time-chart-label',
+        height - 28,
+        String(minutes),
+        'chronometry-axis-label',
         'middle'
       );
-    });
-
-    const realY =
-      top + plotH * (1 - 1 / maxRate);
-
-    addLine(
-      left,
-      realY,
-      left + plotW,
-      realY,
-      'time-chart-real'
-    );
-
-    const points =
-      PATCH20_RATE_TABLE.map(
-        (rate, index) => {
-          const hour =
-            (index + 0.5) * 0.25;
-          const x =
-            left + plotW * (hour / 24);
-          const y =
-            top +
-            plotH *
-              (
-                1 -
-                Math.min(maxRate, rate) /
-                  maxRate
-              );
-
-          return `${x.toFixed(1)},${y.toFixed(1)}`;
-        }
-      ).join(' ');
-
-    const polyline =
-      document.createElementNS(
-        ns,
-        'polyline'
-      );
-
-    polyline.setAttribute(
-      'points',
-      points
-    );
-    polyline.setAttribute(
-      'class',
-      'time-chart-zone'
-    );
-    svg.appendChild(polyline);
+    }
 
     addText(
-      left,
-      10,
-      'множитель относительно реального времени',
-      'time-chart-caption'
+      left + plotW / 2,
+      height - 6,
+      'реально прошло, минут',
+      'chronometry-axis-title',
+      'middle'
     );
-  }
 
+    const yTitle = addText(
+      18,
+      top + plotH / 2,
+      'накопленное время, часов',
+      'chronometry-axis-title',
+      'middle'
+    );
+
+    yTitle.setAttribute(
+      'transform',
+      `rotate(-90 18 ${top + plotH / 2})`
+    );
+
+    const zonePoints = series.map(
+      point => [
+        xFor(point.realMinutes),
+        yFor(point.zoneHours)
+      ]
+    );
+
+    const realPoints = series.map(
+      point => [
+        xFor(point.realMinutes),
+        yFor(point.realHours)
+      ]
+    );
+
+    const gapPolygon = [
+      ...zonePoints,
+      ...realPoints.slice().reverse()
+    ]
+      .map(
+        ([x, y]) =>
+          `${x.toFixed(1)},${y.toFixed(1)}`
+      )
+      .join(' ');
+
+    svg.appendChild(
+      make('polygon', {
+        points: gapPolygon,
+        class: 'chronometry-gap-series'
+      })
+    );
+
+    svg.appendChild(
+      make('polyline', {
+        points: zonePoints
+          .map(
+            ([x, y]) =>
+              `${x.toFixed(1)},${y.toFixed(1)}`
+          )
+          .join(' '),
+        class: 'chronometry-zone-series'
+      })
+    );
+
+    svg.appendChild(
+      make('polyline', {
+        points: realPoints
+          .map(
+            ([x, y]) =>
+              `${x.toFixed(1)},${y.toFixed(1)}`
+          )
+          .join(' '),
+        class: 'chronometry-real-series'
+      })
+    );
+
+    const end = series[series.length - 1];
+    const endX = xFor(end.realMinutes);
+    const zoneY = yFor(end.zoneHours);
+    const realY = yFor(end.realHours);
+
+    svg.appendChild(
+      make('circle', {
+        cx: endX,
+        cy: zoneY,
+        r: 5.5,
+        class: 'chronometry-zone-dot'
+      })
+    );
+
+    svg.appendChild(
+      make('circle', {
+        cx: endX,
+        cy: realY,
+        r: 4.5,
+        class: 'chronometry-real-dot'
+      })
+    );
+
+    addText(
+      endX - 10,
+      zoneY - 13,
+      '24 ч Зоны',
+      'chronometry-zone-end-label',
+      'end'
+    );
+
+    addText(
+      endX - 10,
+      realY - 12,
+      `${end.realHours.toFixed(1)} ч реального`,
+      'chronometry-real-end-label',
+      'end'
+    );
+
+    if (els.chronometrySummary) {
+      const roundedMinutes =
+        Math.round(end.realMinutes);
+
+      const hours =
+        Math.floor(roundedMinutes / 60);
+
+      const minutes =
+        roundedMinutes % 60;
+
+      const gap =
+        24 - end.realHours;
+
+      els.chronometrySummary.textContent =
+        `24 часа Зоны по калибровке Patch 2.0 проходят примерно за ${hours} ч ${minutes} мин реального времени. К завершению цикла накопленное расхождение составляет около ${gap.toFixed(1)} часа.`;
+    }
+  }
 
 
   async function updateApplicationNow() {
@@ -3761,6 +3988,96 @@ mapMeasureHint: $('mapMeasureHint'),
     }
   }
 
+  function openChronometryDialog() {
+    if (!els.chronometryDialog) return;
+
+    const reopenSettings = Boolean(
+      els.settingsDialog &&
+      els.settingsDialog.open
+    );
+
+    if (reopenSettings) {
+      closeSettings();
+    }
+
+    els.chronometryDialog.dataset.reopenSettings =
+      reopenSettings ? '1' : '0';
+
+    if (
+      typeof els.chronometryDialog.showModal ===
+      'function'
+    ) {
+      els.chronometryDialog.showModal();
+    } else {
+      els.chronometryDialog.setAttribute(
+        'open',
+        ''
+      );
+    }
+
+    window.requestAnimationFrame(() => {
+      drawChronometryChart();
+    });
+  }
+
+  function closeChronometryDialog() {
+    if (!els.chronometryDialog) return;
+
+    const reopenSettings =
+      els.chronometryDialog.dataset
+        .reopenSettings === '1';
+
+    if (
+      typeof els.chronometryDialog.close ===
+        'function' &&
+      els.chronometryDialog.open
+    ) {
+      els.chronometryDialog.close();
+    } else {
+      els.chronometryDialog.removeAttribute(
+        'open'
+      );
+    }
+
+    els.chronometryDialog.dataset.reopenSettings =
+      '0';
+
+    if (reopenSettings) {
+      window.setTimeout(
+        openSettings,
+        80
+      );
+    }
+  }
+
+  if (els.openChronometryBtn) {
+    els.openChronometryBtn.addEventListener(
+      'click',
+      openChronometryDialog
+    );
+  }
+
+  if (els.closeChronometryBtn) {
+    els.closeChronometryBtn.addEventListener(
+      'click',
+      closeChronometryDialog
+    );
+  }
+
+  if (els.chronometryDialog) {
+    els.chronometryDialog.addEventListener(
+      'click',
+      event => {
+        if (
+          event.target ===
+          els.chronometryDialog
+        ) {
+          closeChronometryDialog();
+        }
+      }
+    );
+  }
+
   if (els.updateAppBtn) {
     els.updateAppBtn.addEventListener('click', updateApplicationNow);
   }
@@ -3774,19 +4091,6 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   applyTheme(currentTheme(), false);
-
-  drawTimeFlowChart();
-
-  if (els.timeFlowInfoDetails) {
-    els.timeFlowInfoDetails.addEventListener(
-      'toggle',
-      () => {
-        if (els.timeFlowInfoDetails.open) {
-          drawTimeFlowChart();
-        }
-      }
-    );
-  }
 
   const restored = loadState();
   if (restored) els.message.textContent = 'Состояние восстановлено.';

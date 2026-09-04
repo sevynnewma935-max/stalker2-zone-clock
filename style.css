@@ -2937,3 +2937,300 @@ button.zone-button-press:not(:disabled) {
   font-size: .66rem;
   line-height: 1.45;
 }
+
+
+/* PWA v80 — отдельное большое окно Хронометрии */
+.settings-info-btn {
+  width: 100%;
+  min-height: 48px;
+  font-weight: 800;
+  letter-spacing: .075em;
+}
+
+.chronometry-dialog {
+  width: min(96vw, 940px);
+  max-width: 940px;
+  max-height: 92dvh;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+  color: var(--text);
+  overflow: hidden;
+}
+
+.chronometry-dialog::backdrop {
+  background: rgba(0, 0, 0, .78);
+  backdrop-filter: blur(4px);
+}
+
+.chronometry-modal {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  max-height: 92dvh;
+}
+
+.chronometry-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(8, 16, 11, .94);
+}
+
+.chronometry-header h2 {
+  margin: 5px 0 0;
+  font-size: 1.38rem;
+  line-height: 1.15;
+  letter-spacing: .08em;
+}
+
+.chronometry-header-note {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: .8rem;
+  line-height: 1.45;
+}
+
+.chronometry-content {
+  display: grid;
+  gap: 26px;
+  padding: 22px;
+  overflow-y: auto;
+}
+
+.chronometry-chart-section {
+  display: grid;
+  gap: 13px;
+}
+
+.chronometry-chart-title {
+  color: var(--text);
+  font-size: .9rem;
+  font-weight: 800;
+  letter-spacing: .075em;
+}
+
+.chronometry-chart-frame {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(10, 22, 14, .78),
+      rgba(4, 10, 7, .92)
+    );
+}
+
+.chronometry-chart {
+  display: block;
+  width: 100%;
+  min-width: 700px;
+  min-height: 390px;
+}
+
+.chronometry-grid {
+  stroke: rgba(218, 232, 216, .15);
+  stroke-width: 1;
+}
+
+.chronometry-grid-vertical {
+  stroke: rgba(218, 232, 216, .08);
+}
+
+.chronometry-axis-label,
+.chronometry-axis-title {
+  fill: #aab5aa;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+}
+
+.chronometry-axis-label {
+  font-size: 12px;
+}
+
+.chronometry-axis-title {
+  font-size: 13px;
+}
+
+.chronometry-gap-series {
+  fill: rgba(198, 210, 91, .12);
+  stroke: none;
+}
+
+.chronometry-zone-series {
+  fill: none;
+  stroke: #c6d25b;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chronometry-real-series {
+  fill: none;
+  stroke: #98a29b;
+  stroke-width: 3;
+  stroke-dasharray: 9 7;
+  stroke-linecap: round;
+}
+
+.chronometry-zone-dot {
+  fill: #d7e46c;
+  stroke: #162014;
+  stroke-width: 2;
+}
+
+.chronometry-real-dot {
+  fill: #b7c0ba;
+  stroke: #162014;
+  stroke-width: 2;
+}
+
+.chronometry-zone-end-label {
+  fill: #e6f085;
+  font-size: 14px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: #071009;
+  stroke-width: 4px;
+}
+
+.chronometry-real-end-label {
+  fill: #d0d7d2;
+  font-size: 13px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: #071009;
+  stroke-width: 4px;
+}
+
+.chronometry-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+.chronometry-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.chronometry-legend i {
+  display: inline-block;
+  width: 28px;
+  height: 4px;
+  border-radius: 99px;
+}
+
+.chronometry-zone-line {
+  background: #c6d25b;
+}
+
+.chronometry-real-line {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #98a29b 0 7px,
+      transparent 7px 11px
+    );
+}
+
+.chronometry-gap-fill {
+  height: 10px !important;
+  background: rgba(198, 210, 91, .18);
+  border: 1px solid rgba(198, 210, 91, .35);
+}
+
+.chronometry-summary {
+  padding: 14px 15px;
+  border-left: 3px solid #c6d25b;
+  border-radius: 9px;
+  background: rgba(198, 210, 91, .07);
+  color: var(--text);
+  font-size: .94rem;
+  line-height: 1.55;
+}
+
+.chronometry-article {
+  display: grid;
+  gap: 18px;
+  padding-top: 4px;
+}
+
+.chronometry-article h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.36rem;
+  line-height: 1.3;
+}
+
+.chronometry-article p {
+  margin: 0;
+  color: #d4ddd3;
+  font-size: 1.06rem;
+  line-height: 1.78;
+}
+
+@media (max-width: 620px) {
+  .chronometry-dialog {
+    width: 96vw;
+    max-height: 94dvh;
+  }
+
+  .chronometry-modal {
+    max-height: 94dvh;
+  }
+
+  .chronometry-header {
+    padding: 15px 14px;
+  }
+
+  .chronometry-header h2 {
+    font-size: 1.18rem;
+  }
+
+  .chronometry-content {
+    padding: 16px 14px 24px;
+    gap: 22px;
+  }
+
+  .chronometry-chart-title {
+    font-size: .79rem;
+    line-height: 1.4;
+  }
+
+  .chronometry-chart {
+    min-width: 690px;
+    min-height: 360px;
+  }
+
+  .chronometry-summary {
+    font-size: .94rem;
+  }
+
+  .chronometry-article h3 {
+    font-size: 1.28rem;
+  }
+
+  .chronometry-article p {
+    font-size: 1.02rem;
+    line-height: 1.72;
+  }
+}
+
+/* Более плавное разворачивание карты */
+.map-dialog {
+  transform-origin: top left;
+  will-change: transform, opacity;
+}
