@@ -164,6 +164,11 @@
           <div class="map-zone-time-line">
             ИГРОВОЕ ВРЕМЯ <strong id="mapZoneTime">--:--</strong>
           </div>
+          <div id="mapJourneyHud" class="map-journey-hud" hidden>
+            <strong id="mapJourneyHudDistance">—</strong>
+            <span>·</span>
+            <strong id="mapJourneyHudTime">—</strong>
+          </div>
         </div>
         <div class="map-header-actions">
           <button id="mapFullscreenBtn" class="icon-btn small" type="button" aria-label="Развернуть карту на весь экран" title="На весь экран">
@@ -196,7 +201,6 @@
             <option value="garbage_cement_cooling">СВАЛКА → ЦЕМЕНТНЫЙ ЗАВОД → ГРАДИРНИ</option>
             <option value="rostok_redforest_yanov_jupiter_chemical">РОСТОК → РЫЖИЙ ЛЕС → ЯНОВ → ЮПИТЕР → ХИМЗАВОД</option>
           </select>
-          <div id="mapRouteSelectValue" class="map-route-selected-value"></div>
         </label>
         <label id="mapRouteStartWrap" class="map-route-select-wrap" for="mapRouteStartSelect">
           <span>НАЧАЛО МАРШРУТА</span>
@@ -204,8 +208,10 @@
             <option value="svalka">СВАЛКА</option>
             <option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>
           </select>
-          <div id="mapRouteStartValue" class="map-route-selected-value"></div>
         </label>
+        <button id="mapJourneyBtn" class="btn primary map-journey-btn" type="button">
+          В ПУТЬ
+        </button>
       </div>
 
       <div class="map-info-strip">
@@ -273,6 +279,47 @@
           </div>
         </div>
       </details>
+    </div>
+  </dialog>
+
+  <dialog id="mapJourneyDialog" class="journey-dialog" aria-labelledby="mapJourneyDialogTitle">
+    <div class="journey-modal">
+      <div class="journey-modal-header">
+        <div>
+          <div class="eyebrow">ZONE CLOCK / МАРШРУТ</div>
+          <h2 id="mapJourneyDialogTitle">ПЕРЕД ВЫХОДОМ</h2>
+        </div>
+        <button id="closeJourneyBtn" class="icon-btn small" type="button" aria-label="Закрыть" title="Закрыть">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="journey-content">
+        <div id="mapJourneyWish" class="journey-wish"></div>
+        <div class="journey-stat-grid">
+          <div class="journey-stat">
+            <span>МАРШРУТ</span>
+            <strong id="mapJourneyRouteName">—</strong>
+          </div>
+          <div class="journey-stat">
+            <span>ДЛИНА</span>
+            <strong id="mapJourneyDistance">—</strong>
+          </div>
+          <div class="journey-stat">
+            <span>ПРИМЕРНОЕ ВРЕМЯ</span>
+            <strong id="mapJourneyTime">—</strong>
+          </div>
+        </div>
+        <div id="mapJourneyEmission" class="journey-warning"></div>
+        <div id="mapJourneyNight" class="journey-warning journey-night" hidden></div>
+        <div class="journey-estimate-note">
+          Оценка времени рассчитана для среднего темпа около 8 км/ч с короткими остановками. Бои, перегруз и обходы увеличат время.
+        </div>
+        <button id="startJourneyBtn" class="btn primary wide journey-start-btn" type="button">
+          НАЧАТЬ ПУТЬ
+        </button>
+      </div>
     </div>
   </dialog>
 
@@ -444,9 +491,48 @@
           </div>
         </div>
 
+        <div class="settings-group">
+          <div class="settings-heading">ИНФОРМАЦИЯ</div>
+          <details id="timeFlowInfoDetails" class="settings-info-details">
+            <summary>
+              <span>ХРОНОМЕТРИЯ ЗОНЫ</span>
+              <span aria-hidden="true">⌄</span>
+            </summary>
+            <div class="settings-info-body">
+              <div class="time-flow-chart-card">
+                <div class="time-flow-chart-title">СКОРОСТЬ ТЕЧЕНИЯ ВРЕМЕНИ</div>
+                <svg id="timeFlowChart" class="time-flow-chart" viewBox="0 0 360 180" role="img" aria-label="Сравнение скорости времени Zone Clock и реального времени"></svg>
+                <div class="time-flow-legend">
+                  <span><i class="legend-zone"></i> Patch 2.0</span>
+                  <span><i class="legend-real"></i> Реальное время ×1</span>
+                </div>
+                <div class="settings-subnote">
+                  По полной калибровке сутки Зоны занимают примерно 96 реальных минут, но скорость меняется в течение суток.
+                </div>
+              </div>
+
+              <article class="zone-time-article">
+                <h3>О хронометрической деформации в пределах Зоны</h3>
+                <p>
+                  Полевые наблюдения показывают, что локальный ход времени в Зоне нельзя описать одним постоянным коэффициентом. Если сравнить часы наблюдателя за Периметром и показания хронометра внутри Зоны, возникает эффект переменной временной компрессии: один и тот же реальный интервал соответствует разному количеству внутризонного времени в зависимости от фазы суток.
+                </p>
+                <p>
+                  В условной модели это можно объяснить «хронорезонансом» — взаимодействием аномального поля с суточным циклом освещения, атмосферной ионизацией и накопленной энергией аномалий. В периоды относительной стабильности поле как будто растягивает внутреннюю шкалу, а в переходные часы перед рассветом и после заката коэффициент меняется. Поэтому график Patch 2.0 не является прямой линией.
+                </p>
+                <p>
+                  С практической точки зрения сталкер воспринимает это не как ускорение собственного движения, а как рассогласование двух систем отсчёта. Пульс, усталость и пройденное расстояние остаются субъективно обычными, тогда как положение солнца и часы Зоны заметно уходят вперёд относительно времени за Периметром.
+                </p>
+                <p>
+                  Zone Clock рассматривает эту деформацию не как мистическую константу, а как измеряемую функцию. Таблица из 96 пятнадцатиминутных участков позволяет отдельно учитывать участки ускорения и замедления и тем самым точнее прогнозировать рассвет, ночь, длительность маршрута и окно риска выброса.
+                </p>
+              </article>
+            </div>
+          </details>
+        </div>
+
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v77</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v79</strong></div>
           <button id="updateAppBtn" class="btn update-app-btn" type="button">
             ОБНОВИТЬ ПРИЛОЖЕНИЕ
           </button>
