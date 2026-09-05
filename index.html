@@ -147,6 +147,12 @@
 <div class="map-zone-time-line">
             ИГРОВОЕ ВРЕМЯ <strong id="mapZoneTime">--:--</strong>
 </div>
+<div class="map-route-header-summary" id="mapRouteHeaderSummary">
+<span>МАРШРУТ</span>
+<strong id="mapRouteHeaderDistance">—</strong>
+<span>·</span>
+<strong id="mapRouteHeaderTime">—</strong>
+</div>
 <div class="map-journey-hud" hidden="" id="mapJourneyHud">
 <strong id="mapJourneyHudDistance">—</strong>
 <span>·</span>
@@ -184,6 +190,7 @@
 <select class="map-route-select" id="mapRouteSelect">
 <option value="garbage_cement_cooling">Свалка → Цементный завод → Градирни</option>
 <option value="rostok_redforest_yanov_jupiter_chemical">Росток → Рыжий лес → Янов → Юпитер → Химзавод</option>
+<option value="custom_artifacts">Свой маршрут по артефактам</option>
 <option value="road_planner">По местоположениям</option>
 <option value="movement_test">Тестовый маршрут</option>
 </select>
@@ -273,6 +280,10 @@
 <polyline class="map-preset-route-line" fill="none" id="mapPresetRouteBranch" points=""></polyline>
 <g id="mapPresetRoutePoints"></g>
 <g id="mapArtifactVisitPoints"></g>
+</g>
+<g class="map-custom-artifact-layer" id="mapCustomArtifactLayer" style="display:none">
+<path class="map-custom-artifact-path" d="" id="mapCustomArtifactPath"></path>
+<g id="mapCustomArtifactPoints"></g>
 </g>
 <g class="map-known-locations-layer" id="mapKnownLocationsLayer" style="display:none"></g>
 <g class="map-road-planner-layer" id="mapRoadPlannerLayer" style="display:none">
@@ -671,7 +682,7 @@
 </div>
 <div class="settings-group version-group">
 <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.11</strong></div>
+<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.13</strong></div>
 <button class="btn update-app-btn" id="updateAppBtn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>

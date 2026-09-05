@@ -106,11 +106,17 @@
     mapPlannerMessage: $('mapPlannerMessage'),
     mapRoadPlannerLayer: $('mapRoadPlannerLayer'),
     mapRoadPlannerPath: $('mapRoadPlannerPath'),
+    mapCustomArtifactLayer: $('mapCustomArtifactLayer'),
+    mapCustomArtifactPath: $('mapCustomArtifactPath'),
+    mapCustomArtifactPoints: $('mapCustomArtifactPoints'),
     mapKnownLocationsLayer: $('mapKnownLocationsLayer'),
     mapZoneTime: $('mapZoneTime'),
     mapJourneyHud: $('mapJourneyHud'),
     mapJourneyHudDistance: $('mapJourneyHudDistance'),
     mapJourneyHudTime: $('mapJourneyHudTime'),
+    mapRouteHeaderSummary: $('mapRouteHeaderSummary'),
+    mapRouteHeaderDistance: $('mapRouteHeaderDistance'),
+    mapRouteHeaderTime: $('mapRouteHeaderTime'),
     mapDistance: $('mapDistance'), mapPointCount: $('mapPointCount'),
 mapMeasureHint: $('mapMeasureHint'),
     mapKnownDistanceKm: $('mapKnownDistanceKm'),
@@ -1455,10 +1461,14 @@ mapMeasureHint: $('mapMeasureHint'),
 
   const MAP_ROUTE_MODE_ROAD_PLANNER = 'road_planner';
   const MAP_ROUTE_MODE_MOVEMENT_TEST = 'movement_test';
+  const MAP_ROUTE_MODE_CUSTOM_ARTIFACT = 'custom_artifacts';
+  const MAP_CUSTOM_ARTIFACT_STORAGE_KEY =
+    'stalker2-zone-clock-custom-artifact-route-v1';
 
   function isSpecialMapRouteMode(routeKey = mapSelectedRouteKey) {
     return routeKey === MAP_ROUTE_MODE_ROAD_PLANNER ||
-      routeKey === MAP_ROUTE_MODE_MOVEMENT_TEST;
+      routeKey === MAP_ROUTE_MODE_MOVEMENT_TEST ||
+      routeKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT;
   }
 
   const MAP_PRESET_ROUTES = {
@@ -1580,6 +1590,12 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapRoadPlannerBusy = false;
   let mapRoadPlannerAutoBuildTimer = 0;
   let mapRoadPlannerNeedsRebuild = false;
+
+  let mapCustomArtifactSequence = [];
+  let mapCustomArtifactRoutePoints = [];
+  let mapCustomArtifactMeters = 0;
+  let mapCustomArtifactBusy = false;
+  let mapCustomArtifactBuildTimer = 0;
 
   let mapJourneyActive = false;
   let mapJourneyPlan = null;
@@ -2951,7 +2967,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
     if (els.mapFullscreenResetPointsBtn) {
       els.mapFullscreenResetPointsBtn.disabled =
-        !(mapRoadPlannerSequence.length || mapMeasurePoints.length);
+        !(mapRoadPlannerSequence.length || mapCustomArtifactSequence.length || mapMeasurePoints.length);
     }
 
     if (els.mapLocationJourneyBtn) {
@@ -3110,6 +3126,8 @@ mapMeasureHint: $('mapMeasureHint'),
             )
           : '—';
     }
+
+    updateMapRouteHeaderSummary();
   }
 
   function saveVisitedArtifacts() {
@@ -3515,6 +3533,332 @@ mapMeasureHint: $('mapMeasureHint'),
     }
 
     return totalGame;
+  }
+
+
+  function getCustomArtifactCandidates() {
+    const defs = [
+      { routeKey: 'garbage_cement_cooling', exclude: new Set([3, 13]) },
+      { routeKey: 'rostok_redforest_yanov_jupiter_chemical', exclude: new Set([7]) }
+    ];
+    const result = [];
+
+    defs.forEach(def => {
+      const route = MAP_PRESET_ROUTES[def.routeKey];
+      if (!route || !Array.isArray(route.markers)) return;
+
+      route.markers.forEach((point, markerIndex) => {
+        if (def.exclude.has(markerIndex)) return;
+
+        const duplicate = result.find(item =>
+          Math.hypot(item.x - point.x, item.y - point.y) < 5
+        );
+        if (duplicate) return;
+
+        result.push({
+          id: `${def.routeKey}:${markerIndex}`,
+          routeKey: def.routeKey,
+          markerIndex,
+          x: Number(point.x),
+          y: Number(point.y),
+          label: `Артефакт ${result.length + 1}`
+        });
+      });
+    });
+
+    return result;
+  }
+
+  function saveCustomArtifactRoute() {
+    try {
+      localStorage.setItem(
+        MAP_CUSTOM_ARTIFACT_STORAGE_KEY,
+        JSON.stringify(mapCustomArtifactSequence.map(item => item.id))
+      );
+    } catch (_) {}
+  }
+
+  function restoreCustomArtifactRoute() {
+    if (mapCustomArtifactSequence.length) return;
+    try {
+      const ids = JSON.parse(
+        localStorage.getItem(MAP_CUSTOM_ARTIFACT_STORAGE_KEY) || '[]'
+      );
+      if (!Array.isArray(ids)) return;
+      const candidates = getCustomArtifactCandidates();
+      const byId = new Map(candidates.map(item => [item.id, item]));
+      mapCustomArtifactSequence = ids
+        .map(id => byId.get(id))
+        .filter(Boolean);
+    } catch (_) {}
+  }
+
+  function customArtifactZoneTravelSeconds() {
+    if (!(mapCustomArtifactMeters > 0)) return 0;
+    const realSeconds = (mapCustomArtifactMeters / 1000) /
+      ROUTE_TRAVEL_SPEED_KMH * 3600;
+    return projectZoneAdvanceForRealSeconds(realSeconds, gameSeconds);
+  }
+
+  function requestCustomArtifactBuild() {
+    window.clearTimeout(mapCustomArtifactBuildTimer);
+    if (mapCustomArtifactSequence.length < 2) {
+      mapCustomArtifactRoutePoints = [];
+      mapCustomArtifactMeters = 0;
+      updateCustomArtifactRouteGeometry();
+      updateMapRouteHeaderSummary();
+      return;
+    }
+    mapCustomArtifactBuildTimer = window.setTimeout(
+      buildCustomArtifactRoute,
+      90
+    );
+  }
+
+  async function buildCustomArtifactRoute() {
+    if (mapCustomArtifactBusy || mapCustomArtifactSequence.length < 2) return;
+    mapCustomArtifactBusy = true;
+    updateMapRouteHeaderSummary();
+
+    try {
+      const grid = await loadRoadPlannerCostGrid();
+      const fullPath = [];
+      let totalMeters = 0;
+
+      for (let index = 0; index < mapCustomArtifactSequence.length - 1; index++) {
+        const rawA = mapCustomArtifactSequence[index];
+        const rawB = mapCustomArtifactSequence[index + 1];
+        const snappedA = snapPlannerPointToRoad(rawA, grid);
+        const snappedB = snapPlannerPointToRoad(rawB, grid);
+        const gridPath = buildRoadPlannerGridPath(
+          grid,
+          snappedA.grid,
+          snappedB.grid
+        );
+
+        let logicalPath;
+        if (gridPath && gridPath.length >= 2) {
+          const roadPath = gridPath.map(point =>
+            plannerLogicalFromGrid(point.x, point.y)
+          );
+          logicalPath = [rawA, snappedA.logical, ...roadPath, snappedB.logical, rawB];
+        } else {
+          logicalPath = [rawA, rawB];
+        }
+
+        const simplified = simplifyRoadScreenPoints(logicalPath, 2.2);
+        if (fullPath.length) fullPath.push(...simplified.slice(1));
+        else fullPath.push(...simplified);
+        totalMeters += plannerPathMeters(simplified);
+      }
+
+      mapCustomArtifactRoutePoints = fullPath;
+      mapCustomArtifactMeters = totalMeters;
+      saveCustomArtifactRoute();
+    } catch (error) {
+      console.error('Zone Clock custom artifact route error:', error);
+      mapCustomArtifactRoutePoints = mapCustomArtifactSequence.map(item => ({
+        x: item.x,
+        y: item.y
+      }));
+      mapCustomArtifactMeters = plannerPathMeters(mapCustomArtifactRoutePoints);
+    } finally {
+      mapCustomArtifactBusy = false;
+      renderCustomArtifactRoute();
+      updateCustomArtifactRouteGeometry();
+      updateMapRouteHeaderSummary();
+      updateMapFullscreenUI();
+    }
+  }
+
+  function clearCustomArtifactRoute() {
+    window.clearTimeout(mapCustomArtifactBuildTimer);
+    mapCustomArtifactSequence = [];
+    mapCustomArtifactRoutePoints = [];
+    mapCustomArtifactMeters = 0;
+    try {
+      localStorage.removeItem(MAP_CUSTOM_ARTIFACT_STORAGE_KEY);
+    } catch (_) {}
+    renderCustomArtifactRoute();
+    updateCustomArtifactRouteGeometry();
+    updateMapRouteHeaderSummary();
+    updateMapFullscreenUI();
+  }
+
+  function toggleCustomArtifactSelection(candidate) {
+    if (!candidate) return;
+    const existingIndex = mapCustomArtifactSequence.findIndex(
+      item => item.id === candidate.id
+    );
+
+    if (existingIndex >= 0) {
+      mapCustomArtifactSequence.splice(existingIndex, 1);
+    } else {
+      mapCustomArtifactSequence.push(candidate);
+    }
+
+    mapCustomArtifactRoutePoints = [];
+    mapCustomArtifactMeters = 0;
+    saveCustomArtifactRoute();
+    renderCustomArtifactRoute();
+    updateCustomArtifactRouteGeometry();
+    requestCustomArtifactBuild();
+    updateMapRouteHeaderSummary();
+    updateMapFullscreenUI();
+  }
+
+  function renderCustomArtifactRoute() {
+    if (!els.mapCustomArtifactPoints) return;
+    const active = mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT;
+    els.mapCustomArtifactPoints.textContent = '';
+    if (!active) return;
+
+    getCustomArtifactCandidates().forEach(candidate => {
+      const selectedIndex = mapCustomArtifactSequence.findIndex(
+        item => item.id === candidate.id
+      );
+      const elapsed = artifactElapsedSeconds(
+        candidate.routeKey,
+        candidate.markerIndex
+      );
+      const isVisited = elapsed !== null;
+      const respawnState = artifactRespawnState(elapsed);
+
+      const circle = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'circle'
+      );
+      circle.setAttribute('r', '5.4');
+      circle.setAttribute(
+        'class',
+        `map-custom-artifact-point map-artifact-visit-point${
+          isVisited ? ` visited artifact-${respawnState.key}` : ''
+        }${selectedIndex >= 0 ? ' is-custom-selected' : ''}`
+      );
+      circle.setAttribute('data-custom-artifact-id', candidate.id);
+      circle.setAttribute('tabindex', '0');
+      circle.setAttribute('role', 'button');
+      circle.setAttribute(
+        'aria-label',
+        selectedIndex >= 0
+          ? `${candidate.label}, точка маршрута ${selectedIndex + 1}`
+          : `${candidate.label}, добавить в свой маршрут`
+      );
+      circle.addEventListener('pointerdown', event => event.stopPropagation());
+      circle.addEventListener('click', event => {
+        event.stopPropagation();
+        toggleCustomArtifactSelection(candidate);
+      });
+      circle.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          event.stopPropagation();
+          toggleCustomArtifactSelection(candidate);
+        }
+      });
+      els.mapCustomArtifactPoints.appendChild(circle);
+
+      if (selectedIndex >= 0) {
+        const label = document.createElementNS(
+          'http://www.w3.org/2000/svg',
+          'text'
+        );
+        label.setAttribute('class', 'map-custom-artifact-order');
+        label.setAttribute('data-custom-artifact-id', candidate.id);
+        label.textContent = String(selectedIndex + 1);
+        els.mapCustomArtifactPoints.appendChild(label);
+      }
+    });
+  }
+
+  function updateCustomArtifactRouteGeometry() {
+    if (!els.mapCustomArtifactLayer || !els.mapCustomArtifactPath || !els.mapCustomArtifactPoints) return;
+    const active = mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT;
+    els.mapCustomArtifactLayer.style.display = active ? '' : 'none';
+    if (!active) {
+      els.mapCustomArtifactPath.setAttribute('d', '');
+      return;
+    }
+
+    const routeScreen = mapCustomArtifactRoutePoints.map(routePointToScreen);
+    const simplified = simplifyRoadScreenPoints(routeScreen, 1.8);
+    els.mapCustomArtifactPath.setAttribute(
+      'd',
+      routeScreen.length >= 2 ? buildSmoothScreenChain(simplified) : ''
+    );
+
+    const candidates = getCustomArtifactCandidates();
+    const candidateMap = new Map(candidates.map(item => [item.id, item]));
+    els.mapCustomArtifactPoints
+      .querySelectorAll('.map-custom-artifact-point')
+      .forEach(circle => {
+        const candidate = candidateMap.get(circle.getAttribute('data-custom-artifact-id'));
+        if (!candidate) return;
+        const screen = routePointToScreen(candidate);
+        circle.setAttribute('cx', screen.x);
+        circle.setAttribute('cy', screen.y);
+      });
+
+    els.mapCustomArtifactPoints
+      .querySelectorAll('.map-custom-artifact-order')
+      .forEach(label => {
+        const candidate = candidateMap.get(label.getAttribute('data-custom-artifact-id'));
+        if (!candidate) return;
+        const screen = routePointToScreen(candidate);
+        label.setAttribute('x', screen.x + 8);
+        label.setAttribute('y', screen.y - 8);
+      });
+  }
+
+  function getSelectedRouteMetrics() {
+    if (mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT) {
+      return {
+        distanceMeters: mapCustomArtifactMeters,
+        zoneSeconds: customArtifactZoneTravelSeconds()
+      };
+    }
+
+    if (mapSelectedRouteKey === MAP_ROUTE_MODE_ROAD_PLANNER) {
+      return {
+        distanceMeters: mapRoadPlannerMeters,
+        zoneSeconds: plannerZoneTravelSeconds()
+      };
+    }
+
+    if (mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST) {
+      const distanceMeters = movementTestDistanceMeters();
+      const realSeconds = (distanceMeters / 1000) /
+        ROUTE_TRAVEL_SPEED_KMH * 3600;
+      return {
+        distanceMeters,
+        zoneSeconds: projectZoneAdvanceForRealSeconds(realSeconds, gameSeconds)
+      };
+    }
+
+    const route = getPresetRoute();
+    if (!route) return { distanceMeters: 0, zoneSeconds: 0 };
+    const plan = getJourneyPlan(route);
+    return {
+      distanceMeters: plan.distanceMeters,
+      zoneSeconds: plan.zoneAdvanceSeconds
+    };
+  }
+
+  function updateMapRouteHeaderSummary() {
+    if (!els.mapRouteHeaderSummary) return;
+    const metrics = getSelectedRouteMetrics();
+    const hasDistance = metrics.distanceMeters > 0;
+    els.mapRouteHeaderSummary.hidden = false;
+    if (els.mapRouteHeaderDistance) {
+      els.mapRouteHeaderDistance.textContent = hasDistance
+        ? formatMapDistance(metrics.distanceMeters)
+        : '—';
+    }
+    if (els.mapRouteHeaderTime) {
+      els.mapRouteHeaderTime.textContent = metrics.zoneSeconds > 0
+        ? formatJourneyZoneTime(metrics.zoneSeconds)
+        : '—';
+    }
   }
 
   function getRoadPlannerJourneyLabel() {
@@ -4855,7 +5199,8 @@ mapMeasureHint: $('mapMeasureHint'),
   function updatePresetRouteUI() {
     const isRoadPlannerMode = mapSelectedRouteKey === MAP_ROUTE_MODE_ROAD_PLANNER;
     const isMovementTestMode = mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST;
-    const isSpecialMode = isRoadPlannerMode || isMovementTestMode;
+    const isCustomArtifactMode = mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT;
+    const isSpecialMode = isRoadPlannerMode || isMovementTestMode || isCustomArtifactMode;
     const activeRoute = getPresetRoute();
     const isGarbageRoute = !isSpecialMode && activeRoute.key === 'garbage_cement_cooling';
     const isRostokRoute = !isSpecialMode && activeRoute.key === 'rostok_redforest_yanov_jupiter_chemical';
@@ -4869,7 +5214,16 @@ mapMeasureHint: $('mapMeasureHint'),
     }
 
     if (els.mapJourneyBtn) els.mapJourneyBtn.hidden = isSpecialMode;
-    if (els.mapArtifactVisitHint) els.mapArtifactVisitHint.hidden = isSpecialMode;
+    if (els.mapArtifactVisitHint) {
+      els.mapArtifactVisitHint.hidden = isRoadPlannerMode || isMovementTestMode;
+      if (isCustomArtifactMode) {
+        els.mapArtifactVisitHint.textContent =
+          'Свой маршрут: нажимайте артефакты в нужной последовательности. Повторное нажатие снимает точку с маршрута.';
+      } else {
+        els.mapArtifactVisitHint.textContent =
+          'Артефакты: нажмите точку после сбора. До 2 суток — СОБРАН, 2–3 суток — ВОЗМОЖНО ПОЯВИЛСЯ, после 3 суток — ПОРА ПРОВЕРИТЬ.';
+      }
+    }
 
     if (els.mapRoadPlanner) {
       els.mapRoadPlanner.hidden = !isRoadPlannerMode;
@@ -4905,8 +5259,13 @@ mapMeasureHint: $('mapMeasureHint'),
       if (isRoadPlannerMode) {
         els.mapPresetRouteLabel.hidden = false;
         els.mapPresetRouteLabel.textContent = mapRoadPlannerSequence.length
-          ? `ПО МЕСТОПОЛОЖЕНИЯМ · ${mapRoadPlannerSequence.length} ТОЧЕК`
-          : 'ПО МЕСТОПОЛОЖЕНИЯМ · ВЫБЕРИТЕ ТОЧКИ';
+          ? `По местоположениям · ${mapRoadPlannerSequence.length} точек`
+          : 'По местоположениям · выберите точки';
+      } else if (isCustomArtifactMode) {
+        els.mapPresetRouteLabel.hidden = false;
+        els.mapPresetRouteLabel.textContent = mapCustomArtifactSequence.length
+          ? `Свой маршрут по артефактам · ${mapCustomArtifactSequence.length} точек`
+          : 'Свой маршрут по артефактам · выберите артефакты';
       } else if (isMovementTestMode) {
         const testRoute = getMovementTestRoute();
         els.mapPresetRouteLabel.hidden = false;
@@ -4919,8 +5278,18 @@ mapMeasureHint: $('mapMeasureHint'),
       }
     }
 
+    if (isCustomArtifactMode) {
+      restoreCustomArtifactRoute();
+      renderCustomArtifactRoute();
+      requestCustomArtifactBuild();
+    } else {
+      updateCustomArtifactRouteGeometry();
+    }
+
     updateMovementTestScreenGeometry();
     updateRoadPlannerScreenGeometry();
+    updateCustomArtifactRouteGeometry();
+    updateMapRouteHeaderSummary();
   }
 
   function updatePresetRouteScreenGeometry() {
@@ -5093,6 +5462,8 @@ mapMeasureHint: $('mapMeasureHint'),
         }
       }
     });
+
+    updateCustomArtifactRouteGeometry();
   }
 
   function renderPresetRoute() {
@@ -5365,7 +5736,9 @@ mapMeasureHint: $('mapMeasureHint'),
 
   function changePresetRoute(routeKey) {
     const isPreset = Boolean(MAP_PRESET_ROUTES[routeKey]);
-    const isSpecial = routeKey === MAP_ROUTE_MODE_ROAD_PLANNER || routeKey === MAP_ROUTE_MODE_MOVEMENT_TEST;
+    const isSpecial = routeKey === MAP_ROUTE_MODE_ROAD_PLANNER ||
+      routeKey === MAP_ROUTE_MODE_MOVEMENT_TEST ||
+      routeKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT;
     if (!isPreset && !isSpecial) return;
 
     mapSelectedRouteKey = routeKey;
@@ -5379,6 +5752,12 @@ mapMeasureHint: $('mapMeasureHint'),
       ensureRoadPlannerLandscapeView();
     } else if (routeKey === MAP_ROUTE_MODE_MOVEMENT_TEST) {
       mapMovementTestVisible = true;
+    } else if (routeKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT) {
+      mapMovementTestVisible = false;
+      ensureRoadPlannerLandscapeView();
+      restoreCustomArtifactRoute();
+      renderCustomArtifactRoute();
+      requestCustomArtifactBuild();
     } else {
       mapMovementTestVisible = false;
       renderPresetRoute();
@@ -5388,6 +5767,8 @@ mapMeasureHint: $('mapMeasureHint'),
     updatePresetRouteScreenGeometry();
     updateMovementTestScreenGeometry();
     updateRoadPlannerScreenGeometry();
+    updateCustomArtifactRouteGeometry();
+    updateMapRouteHeaderSummary();
     updateJourneyHud();
     updateMapInfo();
   }
@@ -5489,6 +5870,9 @@ mapMeasureHint: $('mapMeasureHint'),
         }
 
         updateMovementTestScreenGeometry();
+        updatePresetRouteScreenGeometry();
+        updateRoadPlannerScreenGeometry();
+        updateCustomArtifactRouteGeometry();
       });
     }
   }
@@ -5559,14 +5943,16 @@ mapMeasureHint: $('mapMeasureHint'),
     if (els.mapFullscreenResetPointsBtn) {
       const hasSelectedLocationPoints =
         mapRoadPlannerSequence.length > 0;
+      const hasSelectedArtifactPoints =
+        mapCustomArtifactSequence.length > 0;
       const hasMeasuredPoints =
         mapMeasurePoints.length > 0;
 
       els.mapFullscreenResetPointsBtn.disabled =
-        !(hasSelectedLocationPoints || hasMeasuredPoints);
+        !(hasSelectedLocationPoints || hasSelectedArtifactPoints || hasMeasuredPoints);
 
       els.mapFullscreenResetPointsBtn.title =
-        hasSelectedLocationPoints
+        hasSelectedLocationPoints || hasSelectedArtifactPoints
           ? 'Сбросить выбранные точки маршрута'
           : 'Сбросить выбранные точки';
     }
@@ -6014,7 +6400,9 @@ mapMeasureHint: $('mapMeasureHint'),
     els.mapFullscreenResetPointsBtn.addEventListener(
       'click',
       () => {
-        if (mapRoadPlannerSequence.length) {
+        if (mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT && mapCustomArtifactSequence.length) {
+          clearCustomArtifactRoute();
+        } else if (mapRoadPlannerSequence.length) {
           clearRoadPlanner();
         } else {
           clearMapMeasurement();
@@ -6049,7 +6437,13 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   if (els.mapClearBtn) {
-    els.mapClearBtn.addEventListener('click', clearMapMeasurement);
+    els.mapClearBtn.addEventListener('click', () => {
+      if (mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT) {
+        clearCustomArtifactRoute();
+      } else {
+        clearMapMeasurement();
+      }
+    });
   }
 
   if (els.mapZoomInBtn) {
@@ -7540,7 +7934,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v111.csv';
+    link.download = 'zone-clock-test-v113.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();

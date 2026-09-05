@@ -4507,3 +4507,135 @@ button.zone-button-press:not(:disabled) {
 .settings-map-calibration .map-calibration-message {
   margin-top: 0;
 }
+
+
+/* PWA v112 — пульсирующие артефакты, свой маршрут и метрики маршрута */
+@keyframes zoneArtifactPulse {
+  0%, 100% {
+    stroke: #63ff7a;
+    stroke-width: 2px;
+    filter: drop-shadow(0 0 1px rgba(75, 255, 105, .35));
+  }
+  50% {
+    stroke: #a5ffb2;
+    stroke-width: 5px;
+    filter: drop-shadow(0 0 7px rgba(75, 255, 105, .95));
+  }
+}
+
+#mapPresetRoutePoints .map-artifact-visit-point:not(.visited),
+#mapCustomArtifactPoints .map-artifact-visit-point:not(.visited) {
+  animation: zoneArtifactPulse 1.55s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+#mapCustomArtifactPoints .map-custom-artifact-point {
+  pointer-events: auto;
+  cursor: pointer;
+  fill: rgba(20, 142, 40, .98);
+  stroke: #63ff7a;
+  stroke-width: 2px;
+}
+
+#mapCustomArtifactPoints .map-custom-artifact-point.is-custom-selected {
+  fill: rgba(190, 210, 65, .98) !important;
+  stroke: #f3ff8b !important;
+  stroke-width: 3px !important;
+  animation: none !important;
+  filter: drop-shadow(0 0 5px rgba(230, 255, 90, .8));
+}
+
+.map-custom-artifact-order {
+  fill: #f4ffd4;
+  stroke: rgba(4, 10, 5, .98);
+  stroke-width: 3px;
+  paint-order: stroke;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+.map-custom-artifact-path {
+  fill: none;
+  stroke: #d7e33f;
+  stroke-width: 4px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 3px rgba(215, 227, 63, .48));
+  pointer-events: none;
+}
+
+.map-route-header-summary {
+  margin-top: 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .55rem;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.map-route-header-summary strong {
+  color: var(--accent-2);
+  font-size: .67rem;
+  letter-spacing: .035em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #mapPresetRoutePoints .map-artifact-visit-point:not(.visited),
+  #mapCustomArtifactPoints .map-artifact-visit-point:not(.visited) {
+    animation: none;
+  }
+}
+
+
+/* PWA v113 — обычная карта прокручивается вместе с экраном */
+.map-dialog:not(.map-fullscreen) {
+  overflow: hidden;
+}
+
+.map-dialog:not(.map-fullscreen) .map-modal {
+  display: flex !important;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.map-dialog:not(.map-fullscreen) .map-modal-header,
+.map-dialog:not(.map-fullscreen) .map-toolbar,
+.map-dialog:not(.map-fullscreen) .map-info-strip,
+.map-dialog:not(.map-fullscreen) .map-preset-route-label,
+.map-dialog:not(.map-fullscreen) .map-artifact-visit-hint,
+.map-dialog:not(.map-fullscreen) .map-road-planner {
+  flex: 0 0 auto;
+}
+
+.map-dialog:not(.map-fullscreen) .map-viewport {
+  flex: 0 0 auto;
+  width: 100% !important;
+  height: min(72dvh, 720px) !important;
+  min-height: 420px !important;
+  position: relative;
+}
+
+/* На телефоне карта идёт обычным блоком после элементов управления:
+   до неё можно прокрутить экран вниз, а затем взаимодействовать с картой. */
+@media (max-width: 720px) {
+  .map-dialog:not(.map-fullscreen) .map-viewport {
+    height: 68dvh !important;
+    min-height: 360px !important;
+  }
+}
+
+/* Полноэкранный режим сохраняет прежнюю неподвижную раскладку. */
+.map-dialog.map-fullscreen .map-modal {
+  display: grid !important;
+  overflow: hidden !important;
+}
