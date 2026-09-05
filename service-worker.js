@@ -1,4 +1,4 @@
-const APP_CACHE = 'stalker2-zone-clock-v97';
+const APP_CACHE = 'stalker2-zone-clock-v98';
 const MAP_CACHE = 'stalker2-zone-map-8192-v1';
 
 const APP_ASSETS = [
@@ -14,16 +14,61 @@ const APP_ASSETS = [
 const MAP_ASSETS = [
   './assets/zone-map-8192.jpg',
   './assets/zone-map-4096.jpg',
+  './assets/zone-map-schematic-4096.jpg',
   './assets/zone-road-cost-512.png'
 ];
+
+async function refreshAppCache() {
+  const cache = await caches.open(APP_CACHE);
+
+  await Promise.all(
+    APP_ASSETS.map(async asset => {
+      const request = new Request(
+        asset,
+        { cache: 'reload' }
+      );
+
+      const response = await fetch(request);
+
+      if (response.ok) {
+        await cache.put(
+          asset,
+          response.clone()
+        );
+      }
+    })
+  );
+}
+
+async function ensurePersistentMapCache() {
+  const cache = await caches.open(MAP_CACHE);
+
+  for (const asset of MAP_ASSETS) {
+    const existing =
+      await cache.match(asset);
+
+    if (existing) continue;
+
+    const response =
+      await fetch(asset);
+
+    if (response.ok) {
+      await cache.put(
+        asset,
+        response.clone()
+      );
+    }
+  }
+}
 
 self.addEventListener('install', event => {
   event.waitUntil(
     Promise.all([
-      caches.open(APP_CACHE).then(cache => cache.addAll(APP_ASSETS)),
-      caches.open(MAP_CACHE).then(cache => cache.addAll(MAP_ASSETS))
+      refreshAppCache(),
+      ensurePersistentMapCache()
     ])
   );
+
   self.skipWaiting();
 });
 
@@ -52,6 +97,7 @@ self.addEventListener('fetch', event => {
   const isMap =
     url.pathname.endsWith('/assets/zone-map-8192.jpg') ||
     url.pathname.endsWith('/assets/zone-map-4096.jpg') ||
+    url.pathname.endsWith('/assets/zone-map-schematic-4096.jpg') ||
     url.pathname.endsWith('/assets/zone-road-cost-512.png');
   const cacheName = isMap ? MAP_CACHE : APP_CACHE;
 

@@ -3853,3 +3853,174 @@ button.zone-button-press:not(:disabled) {
   font-weight: 900;
 }
 
+
+
+/* PWA v98 — иконки переходов */
+.map-top-btn {
+  width: 48px;
+  min-width: 48px;
+  height: 44px;
+  padding: 0 !important;
+  display: inline-grid;
+  place-items: center;
+}
+
+.map-top-btn svg,
+.icon-only-map-switch svg {
+  width: 23px;
+  height: 23px;
+  fill: currentColor;
+}
+
+.icon-only-map-switch {
+  width: 48px;
+  min-width: 48px;
+  padding: 0 !important;
+  display: inline-grid;
+  place-items: center;
+}
+
+/* Переключение ландшафт / схема */
+.map-view-mode-btn {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0 9px;
+  background: rgba(9, 18, 12, .68);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.map-view-mode-btn svg {
+  width: 19px;
+  height: 19px;
+  fill: currentColor;
+}
+
+.map-view-mode-btn span {
+  font-size: .55rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+
+.map-view-mode-btn.active {
+  color: #e5ef8b;
+  border-color: rgba(198, 210, 91, .48);
+}
+
+.zone-map-transform img.zone-map-schematic-image {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 2048px !important;
+  height: 2048px !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: fill !important;
+  image-rendering: auto !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  display: none !important;
+}
+
+.map-viewport.map-view-schematic .zone-map-transform img.zone-map-4096-image,
+.map-viewport.map-view-schematic .zone-map-transform img.zone-map-8192-image {
+  display: none !important;
+}
+
+.map-viewport.map-view-schematic .zone-map-transform img.zone-map-schematic-image {
+  display: block !important;
+}
+
+/* Готовые места для построителя */
+.map-road-planner-location-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.map-road-planner-location-grid label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.map-road-planner-location-grid label > span {
+  color: var(--muted);
+  font-size: .52rem;
+  letter-spacing: .07em;
+}
+
+.map-road-planner-location-select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  padding: 7px 8px;
+  background: rgba(4, 11, 7, .72);
+  color: #e3eee1;
+  -webkit-text-fill-color: #e3eee1;
+  font: inherit;
+  font-size: .62rem;
+  font-weight: 700;
+  color-scheme: dark;
+}
+
+.map-road-planner-location-select option {
+  background: #07110b;
+  color: #e3eee1;
+}
+
+/* + / - в полноэкранной карте */
+.map-fullscreen-zoom-controls {
+  display: none;
+  position: absolute;
+  z-index: 40;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.map-fullscreen-zoom-controls button {
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgba(220, 235, 218, .34);
+  border-radius: 14px;
+  background: rgba(7, 15, 10, .88);
+  color: #eef5ec;
+  font: inherit;
+  font-size: 1.55rem;
+  line-height: 1;
+  font-weight: 500;
+  backdrop-filter: blur(5px);
+}
+
+.map-dialog.map-fullscreen .map-fullscreen-zoom-controls {
+  display: flex;
+}
+
+.map-dialog.map-fullscreen .map-view-mode-btn {
+  min-height: 42px;
+}
+
+@media (max-width: 560px) {
+  .map-view-mode-btn span {
+    display: none;
+  }
+
+  .map-view-mode-btn {
+    width: 44px;
+    min-width: 44px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .map-road-planner-location-grid {
+    grid-template-columns: 1fr;
+  }
+}

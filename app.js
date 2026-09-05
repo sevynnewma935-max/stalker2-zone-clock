@@ -61,16 +61,19 @@
     notificationStatus: $('notificationStatus'),
     notificationIntervalSelect: $('notificationIntervalSelect'),
     zoneToast: $('zoneToast'),
-    mapBtn: $('mapBtn'), closeMapBtn: $('closeMapBtn'), mapDialog: $('mapDialog'),
+    mapBtn: $('mapBtn'), mapDialog: $('mapDialog'),
     mapClockBtn: $('mapClockBtn'),
+    mapViewModeBtn: $('mapViewModeBtn'), mapViewModeLabel: $('mapViewModeLabel'),
     mapFullscreenBtn: $('mapFullscreenBtn'),
     mapViewport: $('mapViewport'), zoneMapTransform: $('zoneMapTransform'),
     zoneMapPreviewImage: $('zoneMapPreviewImage'),
-    zoneMapImage: $('zoneMapImage'), mapOverlay: $('mapOverlay'),
+    zoneMapImage: $('zoneMapImage'), zoneMapSchematicImage: $('zoneMapSchematicImage'), mapOverlay: $('mapOverlay'),
     mapMeasureLine: $('mapMeasureLine'), mapMeasurePoints: $('mapMeasurePoints'),
     mapMeasureBtn: $('mapMeasureBtn'), mapUndoBtn: $('mapUndoBtn'),
     mapClearBtn: $('mapClearBtn'), mapZoomOutBtn: $('mapZoomOutBtn'),
     mapZoomInBtn: $('mapZoomInBtn'), mapFitBtn: $('mapFitBtn'),
+    mapFullscreenZoomInBtn: $('mapFullscreenZoomInBtn'),
+    mapFullscreenZoomOutBtn: $('mapFullscreenZoomOutBtn'),
     mapPresetRouteBtn: $('mapPresetRouteBtn'),
     mapRouteSelect: $('mapRouteSelect'),
     mapJourneyBtn: $('mapJourneyBtn'),
@@ -90,6 +93,8 @@
     mapRoadPlanner: $('mapRoadPlanner'),
     mapPlannerStartBtn: $('mapPlannerStartBtn'),
     mapPlannerEndBtn: $('mapPlannerEndBtn'),
+    mapPlannerStartLocationSelect: $('mapPlannerStartLocationSelect'),
+    mapPlannerEndLocationSelect: $('mapPlannerEndLocationSelect'),
     mapPlannerBuildBtn: $('mapPlannerBuildBtn'),
     mapPlannerClearBtn: $('mapPlannerClearBtn'),
     mapPlannerStartText: $('mapPlannerStartText'),
@@ -1222,6 +1227,62 @@ mapMeasureHint: $('mapMeasureHint'),
   const MAP_ROAD_COST_ASSET =
     './assets/zone-road-cost-512.png';
 
+  const MAP_VIEW_STORAGE_KEY =
+    'stalker2-zone-clock-map-view-v1';
+
+  const MAP_KNOWN_LOCATIONS = {
+    svalka: {
+      label: 'СВАЛКА',
+      x: 869.4,
+      y: 1195.9
+    },
+    cement: {
+      label: 'ЦЕМЕНТНЫЙ ЗАВОД',
+      x: 1253.4,
+      y: 953.9
+    },
+    cooling: {
+      label: 'ГРАДИРНИ',
+      x: 1263.1,
+      y: 879.8
+    },
+    rostok: {
+      label: 'РОСТОК',
+      x: 779.2,
+      y: 1036.7
+    },
+    red_forest: {
+      label: 'РЫЖИЙ ЛЕС',
+      x: 552.1,
+      y: 867.6
+    },
+    yaniv: {
+      label: 'ЯНОВ',
+      x: 438.1,
+      y: 733.0
+    },
+    jupiter: {
+      label: 'ЮПИТЕР',
+      x: 628.4,
+      y: 791.0
+    },
+    chemical: {
+      label: 'ХИМЗАВОД',
+      x: 656.1,
+      y: 1157.3
+    },
+    cement_bridge: {
+      label: 'МОСТ У ЦЕМЕНТНОГО ЗАВОДА',
+      x: 1262.0,
+      y: 934.5
+    },
+    swyd_east: {
+      label: 'SWYD-EAST CHECKPOINT',
+      x: 785.0,
+      y: 948.5
+    }
+  };
+
   // Контрольные отрезки для замера скорости перемещения.
   // Координаты находятся в логической системе карты Zone Clock 2048 × 2048.
   const MOVEMENT_TEST_ROUTES = {
@@ -1384,11 +1445,17 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapInteractionDepth = 0;
   let mapFullscreenMode = false;
   let mapParkedForClock = false;
+  let mapViewMode =
+    localStorage.getItem(MAP_VIEW_STORAGE_KEY) === 'schematic'
+      ? 'schematic'
+      : 'landscape';
   let mapMovementTestVisible = false;
 
   let mapRoadPlannerSelectMode = null;
   let mapRoadPlannerPointA = null;
   let mapRoadPlannerPointB = null;
+  let mapRoadPlannerPlaceAKey = '';
+  let mapRoadPlannerPlaceBKey = '';
   let mapRoadPlannerRoutePoints = [];
   let mapRoadPlannerMeters = 0;
   let mapRoadPlannerCostGrid = null;
@@ -1530,6 +1597,58 @@ mapMeasureHint: $('mapMeasureHint'),
     };
   }
 
+  function updateMapViewUI() {
+    const schematic =
+      mapViewMode === 'schematic';
+
+    if (els.mapViewport) {
+      els.mapViewport.classList.toggle(
+        'map-view-schematic',
+        schematic
+      );
+    }
+
+    if (els.mapViewModeLabel) {
+      els.mapViewModeLabel.textContent =
+        schematic
+          ? 'СХЕМА'
+          : 'ЛАНДШАФТ';
+    }
+
+    if (els.mapViewModeBtn) {
+      els.mapViewModeBtn.classList.toggle(
+        'active',
+        schematic
+      );
+
+      els.mapViewModeBtn.setAttribute(
+        'aria-label',
+        schematic
+          ? 'Переключить на ландшафтный вид'
+          : 'Переключить на схематический вид'
+      );
+
+      els.mapViewModeBtn.title =
+        schematic
+          ? 'Сейчас: схема. Нажмите для ландшафта.'
+          : 'Сейчас: ландшафт. Нажмите для схемы.';
+    }
+  }
+
+  function toggleMapViewMode() {
+    mapViewMode =
+      mapViewMode === 'schematic'
+        ? 'landscape'
+        : 'schematic';
+
+    localStorage.setItem(
+      MAP_VIEW_STORAGE_KEY,
+      mapViewMode
+    );
+
+    updateMapViewUI();
+  }
+
 
   function mapClientToLogical(
     clientX,
@@ -1566,8 +1685,18 @@ mapMeasureHint: $('mapMeasureHint'),
     };
   }
 
-  function formatPlannerPoint(point) {
+  function formatPlannerPoint(
+    point,
+    placeKey = ''
+  ) {
     if (!point) return 'НЕ ВЫБРАНА';
+
+    const place =
+      MAP_KNOWN_LOCATIONS[placeKey];
+
+    if (place) {
+      return place.label;
+    }
 
     return (
       `X ${Math.round(point.x)} · ` +
@@ -1582,6 +1711,8 @@ mapMeasureHint: $('mapMeasureHint'),
         JSON.stringify({
           a: mapRoadPlannerPointA,
           b: mapRoadPlannerPointB,
+          placeA: mapRoadPlannerPlaceAKey,
+          placeB: mapRoadPlannerPlaceBKey,
           route: mapRoadPlannerRoutePoints,
           meters: mapRoadPlannerMeters
         })
@@ -1616,6 +1747,22 @@ mapMeasureHint: $('mapMeasureHint'),
           x: Number(data.b.x),
           y: Number(data.b.y)
         };
+      }
+
+      if (
+        data.placeA &&
+        MAP_KNOWN_LOCATIONS[data.placeA]
+      ) {
+        mapRoadPlannerPlaceAKey =
+          data.placeA;
+      }
+
+      if (
+        data.placeB &&
+        MAP_KNOWN_LOCATIONS[data.placeB]
+      ) {
+        mapRoadPlannerPlaceBKey =
+          data.placeB;
       }
 
       if (Array.isArray(data.route)) {
@@ -2361,17 +2508,29 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function updateRoadPlannerUI() {
+    if (els.mapPlannerStartLocationSelect) {
+      els.mapPlannerStartLocationSelect.value =
+        mapRoadPlannerPlaceAKey;
+    }
+
+    if (els.mapPlannerEndLocationSelect) {
+      els.mapPlannerEndLocationSelect.value =
+        mapRoadPlannerPlaceBKey;
+    }
+
     if (els.mapPlannerStartText) {
       els.mapPlannerStartText.textContent =
         formatPlannerPoint(
-          mapRoadPlannerPointA
+          mapRoadPlannerPointA,
+          mapRoadPlannerPlaceAKey
         );
     }
 
     if (els.mapPlannerEndText) {
       els.mapPlannerEndText.textContent =
         formatPlannerPoint(
-          mapRoadPlannerPointB
+          mapRoadPlannerPointB,
+          mapRoadPlannerPlaceBKey
         );
     }
 
@@ -2578,9 +2737,11 @@ mapMeasureHint: $('mapMeasureHint'),
     if (which === 'a') {
       mapRoadPlannerPointA =
         logical;
+      mapRoadPlannerPlaceAKey = '';
     } else {
       mapRoadPlannerPointB =
         logical;
+      mapRoadPlannerPlaceBKey = '';
     }
 
     mapRoadPlannerRoutePoints = [];
@@ -2592,6 +2753,53 @@ mapMeasureHint: $('mapMeasureHint'),
         which === 'a'
           ? 'Точка А выбрана. Теперь укажите точку Б.'
           : 'Точка Б выбрана. Можно строить маршрут.';
+    }
+
+    saveRoadPlannerState();
+    updateRoadPlannerUI();
+    updateMapInfo();
+  }
+
+  function setRoadPlannerKnownLocation(
+    which,
+    placeKey
+  ) {
+    const place =
+      MAP_KNOWN_LOCATIONS[placeKey];
+
+    if (!place) {
+      if (which === 'a') {
+        mapRoadPlannerPlaceAKey = '';
+      } else {
+        mapRoadPlannerPlaceBKey = '';
+      }
+
+      updateRoadPlannerUI();
+      return;
+    }
+
+    const point = {
+      x: place.x,
+      y: place.y
+    };
+
+    if (which === 'a') {
+      mapRoadPlannerPointA = point;
+      mapRoadPlannerPlaceAKey =
+        placeKey;
+    } else {
+      mapRoadPlannerPointB = point;
+      mapRoadPlannerPlaceBKey =
+        placeKey;
+    }
+
+    mapRoadPlannerRoutePoints = [];
+    mapRoadPlannerMeters = 0;
+    mapRoadPlannerSelectMode = null;
+
+    if (els.mapPlannerMessage) {
+      els.mapPlannerMessage.textContent =
+        `${place.label}: точка ${which.toUpperCase()} выбрана.`;
     }
 
     saveRoadPlannerState();
@@ -2708,6 +2916,8 @@ mapMeasureHint: $('mapMeasureHint'),
     mapRoadPlannerSelectMode = null;
     mapRoadPlannerPointA = null;
     mapRoadPlannerPointB = null;
+    mapRoadPlannerPlaceAKey = '';
+    mapRoadPlannerPlaceBKey = '';
     mapRoadPlannerRoutePoints = [];
     mapRoadPlannerMeters = 0;
 
@@ -5213,6 +5423,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
         updateMapZoneTime();
         updateMapFullscreenUI();
+        updateMapViewUI();
 
         if (els.mapRoadPlanner && !mapFullscreenMode) {
           els.mapRoadPlanner.open = true;
@@ -5298,26 +5509,34 @@ mapMeasureHint: $('mapMeasureHint'),
     els.mapFullscreenBtn.addEventListener('click', toggleMapFullscreen);
   }
 
-  if (els.closeMapBtn) {
-    els.closeMapBtn.addEventListener('click', () => {
-      mapParkedForClock = false;
-      mapFullscreenMode = false;
-      updateMapFullscreenUI();
-      if (typeof els.mapDialog.close === 'function') els.mapDialog.close();
-      else els.mapDialog.removeAttribute('open');
-    });
+  if (els.mapViewModeBtn) {
+    els.mapViewModeBtn.addEventListener(
+      'click',
+      toggleMapViewMode
+    );
+  }
+
+  if (els.mapFullscreenZoomInBtn) {
+    els.mapFullscreenZoomInBtn.addEventListener(
+      'click',
+      () => zoomZoneMap(1.35)
+    );
+  }
+
+  if (els.mapFullscreenZoomOutBtn) {
+    els.mapFullscreenZoomOutBtn.addEventListener(
+      'click',
+      () => zoomZoneMap(1 / 1.35)
+    );
   }
 
   if (els.mapDialog) {
-    els.mapDialog.addEventListener('click', event => {
-      if (event.target === els.mapDialog) {
-        mapParkedForClock = false;
-        mapFullscreenMode = false;
-        updateMapFullscreenUI();
-        if (typeof els.mapDialog.close === 'function') els.mapDialog.close();
-        else els.mapDialog.removeAttribute('open');
+    els.mapDialog.addEventListener(
+      'cancel',
+      event => {
+        event.preventDefault();
       }
-    });
+    );
   }
 
   if (els.mapMeasureBtn) {
@@ -5431,6 +5650,44 @@ mapMeasureHint: $('mapMeasureHint'),
 
         renderPresetRoute();
         updateJourneyHud();
+      }
+    );
+  }
+
+  if (els.mapPlannerStartLocationSelect) {
+    els.mapPlannerStartLocationSelect.addEventListener(
+      'change',
+      event => {
+        const key = event.target.value;
+
+        if (key) {
+          setRoadPlannerKnownLocation(
+            'a',
+            key
+          );
+        } else {
+          mapRoadPlannerPlaceAKey = '';
+          updateRoadPlannerUI();
+        }
+      }
+    );
+  }
+
+  if (els.mapPlannerEndLocationSelect) {
+    els.mapPlannerEndLocationSelect.addEventListener(
+      'change',
+      event => {
+        const key = event.target.value;
+
+        if (key) {
+          setRoadPlannerKnownLocation(
+            'b',
+            key
+          );
+        } else {
+          mapRoadPlannerPlaceBKey = '';
+          updateRoadPlannerUI();
+        }
       }
     );
   }
@@ -6831,7 +7088,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v97.csv';
+    link.download = 'zone-clock-test-v98.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -7335,63 +7592,103 @@ mapMeasureHint: $('mapMeasureHint'),
     if (!els.updateAppBtn) return;
 
     els.updateAppBtn.disabled = true;
-    setUpdateAppStatus('Проверяю обновления…');
+    setUpdateAppStatus(
+      'Проверяю сервер и готовлю полное обновление…'
+    );
 
     try {
-      if (!('serviceWorker' in navigator)) {
-        setUpdateAppStatus('Service worker не поддерживается. Перезагружаю страницу…');
-        window.setTimeout(() => window.location.reload(), 500);
-        return;
-      }
+      const probeUrl =
+        new URL(
+          './service-worker.js',
+          window.location.href
+        );
 
-      let registration = await navigator.serviceWorker.getRegistration();
-
-      if (!registration) {
-        registration = await navigator.serviceWorker.register('./service-worker.js');
-      }
-
-      let updateFound = false;
-
-      const onUpdateFound = () => {
-        updateFound = true;
-        setUpdateAppStatus('Найдена новая версия…');
-        watchUpdateWorker(registration.installing);
-      };
-
-      registration.addEventListener('updatefound', onUpdateFound, { once: true });
-
-      navigator.serviceWorker.addEventListener(
-        'controllerchange',
-        finishAppUpdateReload,
-        { once: true }
+      probeUrl.searchParams.set(
+        'zc_check',
+        String(Date.now())
       );
 
-      if (registration.waiting) {
-        updateFound = true;
-        setUpdateAppStatus('Обновление уже загружено. Активирую…');
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      } else {
-        await registration.update();
-
-        if (registration.installing) {
-          updateFound = true;
-          watchUpdateWorker(registration.installing);
-        } else if (registration.waiting) {
-          updateFound = true;
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      const probe = await fetch(
+        probeUrl.toString(),
+        {
+          cache: 'no-store'
         }
+      );
+
+      if (!probe.ok) {
+        throw new Error(
+          `HTTP ${probe.status}`
+        );
       }
 
-      if (!updateFound && !appUpdateReloading) {
-        setUpdateAppStatus('Уже установлена последняя версия.');
-        els.updateAppBtn.disabled = false;
+      setUpdateAppStatus(
+        'Свежая версия доступна. Очищаю старые файлы…'
+      );
+
+      if (
+        typeof closeSettings ===
+        'function'
+      ) {
+        closeSettings();
       }
+
+      if ('caches' in window) {
+        const keys =
+          await caches.keys();
+
+        await Promise.all(
+          keys
+            .filter(key =>
+              key.startsWith(
+                'stalker2-zone-clock-'
+              )
+            )
+            .map(key =>
+              caches.delete(key)
+            )
+        );
+      }
+
+      if ('serviceWorker' in navigator) {
+        const registrations =
+          await navigator.serviceWorker
+            .getRegistrations();
+
+        await Promise.all(
+          registrations.map(
+            registration =>
+              registration.unregister()
+          )
+        );
+      }
+
+      const reloadUrl =
+        new URL(
+          window.location.href
+        );
+
+      reloadUrl.searchParams.set(
+        'zc_update',
+        String(Date.now())
+      );
+
+      window.location.replace(
+        reloadUrl.toString()
+      );
     } catch (error) {
-      console.error('Zone Clock update error:', error);
-      setUpdateAppStatus('Не удалось проверить обновление. Проверьте интернет.');
+      console.error(
+        'Zone Clock hard update error:',
+        error
+      );
+
+      setUpdateAppStatus(
+        'Обновление не загружено. Проверьте интернет и повторите.'
+      );
+
       els.updateAppBtn.disabled = false;
     }
   }
+
 
   function openChronometryDialog() {
     if (!els.chronometryDialog) return;
@@ -7496,6 +7793,29 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   applyTheme(currentTheme(), false);
+
+  try {
+    const cleanUrl =
+      new URL(window.location.href);
+
+    if (
+      cleanUrl.searchParams.has(
+        'zc_update'
+      )
+    ) {
+      cleanUrl.searchParams.delete(
+        'zc_update'
+      );
+
+      window.history.replaceState(
+        null,
+        '',
+        cleanUrl.toString()
+      );
+    }
+  } catch (_) {}
+
+  updateMapViewUI();
 
   const restored = loadState();
 
