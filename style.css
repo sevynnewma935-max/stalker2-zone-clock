@@ -3821,3 +3821,35 @@ button.zone-button-press:not(:disabled) {
       repeat(2, minmax(0, 1fr));
   }
 }
+
+
+/* PWA v97 — блок построения маршрута всегда заметен */
+.map-road-planner {
+  border-top: 1px solid rgba(198, 210, 91, .42);
+  border-bottom: 1px solid rgba(198, 210, 91, .32);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(198, 210, 91, .075),
+      rgba(8, 18, 11, .94)
+    );
+}
+
+.map-road-planner[open] > summary {
+  color: #e6ef9b;
+  border-bottom: 1px solid rgba(198, 210, 91, .18);
+}
+
+.map-road-planner > summary span:first-child {
+  font-size: .68rem;
+  font-weight: 900;
+}
+
+.map-road-planner-body {
+  padding-top: 10px;
+}
+
+.map-road-planner-actions .btn.primary {
+  font-weight: 900;
+}
+

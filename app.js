@@ -5214,6 +5214,10 @@ mapMeasureHint: $('mapMeasureHint'),
         updateMapZoneTime();
         updateMapFullscreenUI();
 
+        if (els.mapRoadPlanner && !mapFullscreenMode) {
+          els.mapRoadPlanner.open = true;
+        }
+
         if (
           typeof els.mapDialog.showModal ===
           'function'
@@ -6827,7 +6831,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v96.csv';
+    link.download = 'zone-clock-test-v97.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
