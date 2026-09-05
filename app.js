@@ -31,6 +31,7 @@
   const DAYLIGHT_TEST_STORAGE_KEY = 'stalker2-zone-clock-daylight-test-v1';
   const MOVEMENT_TEST_STORAGE_KEY = 'stalker2-zone-clock-movement-test-v1';
   const MOVEMENT_TEST_ACTIVE_KEY = 'stalker2-zone-clock-movement-test-active-v1';
+  const MOVEMENT_TEST_ROUTE_KEY = 'stalker2-zone-clock-movement-test-route-v1';
   const MAP_SCALE_STORAGE_KEY = 'stalker2-zone-clock-map-scale-v1';
   const NOTIFICATION_KEY = 'stalker2-zone-clock-notifications-v1';
   const NOTIFICATION_NEXT_KEY = 'stalker2-zone-clock-next-message-v1';
@@ -61,6 +62,7 @@
     notificationIntervalSelect: $('notificationIntervalSelect'),
     zoneToast: $('zoneToast'),
     mapBtn: $('mapBtn'), closeMapBtn: $('closeMapBtn'), mapDialog: $('mapDialog'),
+    mapClockBtn: $('mapClockBtn'),
     mapFullscreenBtn: $('mapFullscreenBtn'),
     mapViewport: $('mapViewport'), zoneMapTransform: $('zoneMapTransform'),
     zoneMapPreviewImage: $('zoneMapPreviewImage'),
@@ -116,6 +118,9 @@ mapMeasureHint: $('mapMeasureHint'),
     exportTestBtn: $('exportTestBtn'), clearTestBtn: $('clearTestBtn'),
     movementTestDistance: $('movementTestDistance'),
     movementTestStatus: $('movementTestStatus'),
+    movementTestRouteSelect: $('movementTestRouteSelect'),
+    movementTestRouteName: $('movementTestRouteName'),
+    movementTestHelp: $('movementTestHelp'),
     showMovementTestRouteBtn: $('showMovementTestRouteBtn'),
     mapMovementTestLayer: $('mapMovementTestLayer'),
     mapMovementTestLine: $('mapMovementTestLine'),
@@ -1194,19 +1199,56 @@ mapMeasureHint: $('mapMeasureHint'),
   const MAP_IMAGE_SIZE = 2048;
   const DEFAULT_MAP_METERS_PER_PIXEL = 6.5;
 
-  // Контрольный тестовый отрезок для замера скорости перемещения.
-  // Логические координаты карты Zone Clock 2048 × 2048.
-  const MOVEMENT_TEST_START = {
-    x: 1262.0,
-    y: 934.5,
-    label: 'Мост у Цементного завода'
+  // Контрольные отрезки для замера скорости перемещения.
+  // Координаты находятся в логической системе карты Zone Clock 2048 × 2048.
+  const MOVEMENT_TEST_ROUTES = {
+    cement_swyd: {
+      key: 'cement_swyd',
+      label: 'МОСТ У ЦЕМЕНТНОГО ЗАВОДА → SWYD-EAST CHECKPOINT, ЖЕЛЕЗНЫЙ ЛЕС',
+      shortLabel: 'ЦЕМЕНТНЫЙ ЗАВОД → SWYD-EAST',
+      start: {
+        x: 1262.0,
+        y: 934.5,
+        label: 'Мост у Цементного завода',
+        shortLabel: 'МОСТ'
+      },
+      end: {
+        x: 785.0,
+        y: 948.5,
+        label: 'SWYD-East Checkpoint, Железный лес',
+        shortLabel: 'SWYD-EAST'
+      },
+      help: 'Встаньте у контрольной точки на мосту, выберите темп и нажмите «СТАРТ». Переключитесь в игру и двигайтесь до SWYD-East Checkpoint без остановок. На финише вернитесь в Zone Clock и нажмите «ФИНИШ».'
+    },
+
+    cooling_diagonal: {
+      key: 'cooling_diagonal',
+      label: 'ГРАДИРНИ · КОНТРОЛЬНЫЙ ОТРЕЗОК 2',
+      shortLabel: 'ГРАДИРНИ · ОТРЕЗОК 2',
+      start: {
+        x: 1126.1,
+        y: 875.6,
+        label: 'Градирни — точка A',
+        shortLabel: 'ТОЧКА A'
+      },
+      end: {
+        x: 1273.6,
+        y: 939.9,
+        label: 'Градирни — точка B',
+        shortLabel: 'ТОЧКА B'
+      },
+      help: 'Встаньте в красной контрольной точке A с присланной карты, выберите темп и нажмите «СТАРТ». Двигайтесь по прямому контрольному отрезку до точки B без остановок. На финише вернитесь в Zone Clock и нажмите «ФИНИШ».'
+    }
   };
 
-  const MOVEMENT_TEST_END = {
-    x: 785.0,
-    y: 948.5,
-    label: 'SWYD-East Checkpoint, Железный лес'
-  };
+  let movementTestRouteKey =
+    localStorage.getItem(MOVEMENT_TEST_ROUTE_KEY) ||
+    'cement_swyd';
+
+  function getMovementTestRoute(routeKey = movementTestRouteKey) {
+    return MOVEMENT_TEST_ROUTES[routeKey] ||
+      MOVEMENT_TEST_ROUTES.cement_swyd;
+  }
 
   const MOVEMENT_TEST_MODES = {
     slow: 'МЕДЛЕННЫЙ ШАГ',
@@ -1249,7 +1291,7 @@ mapMeasureHint: $('mapMeasureHint'),
     rostok_redforest_yanov_jupiter_chemical: {
       key: 'rostok_redforest_yanov_jupiter_chemical',
       label: 'РОСТОК → РЫЖИЙ ЛЕС → ЯНОВ → ЮПИТЕР → ХИМЗАВОД',
-      roadPath: `M747.5,818.2L735.8,813.3L714.8,799.7L659.2,773.1L635.8,770.7L630.2,783.6M659.2,1093.0L641.9,1078.8L617.8,1069.5L608.6,1061.5L604.3,1060.3L574.6,1060.3L573.4,1042.4L575.9,1001.6L564.7,1001.0L563.5,999.8L563.5,986.2L562.3,982.5L533.9,976.3L528.3,973.8L530.2,954.1L532.0,951.6L538.8,926.3L540.7,924.4L553.0,925.0L554.9,922.6L556.7,905.3L554.9,897.9L557.3,887.4L557.3,880.6L549.9,863.3L537.6,850.9L531.4,846.6L517.2,857.1L497.5,858.4L495.6,860.8L492.5,879.4L490.0,886.1L454.8,886.8L451.8,867.0L448.1,860.2M779.6,1036.8L735.8,1059.7L716.0,1061.5L665.4,1088.7L659.8,1093.0M448.1,859.6L448.1,846.6L420.3,846.0L419.7,806.5L418.4,803.4L419.0,778.1L434.5,752.8L438.2,733.0L441.3,731.2L451.8,729.3L454.9,710.8L467.8,710.2L478.3,687.3L518.5,689.2L538.2,704.0L543.1,704.0L556.7,699.1L579.0,687.9L589.5,701.5L590.1,715.1L603.7,737.3L625.3,754.6L627.7,782.4L629.0,783.6M658.0,1143.0L659.8,1138.7L669.7,1137.5L669.1,1130.0L659.8,1110.3L659.2,1093.6M747.5,818.8L762.3,887.4L767.3,904.1L812.3,904.1L835.2,899.7L843.8,899.7L845.7,901.0L845.7,917.6L829.6,943.0L825.3,962.1L842.6,985.6L851.9,1006.6L852.5,1012.1L822.2,1031.3L819.8,1031.3L804.9,1024.5L800.0,1025.1L796.3,1028.8L791.4,1028.8`,
+      roadPath: `M747.5,818.2L735.8,813.3L714.8,799.7L659.2,773.1L635.8,770.7L630.2,783.6M659.2,1093.0L641.9,1078.8L617.8,1069.5L608.6,1061.5L604.3,1060.3L574.6,1060.3L573.4,1042.4L575.9,1001.6L564.7,1001.0L563.5,999.8L563.5,986.2L562.3,982.5L533.9,976.3L528.3,973.8L530.2,954.1L532.0,951.6L538.8,926.3L540.7,924.4L553.0,925.0L554.9,922.6L556.7,905.3L554.9,897.9L557.3,887.4L557.3,880.6L549.9,863.3L537.6,850.9L531.4,846.6L517.2,857.1L497.5,858.4L495.6,860.8L492.5,879.4L490.0,886.1L454.8,886.8L451.8,867.0L448.1,860.2M779.6,1036.8L735.8,1059.7L716.0,1061.5L665.4,1088.7L659.8,1093.0M448.1,859.6L448.1,846.6L420.3,846.0L419.7,806.5L418.4,803.4L419.0,778.1L434.5,752.8L438.2,733.0L441.3,731.2L451.8,729.3L454.9,710.8L467.8,710.2L478.3,687.3L518.5,689.2L538.2,704.0L543.1,704.0L556.7,699.1L579.0,687.9L589.5,701.5L590.1,715.1L603.7,737.3L625.3,754.6L627.7,782.4L629.0,783.6M658.0,1143.0L659.8,1138.7L669.7,1137.5L669.1,1130.0L659.8,1110.3L659.2,1093.6M747.5,818.8L762.3,887.4L767.3,904.1L812.3,904.1L835.2,899.7L843.8,899.7L845.7,901.0L845.7,917.6L829.6,943.0L825.3,962.1L842.6,985.6L851.9,1006.6L852.5,1012.1L822.2,1031.3L819.8,1031.3L804.9,1024.5L800.0,1025.1L796.3,1028.8L791.4,1028.8M779.2,1036.7L796.6,1028.6`,
       markers: [
         { x: 438.1, y: 733.0 },
         { x: 628.4, y: 791.0 },
@@ -1318,6 +1360,7 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapInteractionEndTimer = 0;
   let mapInteractionDepth = 0;
   let mapFullscreenMode = false;
+  let mapParkedForClock = false;
   let mapMovementTestVisible = false;
   let mapJourneyActive = false;
   let mapJourneyPlan = null;
@@ -1330,12 +1373,21 @@ mapMeasureHint: $('mapMeasureHint'),
     localStorage.getItem(MAP_PRESET_ROUTE_SELECTED_KEY) || 'garbage_cement_cooling';
   const MAP_PRESET_ROUTE_START_KEY =
     'stalker2-zone-clock-preset-route-start-v1';
+  const MAP_ROSTOK_ROUTE_START_KEY =
+    'stalker2-zone-clock-rostok-route-start-v1';
   const MAP_VISITED_ARTIFACTS_KEY =
     'stalker2-zone-clock-visited-artifacts-v2';
   const MAP_VISITED_ARTIFACTS_LEGACY_KEY =
     'stalker2-zone-clock-visited-artifacts-v1';
   let mapPresetRouteStart =
     localStorage.getItem(MAP_PRESET_ROUTE_START_KEY) || 'svalka';
+
+  let mapRostokRouteStart =
+    localStorage.getItem(MAP_ROSTOK_ROUTE_START_KEY) || 'west';
+
+  if (!['west', 'east'].includes(mapRostokRouteStart)) {
+    mapRostokRouteStart = 'west';
+  }
 
   let mapArtifactVisits = (() => {
     try {
@@ -1568,47 +1620,105 @@ mapMeasureHint: $('mapMeasureHint'),
     if (!els.mapPresetRoutePoints) return;
 
     const activeRoute = getPresetRoute();
-    const circles = els.mapPresetRoutePoints.querySelectorAll(
-      '.map-artifact-visit-point'
-    );
-    const statusLabels = els.mapPresetRoutePoints.querySelectorAll(
-      '.map-artifact-status'
+
+    clearRouteStartArtifactState(
+      activeRoute
     );
 
-    circles.forEach((circle, index) => {
-      const elapsed = artifactElapsedSeconds(activeRoute.key, index);
-      const isVisited = elapsed !== null;
-      const state = artifactRespawnState(elapsed);
+    const circles =
+      els.mapPresetRoutePoints
+        .querySelectorAll(
+          '.map-artifact-visit-point'
+        );
 
-      circle.classList.toggle('visited', isVisited);
-      circle.classList.toggle('artifact-collected', state.key === 'collected');
-      circle.classList.toggle('artifact-possible', state.key === 'possible');
-      circle.classList.toggle('artifact-ready', state.key === 'ready');
+    circles.forEach(circle => {
+      const pointIndex =
+        Number(
+          circle.getAttribute(
+            'data-point-index'
+          )
+        );
+
+      if (
+        !Number.isInteger(pointIndex) ||
+        pointIndex < 0
+      ) {
+        return;
+      }
+
+      const elapsed =
+        artifactElapsedSeconds(
+          activeRoute.key,
+          pointIndex
+        );
+
+      const isVisited =
+        elapsed !== null;
+
+      const state =
+        artifactRespawnState(elapsed);
+
+      circle.classList.toggle(
+        'visited',
+        isVisited
+      );
+
+      circle.classList.toggle(
+        'artifact-collected',
+        state.key === 'collected'
+      );
+
+      circle.classList.toggle(
+        'artifact-possible',
+        state.key === 'possible'
+      );
+
+      circle.classList.toggle(
+        'artifact-ready',
+        state.key === 'ready'
+      );
 
       circle.setAttribute(
         'aria-label',
         isVisited
-          ? `Точка ${index + 1}: ${state.label}, прошло ${formatArtifactElapsed(elapsed)}`
-          : `Точка ${index + 1}, не посещена`
+          ? `Точка ${pointIndex + 1}: ${state.label}, прошло ${formatArtifactElapsed(elapsed)}`
+          : `Точка ${pointIndex + 1}, не посещена`
       );
 
-      const label = statusLabels[index];
+      const label =
+        els.mapPresetRoutePoints
+          .querySelector(
+            `.map-artifact-status[data-point-index="${pointIndex}"]`
+          );
 
       if (label) {
         if (isVisited) {
           label.textContent =
             `${state.shortLabel} · ${formatArtifactElapsed(elapsed)}`;
+
           label.style.display = '';
+
           label.setAttribute(
             'class',
             `map-artifact-status artifact-${state.key}`
           );
+
+          label.setAttribute(
+            'data-point-index',
+            String(pointIndex)
+          );
         } else {
           label.textContent = '';
           label.style.display = 'none';
+
           label.setAttribute(
             'class',
             'map-artifact-status'
+          );
+
+          label.setAttribute(
+            'data-point-index',
+            String(pointIndex)
           );
         }
       }
@@ -1682,6 +1792,40 @@ mapMeasureHint: $('mapMeasureHint'),
           )
         }))
         .sort((a, b) => a.distancePx - b.distancePx);
+    }
+
+    if (
+      route.key ===
+        'rostok_redforest_yanov_jupiter_chemical' &&
+      Array.isArray(route.markers)
+    ) {
+      const westOrder = [
+        7, 9, 10, 8, 5, 3, 2, 0, 1, 4, 6
+      ];
+
+      const eastOrder = [
+        7, 6, 4, 1, 0, 2, 3, 5, 8, 10, 9
+      ];
+
+      const order =
+        mapRostokRouteStart === 'east'
+          ? eastOrder
+          : westOrder;
+
+      return order
+        .map((markerIndex, sequenceIndex) => {
+          const point = route.markers[markerIndex];
+
+          if (!point) return null;
+
+          return {
+            ...point,
+            markerIndex,
+            routeKey: route.key,
+            distancePx: sequenceIndex
+          };
+        })
+        .filter(Boolean);
     }
 
     if (Array.isArray(route.journeyStops)) {
@@ -1935,7 +2079,14 @@ mapMeasureHint: $('mapMeasureHint'),
 
     if (els.mapJourneyRouteName) {
       els.mapJourneyRouteName.textContent =
-        route.label;
+        route.key ===
+          'rostok_redforest_yanov_jupiter_chemical'
+          ? `${route.label} · ${
+              mapRostokRouteStart === 'east'
+                ? 'РОСТОК → ВОСТОК'
+                : 'РОСТОК → ЗАПАД'
+            }`
+          : route.label;
     }
 
     if (els.mapJourneyDistance) {
@@ -2251,6 +2402,72 @@ mapMeasureHint: $('mapMeasureHint'),
     return startKey === 'cement' ? 'ЦЕМЕНТНЫЙ ЗАВОД' : 'СВАЛКА';
   }
 
+
+  function getRostokRouteStartLabel(
+    startKey = mapRostokRouteStart
+  ) {
+    return startKey === 'east'
+      ? 'РОСТОК — ИДЁМ НА ВОСТОК'
+      : 'РОСТОК — ИДЁМ НА ЗАПАД';
+  }
+
+
+  function getRouteStartMarkerIndex(
+    route = getPresetRoute()
+  ) {
+    if (!route) return -1;
+
+    if (
+      route.key ===
+      'garbage_cement_cooling'
+    ) {
+      return mapPresetRouteStart === 'cement'
+        ? 3
+        : 13;
+    }
+
+    if (
+      route.key ===
+      'rostok_redforest_yanov_jupiter_chemical'
+    ) {
+      // Росток — начало маршрута, а не точка спавна артефакта.
+      return 7;
+    }
+
+    return -1;
+  }
+
+  function isRouteStartMarker(
+    route,
+    markerIndex
+  ) {
+    return (
+      markerIndex ===
+      getRouteStartMarkerIndex(route)
+    );
+  }
+
+  function clearRouteStartArtifactState(
+    route = getPresetRoute()
+  ) {
+    const markerIndex =
+      getRouteStartMarkerIndex(route);
+
+    if (markerIndex < 0) return;
+
+    const key =
+      artifactVisitKey(
+        route.key,
+        markerIndex
+      );
+
+    if (key in mapArtifactVisits) {
+      delete mapArtifactVisits[key];
+      saveVisitedArtifacts();
+    }
+  }
+
+
   function getRoadPathCommands(route) {
     if (!route || !route.roadPath) return [];
     if (route._roadPathCommands) return route._roadPathCommands;
@@ -2466,37 +2683,297 @@ mapMeasureHint: $('mapMeasureHint'),
     return path;
   }
 
+  function closestPointOnSegment(
+    point,
+    start,
+    end
+  ) {
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const lengthSq = dx * dx + dy * dy;
+
+    if (lengthSq < 0.0001) {
+      return {
+        x: start.x,
+        y: start.y,
+        distance: Math.hypot(
+          point.x - start.x,
+          point.y - start.y
+        )
+      };
+    }
+
+    const t = Math.max(
+      0,
+      Math.min(
+        1,
+        (
+          (point.x - start.x) * dx +
+          (point.y - start.y) * dy
+        ) / lengthSq
+      )
+    );
+
+    const x = start.x + dx * t;
+    const y = start.y + dy * t;
+
+    return {
+      x,
+      y,
+      distance: Math.hypot(
+        point.x - x,
+        point.y - y
+      )
+    };
+  }
+
+  function closestPointOnChains(
+    point,
+    chains
+  ) {
+    let best = null;
+
+    chains.forEach(chain => {
+      for (
+        let index = 0;
+        index < chain.length - 1;
+        index++
+      ) {
+        const candidate =
+          closestPointOnSegment(
+            point,
+            chain[index],
+            chain[index + 1]
+          );
+
+        if (
+          !best ||
+          candidate.distance < best.distance
+        ) {
+          best = candidate;
+        }
+      }
+    });
+
+    return best;
+  }
+
+  function sampleQuadraticRoadSegment(
+    start,
+    control,
+    end,
+    output
+  ) {
+    const approxLength =
+      Math.hypot(
+        control.x - start.x,
+        control.y - start.y
+      ) +
+      Math.hypot(
+        end.x - control.x,
+        end.y - control.y
+      );
+
+    const steps =
+      Math.max(
+        4,
+        Math.ceil(
+          approxLength / 4
+        )
+      );
+
+    for (
+      let step = 1;
+      step <= steps;
+      step++
+    ) {
+      const t = step / steps;
+      const mt = 1 - t;
+
+      output.push({
+        x:
+          mt * mt * start.x +
+          2 * mt * t * control.x +
+          t * t * end.x,
+        y:
+          mt * mt * start.y +
+          2 * mt * t * control.y +
+          t * t * end.y
+      });
+    }
+  }
+
+  function sampleSmoothScreenChain(points) {
+    if (!points.length) return [];
+
+    if (points.length === 1) {
+      return points.slice();
+    }
+
+    if (points.length === 2) {
+      return points.slice();
+    }
+
+    const samples = [
+      {
+        x: points[0].x,
+        y: points[0].y
+      }
+    ];
+
+    let segmentStart =
+      points[0];
+
+    for (
+      let index = 1;
+      index < points.length - 1;
+      index++
+    ) {
+      const control =
+        points[index];
+
+      const next =
+        points[index + 1];
+
+      const end = {
+        x:
+          (control.x + next.x) / 2,
+        y:
+          (control.y + next.y) / 2
+      };
+
+      sampleQuadraticRoadSegment(
+        segmentStart,
+        control,
+        end,
+        samples
+      );
+
+      segmentStart = end;
+    }
+
+    const beforeLast =
+      points[points.length - 2];
+
+    const last =
+      points[points.length - 1];
+
+    sampleQuadraticRoadSegment(
+      segmentStart,
+      beforeLast,
+      last,
+      samples
+    );
+
+    return samples;
+  }
+
   function buildScreenRoadPath(route) {
-    return roadCommandsToChains(route)
-      .map(chain => {
-        const screenPoints = chain.map(
-          point => ({
+    const screenChains =
+      roadCommandsToChains(route)
+        .map(chain =>
+          chain.map(point => ({
             x:
               mapPanX +
               point.x * mapZoom,
             y:
               mapPanY +
               point.y * mapZoom
-          })
+          }))
         );
 
-        /*
-         * Упрощение выполняется уже после масштабирования,
-         * поэтому визуальная точность остаётся одинаковой
-         * при любом zoom. Микро-зигзаги менее ~2.4 px
-         * исчезают, а реальные повороты дорог сохраняются.
-         */
+    const sampledSmoothChains = [];
+
+    const basePath = screenChains
+      .map(screenPoints => {
         const simplified =
           simplifyRoadScreenPoints(
             screenPoints,
             2.4
           );
 
+        sampledSmoothChains.push(
+          sampleSmoothScreenChain(
+            simplified
+          )
+        );
+
         return buildSmoothScreenChain(
           simplified
         );
       })
       .join('');
+
+    if (
+      !Array.isArray(route.markers) ||
+      !route.markers.length
+    ) {
+      return basePath;
+    }
+
+    /*
+     * Точку соединяем уже с ФАКТИЧЕСКОЙ сглаженной кривой,
+     * а не с исходной пиксельной геометрией.
+     * Коннектор ещё на 3 экранных пикселя заходит внутрь
+     * основной линии, поэтому визуального зазора нет.
+     */
+    const connectorPath =
+      route.markers
+        .map(point => ({
+          x:
+            mapPanX +
+            point.x * mapZoom,
+          y:
+            mapPanY +
+            point.y * mapZoom
+        }))
+        .map(screenPoint => {
+          const closest =
+            closestPointOnChains(
+              screenPoint,
+              sampledSmoothChains
+            );
+
+          if (!closest) return '';
+
+          const dx =
+            closest.x -
+            screenPoint.x;
+
+          const dy =
+            closest.y -
+            screenPoint.y;
+
+          const distance =
+            Math.hypot(dx, dy);
+
+          if (distance <= 0.25) {
+            return '';
+          }
+
+          const ux = dx / distance;
+          const uy = dy / distance;
+
+          const overlap = 3;
+
+          const routeX =
+            closest.x +
+            ux * overlap;
+
+          const routeY =
+            closest.y +
+            uy * overlap;
+
+          return (
+            `M${routeX.toFixed(1)},` +
+            `${routeY.toFixed(1)}` +
+            `L${screenPoint.x.toFixed(1)},` +
+            `${screenPoint.y.toFixed(1)}`
+          );
+        })
+        .join('');
+
+    return basePath + connectorPath;
   }
 
 
@@ -2527,31 +3004,73 @@ mapMeasureHint: $('mapMeasureHint'),
 
   function updatePresetRouteUI() {
     const activeRoute = getPresetRoute();
-    const showRouteStart = activeRoute.key === 'garbage_cement_cooling';
+
+    const isGarbageRoute =
+      activeRoute.key ===
+      'garbage_cement_cooling';
+
+    const isRostokRoute =
+      activeRoute.key ===
+      'rostok_redforest_yanov_jupiter_chemical';
+
+    const showRouteStart =
+      isGarbageRoute || isRostokRoute;
 
     if (els.mapPresetRouteBtn) {
       els.mapPresetRouteBtn.textContent =
-        mapPresetRouteVisible ? 'МАРШРУТ: ВКЛ' : 'МАРШРУТ: ВЫКЛ';
-      els.mapPresetRouteBtn.classList.toggle('active', mapPresetRouteVisible);
+        mapPresetRouteVisible
+          ? 'МАРШРУТ: ВКЛ'
+          : 'МАРШРУТ: ВЫКЛ';
+
+      els.mapPresetRouteBtn.classList.toggle(
+        'active',
+        mapPresetRouteVisible
+      );
     }
 
     if (els.mapRouteSelect) {
-      els.mapRouteSelect.value = activeRoute.key;
+      els.mapRouteSelect.value =
+        activeRoute.key;
     }
 
-
     if (els.mapRouteStartWrap) {
-      els.mapRouteStartWrap.hidden = !showRouteStart;
+      els.mapRouteStartWrap.hidden =
+        !showRouteStart;
     }
 
     if (els.mapRouteStartSelect) {
-      els.mapRouteStartSelect.value = mapPresetRouteStart;
+      if (isGarbageRoute) {
+        els.mapRouteStartSelect.innerHTML =
+          '<option value="svalka">СВАЛКА</option>' +
+          '<option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>';
+
+        els.mapRouteStartSelect.value =
+          mapPresetRouteStart;
+      } else if (isRostokRoute) {
+        els.mapRouteStartSelect.innerHTML =
+          '<option value="west">РОСТОК — ИДЁМ НА ЗАПАД</option>' +
+          '<option value="east">РОСТОК — ИДЁМ НА ВОСТОК</option>';
+
+        els.mapRouteStartSelect.value =
+          mapRostokRouteStart;
+      }
     }
 
-
     if (els.mapPresetRouteLabel) {
-      els.mapPresetRouteLabel.hidden = !mapPresetRouteVisible;
-      els.mapPresetRouteLabel.textContent = activeRoute.label;
+      els.mapPresetRouteLabel.hidden =
+        !mapPresetRouteVisible;
+
+      if (isRostokRoute) {
+        els.mapPresetRouteLabel.textContent =
+          `${activeRoute.label} · ${
+            mapRostokRouteStart === 'east'
+              ? 'СТАРТ: РОСТОК → ВОСТОК'
+              : 'СТАРТ: РОСТОК → ЗАПАД'
+          }`;
+      } else {
+        els.mapPresetRouteLabel.textContent =
+          activeRoute.label;
+      }
     }
   }
 
@@ -2619,6 +3138,10 @@ mapMeasureHint: $('mapMeasureHint'),
       '.map-artifact-status'
     );
 
+    const routeStartLabels = els.mapPresetRoutePoints.querySelectorAll(
+      '.map-route-start-label'
+    );
+
     const routeZoomRatio =
       mapFitZoom > 0 ? mapZoom / mapFitZoom : 1;
     const showDistanceLabels =
@@ -2634,11 +3157,50 @@ mapMeasureHint: $('mapMeasureHint'),
         circle.setAttribute('cy', screen.y);
       }
 
-      const artifactStatusLabel = artifactStatusLabels[index];
+      const artifactStatusLabel =
+        Array.from(
+          artifactStatusLabels
+        ).find(label =>
+          Number(
+            label.getAttribute(
+              'data-point-index'
+            )
+          ) === index
+        );
 
       if (artifactStatusLabel) {
-        artifactStatusLabel.setAttribute('x', screen.x + 8);
-        artifactStatusLabel.setAttribute('y', screen.y + 16);
+        artifactStatusLabel.setAttribute(
+          'x',
+          screen.x + 8
+        );
+
+        artifactStatusLabel.setAttribute(
+          'y',
+          screen.y + 16
+        );
+      }
+
+      const routeStartLabel =
+        Array.from(
+          routeStartLabels
+        ).find(label =>
+          Number(
+            label.getAttribute(
+              'data-point-index'
+            )
+          ) === index
+        );
+
+      if (routeStartLabel) {
+        routeStartLabel.setAttribute(
+          'x',
+          screen.x + 9
+        );
+
+        routeStartLabel.setAttribute(
+          'y',
+          screen.y - 9
+        );
       }
 
       const label = labels[index];
@@ -2669,95 +3231,258 @@ mapMeasureHint: $('mapMeasureHint'),
   function renderPresetRoute() {
     if (!els.mapPresetRoutePoints) return;
 
-    const activeRoute = getPresetRoute();
-    const isRoadRoute = Boolean(activeRoute.roadPath);
-    const markerDefs = isRoadRoute
-      ? activeRoute.markers
-      : getPresetRouteNodes(activeRoute);
+    const activeRoute =
+      getPresetRoute();
 
-    els.mapPresetRoutePoints.innerHTML = '';
+    const isRoadRoute =
+      Boolean(activeRoute.roadPath);
 
-    markerDefs.forEach((point, index) => {
-      const circle = document.createElementNS(
-        'http://www.w3.org/2000/svg',
-        'circle'
-      );
+    const markerDefs =
+      isRoadRoute
+        ? activeRoute.markers
+        : getPresetRouteNodes(
+            activeRoute
+          );
 
-      const elapsed = artifactElapsedSeconds(activeRoute.key, index);
-      const isVisited = elapsed !== null;
-      const respawnState = artifactRespawnState(elapsed);
+    clearRouteStartArtifactState(
+      activeRoute
+    );
 
-      circle.setAttribute('r', isRoadRoute ? '5.2' : '4.5');
-      circle.setAttribute(
-        'class',
-        `map-preset-route-point map-artifact-visit-point${isVisited ? ` visited artifact-${respawnState.key}` : ''}`
-      );
-      circle.setAttribute('data-route-key', activeRoute.key);
-      circle.setAttribute('data-point-index', String(index));
-      circle.setAttribute('tabindex', '0');
-      circle.setAttribute('role', 'button');
-      circle.setAttribute(
-        'aria-label',
-        isVisited
-          ? `Точка ${index + 1}: ${respawnState.label}, прошло ${formatArtifactElapsed(elapsed)}`
-          : `Точка ${index + 1}, не посещена`
-      );
+    els.mapPresetRoutePoints.innerHTML =
+      '';
 
-      circle.addEventListener('pointerdown', event => {
-        event.stopPropagation();
-      });
+    markerDefs.forEach(
+      (point, index) => {
+        const isStartPoint =
+          isRouteStartMarker(
+            activeRoute,
+            index
+          );
 
-      circle.addEventListener('click', event => {
-        event.stopPropagation();
-        toggleArtifactVisited(activeRoute.key, index);
-      });
+        const circle =
+          document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'circle'
+          );
 
-      circle.addEventListener('keydown', event => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          event.stopPropagation();
-          toggleArtifactVisited(activeRoute.key, index);
-        }
-      });
+        const elapsed =
+          isStartPoint
+            ? null
+            : artifactElapsedSeconds(
+                activeRoute.key,
+                index
+              );
 
-      els.mapPresetRoutePoints.appendChild(circle);
+        const isVisited =
+          !isStartPoint &&
+          elapsed !== null;
 
-      const statusText = document.createElementNS(
-        'http://www.w3.org/2000/svg',
-        'text'
-      );
+        const respawnState =
+          artifactRespawnState(
+            elapsed
+          );
 
-      statusText.setAttribute(
-        'class',
-        `map-artifact-status${isVisited ? ` artifact-${respawnState.key}` : ''}`
-      );
-      statusText.setAttribute('font-size', '9.5');
-      statusText.style.display = isVisited ? '' : 'none';
-      statusText.textContent = isVisited
-        ? `${respawnState.shortLabel} · ${formatArtifactElapsed(elapsed)}`
-        : '';
-
-      els.mapPresetRoutePoints.appendChild(statusText);
-
-      if (isRoadRoute && activeRoute.showCumulativeDistances) {
-        const text = document.createElementNS(
-          'http://www.w3.org/2000/svg',
-          'text'
+        circle.setAttribute(
+          'r',
+          isStartPoint
+            ? '6.2'
+            : (
+                isRoadRoute
+                  ? '5.2'
+                  : '4.5'
+              )
         );
 
-        text.setAttribute(
+        circle.setAttribute(
           'class',
-          'map-preset-route-distance'
+          isStartPoint
+            ? 'map-preset-route-point map-route-start-point'
+            : (
+                `map-preset-route-point map-artifact-visit-point` +
+                (
+                  isVisited
+                    ? ` visited artifact-${respawnState.key}`
+                    : ''
+                )
+              )
         );
 
-        text.setAttribute('font-size', '10.5');
-        els.mapPresetRoutePoints.appendChild(text);
+        circle.setAttribute(
+          'data-route-key',
+          activeRoute.key
+        );
+
+        circle.setAttribute(
+          'data-point-index',
+          String(index)
+        );
+
+        if (isStartPoint) {
+          circle.setAttribute(
+            'role',
+            'img'
+          );
+
+          circle.setAttribute(
+            'aria-label',
+            'Начало маршрута'
+          );
+        } else {
+          circle.setAttribute(
+            'tabindex',
+            '0'
+          );
+
+          circle.setAttribute(
+            'role',
+            'button'
+          );
+
+          circle.setAttribute(
+            'aria-label',
+            isVisited
+              ? `Точка ${index + 1}: ${respawnState.label}, прошло ${formatArtifactElapsed(elapsed)}`
+              : `Точка ${index + 1}, не посещена`
+          );
+
+          circle.addEventListener(
+            'pointerdown',
+            event => {
+              event.stopPropagation();
+            }
+          );
+
+          circle.addEventListener(
+            'click',
+            event => {
+              event.stopPropagation();
+
+              toggleArtifactVisited(
+                activeRoute.key,
+                index
+              );
+            }
+          );
+
+          circle.addEventListener(
+            'keydown',
+            event => {
+              if (
+                event.key === 'Enter' ||
+                event.key === ' '
+              ) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                toggleArtifactVisited(
+                  activeRoute.key,
+                  index
+                );
+              }
+            }
+          );
+        }
+
+        els.mapPresetRoutePoints
+          .appendChild(circle);
+
+        if (isStartPoint) {
+          const startText =
+            document.createElementNS(
+              'http://www.w3.org/2000/svg',
+              'text'
+            );
+
+          startText.setAttribute(
+            'class',
+            'map-route-start-label'
+          );
+
+          startText.setAttribute(
+            'data-point-index',
+            String(index)
+          );
+
+          startText.setAttribute(
+            'font-size',
+            '10'
+          );
+
+          startText.textContent =
+            'СТАРТ';
+
+          els.mapPresetRoutePoints
+            .appendChild(startText);
+        } else {
+          const statusText =
+            document.createElementNS(
+              'http://www.w3.org/2000/svg',
+              'text'
+            );
+
+          statusText.setAttribute(
+            'class',
+            `map-artifact-status${
+              isVisited
+                ? ` artifact-${respawnState.key}`
+                : ''
+            }`
+          );
+
+          statusText.setAttribute(
+            'data-point-index',
+            String(index)
+          );
+
+          statusText.setAttribute(
+            'font-size',
+            '9.5'
+          );
+
+          statusText.style.display =
+            isVisited
+              ? ''
+              : 'none';
+
+          statusText.textContent =
+            isVisited
+              ? `${respawnState.shortLabel} · ${formatArtifactElapsed(elapsed)}`
+              : '';
+
+          els.mapPresetRoutePoints
+            .appendChild(statusText);
+        }
+
+        if (
+          isRoadRoute &&
+          activeRoute.showCumulativeDistances
+        ) {
+          const text =
+            document.createElementNS(
+              'http://www.w3.org/2000/svg',
+              'text'
+            );
+
+          text.setAttribute(
+            'class',
+            'map-preset-route-distance'
+          );
+
+          text.setAttribute(
+            'font-size',
+            '10.5'
+          );
+
+          els.mapPresetRoutePoints
+            .appendChild(text);
+        }
       }
-    });
+    );
 
     updatePresetRouteUI();
     updatePresetRouteScreenGeometry();
   }
+
 
   function togglePresetRoute() {
     mapPresetRouteVisible = !mapPresetRouteVisible;
@@ -3223,24 +3948,89 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   if (els.mapBtn) {
-    els.mapBtn.addEventListener('click', () => {
-      updateMapZoneTime();
-      updateMapFullscreenUI();
+    els.mapBtn.addEventListener(
+      'click',
+      () => {
+        const restoreParkedMap =
+          mapParkedForClock;
 
-      if (typeof els.mapDialog.showModal === 'function') {
-        els.mapDialog.showModal();
-      } else {
-        els.mapDialog.setAttribute('open', '');
+        updateMapZoneTime();
+        updateMapFullscreenUI();
+
+        if (
+          typeof els.mapDialog.showModal ===
+          'function'
+        ) {
+          els.mapDialog.showModal();
+        } else {
+          els.mapDialog.setAttribute(
+            'open',
+            ''
+          );
+        }
+
+        window.requestAnimationFrame(
+          () => {
+            if (restoreParkedMap) {
+              mapParkedForClock = false;
+
+              const rect =
+                els.mapViewport
+                  .getBoundingClientRect();
+
+              if (els.mapOverlay) {
+                els.mapOverlay.setAttribute(
+                  'width',
+                  String(rect.width)
+                );
+
+                els.mapOverlay.setAttribute(
+                  'height',
+                  String(rect.height)
+                );
+              }
+
+              applyMapTransform(true);
+              updateMapInfo();
+            } else {
+              fitZoneMap();
+              updateMapInfo();
+            }
+          }
+        );
       }
+    );
+  }
 
-      window.requestAnimationFrame(() => {
-        fitZoneMap();
-        updateMapInfo();
+  if (els.mapClockBtn) {
+    els.mapClockBtn.addEventListener(
+      'click',
+      () => {
+        mapParkedForClock = true;
 
-        // В v57 карта уже состоит из тайлов исходного PNG,
-        // поэтому дополнительная подгрузка HD-слоя не требуется.
-      });
-    });
+        if (
+          typeof els.mapDialog.close ===
+          'function'
+        ) {
+          els.mapDialog.close();
+        } else {
+          els.mapDialog.removeAttribute(
+            'open'
+          );
+        }
+
+        window.requestAnimationFrame(
+          () => {
+            if (els.clock) {
+              els.clock.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+              });
+            }
+          }
+        );
+      }
+    );
   }
 
   if (els.mapFullscreenBtn) {
@@ -3249,6 +4039,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
   if (els.closeMapBtn) {
     els.closeMapBtn.addEventListener('click', () => {
+      mapParkedForClock = false;
       mapFullscreenMode = false;
       updateMapFullscreenUI();
       if (typeof els.mapDialog.close === 'function') els.mapDialog.close();
@@ -3259,6 +4050,7 @@ mapMeasureHint: $('mapMeasureHint'),
   if (els.mapDialog) {
     els.mapDialog.addEventListener('click', event => {
       if (event.target === els.mapDialog) {
+        mapParkedForClock = false;
         mapFullscreenMode = false;
         updateMapFullscreenUI();
         if (typeof els.mapDialog.close === 'function') els.mapDialog.close();
@@ -3332,25 +4124,54 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   if (els.mapRouteStartSelect) {
-    els.mapRouteStartSelect.addEventListener('change', (event) => {
-      const value = event.target.value;
+    els.mapRouteStartSelect.addEventListener(
+      'change',
+      event => {
+        const value = event.target.value;
+        const activeRoute = getPresetRoute();
 
-      if (!['svalka', 'cement'].includes(value)) return;
+        if (
+          activeRoute.key ===
+          'garbage_cement_cooling'
+        ) {
+          if (!['svalka', 'cement'].includes(value)) {
+            return;
+          }
 
-      mapPresetRouteStart = value;
-      mapJourneyActive = false;
-      mapJourneyPlan = null;
-      mapJourneySequence = [];
+          mapPresetRouteStart = value;
 
-      localStorage.setItem(
-        MAP_PRESET_ROUTE_START_KEY,
-        mapPresetRouteStart
-      );
+          localStorage.setItem(
+            MAP_PRESET_ROUTE_START_KEY,
+            mapPresetRouteStart
+          );
+        } else if (
+          activeRoute.key ===
+          'rostok_redforest_yanov_jupiter_chemical'
+        ) {
+          if (!['west', 'east'].includes(value)) {
+            return;
+          }
 
-      updatePresetRouteUI();
-      updatePresetRouteScreenGeometry();
-      updateJourneyHud();
-    });
+          mapRostokRouteStart = value;
+
+          localStorage.setItem(
+            MAP_ROSTOK_ROUTE_START_KEY,
+            mapRostokRouteStart
+          );
+        } else {
+          return;
+        }
+
+        mapJourneyActive = false;
+        mapJourneyPlan = null;
+        mapJourneySequence = [];
+
+        clearRouteStartArtifactState(activeRoute);
+
+        renderPresetRoute();
+        updateJourneyHud();
+      }
+    );
   }
 
   if (els.mapZoomOutBtn) {
@@ -3560,34 +4381,57 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
 
-  function movementTestDistanceMeters() {
+  function movementTestDistanceMeters(
+    routeKey = movementTestRouteKey
+  ) {
+    const route =
+      getMovementTestRoute(routeKey);
+
     return Math.hypot(
-      MOVEMENT_TEST_END.x - MOVEMENT_TEST_START.x,
-      MOVEMENT_TEST_END.y - MOVEMENT_TEST_START.y
+      route.end.x - route.start.x,
+      route.end.y - route.start.y
     ) * mapMetersPerPixel;
   }
 
   function formatMovementElapsed(seconds) {
-    const safe = Math.max(0, Math.round(seconds));
-    const minutes = Math.floor(safe / 60);
-    const secs = safe % 60;
+    const safe =
+      Math.max(0, Math.round(seconds));
+    const minutes =
+      Math.floor(safe / 60);
+    const secs =
+      safe % 60;
 
     if (minutes >= 60) {
-      const hours = Math.floor(minutes / 60);
-      const restMinutes = minutes % 60;
-      return `${hours}:${String(restMinutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      const hours =
+        Math.floor(minutes / 60);
+      const restMinutes =
+        minutes % 60;
+
+      return (
+        `${hours}:` +
+        `${String(restMinutes).padStart(2, '0')}:` +
+        `${String(secs).padStart(2, '0')}`
+      );
     }
 
-    return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    return (
+      `${String(minutes).padStart(2, '0')}:` +
+      `${String(secs).padStart(2, '0')}`
+    );
   }
 
   function loadMovementTests() {
     try {
       const data = JSON.parse(
-        localStorage.getItem(MOVEMENT_TEST_STORAGE_KEY) || '{}'
+        localStorage.getItem(
+          MOVEMENT_TEST_STORAGE_KEY
+        ) || '{}'
       );
 
-      return data && typeof data === 'object'
+      return (
+        data &&
+        typeof data === 'object'
+      )
         ? data
         : {};
     } catch (_) {
@@ -3605,7 +4449,9 @@ mapMeasureHint: $('mapMeasureHint'),
   function loadActiveMovementTest() {
     try {
       const data = JSON.parse(
-        localStorage.getItem(MOVEMENT_TEST_ACTIVE_KEY) || 'null'
+        localStorage.getItem(
+          MOVEMENT_TEST_ACTIVE_KEY
+        ) || 'null'
       );
 
       if (
@@ -3614,6 +4460,12 @@ mapMeasureHint: $('mapMeasureHint'),
         !(Number(data.startedAtMs) > 0)
       ) {
         return null;
+      }
+
+      // Старые незавершённые замеры до появления выбора маршрута
+      // относятся к первому контрольному отрезку.
+      if (!MOVEMENT_TEST_ROUTES[data.routeKey]) {
+        data.routeKey = 'cement_swyd';
       }
 
       return data;
@@ -3636,19 +4488,45 @@ mapMeasureHint: $('mapMeasureHint'),
     );
   }
 
-  function movementModeRuns(mode) {
+  function movementModeRuns(
+    mode,
+    routeKey = movementTestRouteKey
+  ) {
     const data = loadMovementTests();
-    const runs = data[mode];
-    return Array.isArray(runs) ? runs : [];
+
+    // Новая структура: data[routeKey][mode]
+    if (
+      data[routeKey] &&
+      Array.isArray(data[routeKey][mode])
+    ) {
+      return data[routeKey][mode];
+    }
+
+    // Совместимость со старыми результатами v83–v91:
+    // корневые data[mode] относятся к первому маршруту.
+    if (
+      routeKey === 'cement_swyd' &&
+      Array.isArray(data[mode])
+    ) {
+      return data[mode];
+    }
+
+    return [];
   }
 
-  function movementModeAverage(mode) {
-    const runs = movementModeRuns(mode);
+  function movementModeAverage(
+    mode,
+    routeKey = movementTestRouteKey
+  ) {
+    const runs =
+      movementModeRuns(mode, routeKey);
 
     if (!runs.length) return null;
 
     const valid = runs.filter(run =>
-      Number.isFinite(Number(run.speedKmh)) &&
+      Number.isFinite(
+        Number(run.speedKmh)
+      ) &&
       Number(run.speedKmh) > 0
     );
 
@@ -3676,15 +4554,49 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function updateMovementTestUi() {
+    const active =
+      loadActiveMovementTest();
+
+    if (
+      active &&
+      MOVEMENT_TEST_ROUTES[active.routeKey]
+    ) {
+      movementTestRouteKey =
+        active.routeKey;
+    }
+
+    const route =
+      getMovementTestRoute();
+
     const distanceMeters =
-      movementTestDistanceMeters();
+      movementTestDistanceMeters(
+        route.key
+      );
+
+    if (els.movementTestRouteSelect) {
+      els.movementTestRouteSelect.value =
+        route.key;
+
+      els.movementTestRouteSelect.disabled =
+        Boolean(active);
+    }
+
+    if (els.movementTestRouteName) {
+      els.movementTestRouteName.textContent =
+        route.label;
+    }
+
+    if (els.movementTestHelp) {
+      els.movementTestHelp.textContent =
+        route.help;
+    }
 
     if (els.movementTestDistance) {
       els.movementTestDistance.textContent =
-        formatMapDistance(distanceMeters);
+        formatMapDistance(
+          distanceMeters
+        );
     }
-
-    const active = loadActiveMovementTest();
 
     document.querySelectorAll(
       '[data-movement-mode]'
@@ -3703,12 +4615,18 @@ mapMeasureHint: $('mapMeasureHint'),
         );
 
       const average =
-        movementModeAverage(mode);
+        movementModeAverage(
+          mode,
+          route.key
+        );
 
       if (result) {
         if (average) {
           result.textContent =
-            `Среднее: ${average.speedKmh.toFixed(2)} км/ч · ${formatMovementElapsed(average.realSeconds)} · замеров ${average.count}`;
+            `Среднее: ` +
+            `${average.speedKmh.toFixed(2)} км/ч · ` +
+            `${formatMovementElapsed(average.realSeconds)} · ` +
+            `замеров ${average.count}`;
         } else {
           result.textContent =
             'Нет замеров';
@@ -3718,11 +4636,12 @@ mapMeasureHint: $('mapMeasureHint'),
       if (action) {
         const isThisActive =
           active &&
-          active.mode === mode;
+          active.mode === mode &&
+          active.routeKey === route.key;
 
         const otherActive =
           active &&
-          active.mode !== mode;
+          !isThisActive;
 
         action.textContent =
           isThisActive
@@ -3741,11 +4660,19 @@ mapMeasureHint: $('mapMeasureHint'),
 
     if (els.movementTestStatus) {
       if (active) {
+        const activeRoute =
+          getMovementTestRoute(
+            active.routeKey
+          );
+
         els.movementTestStatus.textContent =
-          `${MOVEMENT_TEST_MODES[active.mode]}: замер идёт. На SWYD-East Checkpoint нажмите «ФИНИШ».`;
+          `${MOVEMENT_TEST_MODES[active.mode]}: ` +
+          `замер идёт по маршруту «${activeRoute.shortLabel}». ` +
+          `В точке «${activeRoute.end.shortLabel}» нажмите «ФИНИШ».`;
       } else {
         els.movementTestStatus.textContent =
-          'Выберите темп и начните замер у моста.';
+          `Маршрут «${route.shortLabel}». ` +
+          `Выберите темп и начните замер в точке «${route.start.shortLabel}».`;
       }
     }
   }
@@ -3762,7 +4689,9 @@ mapMeasureHint: $('mapMeasureHint'),
 
       if (
         active &&
-        active.mode === mode
+        active.mode === mode &&
+        active.routeKey ===
+          movementTestRouteKey
       ) {
         const elapsed =
           Math.max(
@@ -3777,7 +4706,10 @@ mapMeasureHint: $('mapMeasureHint'),
           formatMovementElapsed(elapsed);
       } else {
         const runs =
-          movementModeRuns(mode);
+          movementModeRuns(
+            mode,
+            movementTestRouteKey
+          );
 
         const latest =
           runs.length
@@ -3787,7 +4719,9 @@ mapMeasureHint: $('mapMeasureHint'),
         node.textContent =
           latest
             ? formatMovementElapsed(
-                Number(latest.realSeconds) || 0
+                Number(
+                  latest.realSeconds
+                ) || 0
               )
             : '00:00';
       }
@@ -3795,15 +4729,24 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function startMovementTest(mode) {
-    if (!MOVEMENT_TEST_MODES[mode]) return;
+    if (!MOVEMENT_TEST_MODES[mode]) {
+      return;
+    }
 
     updateNow();
 
-    const active = loadActiveMovementTest();
+    const route =
+      getMovementTestRoute();
+
+    const active =
+      loadActiveMovementTest();
 
     if (
       active &&
-      active.mode !== mode
+      (
+        active.mode !== mode ||
+        active.routeKey !== route.key
+      )
     ) {
       return;
     }
@@ -3811,13 +4754,20 @@ mapMeasureHint: $('mapMeasureHint'),
     if (!active) {
       saveActiveMovementTest({
         mode,
+        routeKey: route.key,
+        routeLabel: route.label,
         startedAtMs: Date.now(),
         startAbsoluteGameSeconds:
-          Math.round(absoluteGameSeconds),
+          Math.round(
+            absoluteGameSeconds
+          ),
         startDay: gameDay,
-        startTime: formatClock(gameSeconds),
+        startTime:
+          formatClock(gameSeconds),
         distanceMeters:
-          movementTestDistanceMeters()
+          movementTestDistanceMeters(
+            route.key
+          )
       });
 
       updateMovementTestUi();
@@ -3825,7 +4775,9 @@ mapMeasureHint: $('mapMeasureHint'),
 
       if (els.testMessage) {
         els.testMessage.textContent =
-          `${MOVEMENT_TEST_MODES[mode]}: старт записан. Идите от моста до SWYD-East Checkpoint.`;
+          `${MOVEMENT_TEST_MODES[mode]}: ` +
+          `старт записан. ` +
+          `${route.start.shortLabel} → ${route.end.shortLabel}.`;
       }
 
       return;
@@ -3835,7 +4787,8 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function finishMovementTest(mode) {
-    const active = loadActiveMovementTest();
+    const active =
+      loadActiveMovementTest();
 
     if (
       !active ||
@@ -3844,9 +4797,15 @@ mapMeasureHint: $('mapMeasureHint'),
       return;
     }
 
+    const route =
+      getMovementTestRoute(
+        active.routeKey
+      );
+
     updateNow();
 
-    const finishedAtMs = Date.now();
+    const finishedAtMs =
+      Date.now();
 
     const realSeconds =
       Math.max(
@@ -3858,7 +4817,9 @@ mapMeasureHint: $('mapMeasureHint'),
       );
 
     const endAbsoluteGameSeconds =
-      Math.round(absoluteGameSeconds);
+      Math.round(
+        absoluteGameSeconds
+      );
 
     const zoneSeconds =
       Math.max(
@@ -3872,7 +4833,9 @@ mapMeasureHint: $('mapMeasureHint'),
     const distanceMeters =
       Number(active.distanceMeters) > 0
         ? Number(active.distanceMeters)
-        : movementTestDistanceMeters();
+        : movementTestDistanceMeters(
+            route.key
+          );
 
     const speedKmh =
       (
@@ -3882,13 +4845,28 @@ mapMeasureHint: $('mapMeasureHint'),
         realSeconds / 3600
       );
 
-    const data = loadMovementTests();
+    const data =
+      loadMovementTests();
 
-    if (!Array.isArray(data[mode])) {
-      data[mode] = [];
+    if (
+      !data[route.key] ||
+      typeof data[route.key] !== 'object' ||
+      Array.isArray(data[route.key])
+    ) {
+      data[route.key] = {};
     }
 
-    data[mode].push({
+    if (
+      !Array.isArray(
+        data[route.key][mode]
+      )
+    ) {
+      data[route.key][mode] = [];
+    }
+
+    data[route.key][mode].push({
+      routeKey: route.key,
+      routeLabel: route.label,
       mode,
       modeLabel:
         MOVEMENT_TEST_MODES[mode],
@@ -3896,12 +4874,18 @@ mapMeasureHint: $('mapMeasureHint'),
         Number(active.startedAtMs),
       finishedAtMs,
       realSeconds:
-        Math.round(realSeconds * 10) / 10,
+        Math.round(
+          realSeconds * 10
+        ) / 10,
       zoneSeconds,
       distanceMeters:
-        Math.round(distanceMeters),
+        Math.round(
+          distanceMeters
+        ),
       speedKmh:
-        Math.round(speedKmh * 100) / 100,
+        Math.round(
+          speedKmh * 100
+        ) / 100,
       startDay:
         active.startDay,
       startTime:
@@ -3914,19 +4898,30 @@ mapMeasureHint: $('mapMeasureHint'),
         new Date().toISOString()
     });
 
-    // Keep the latest 20 attempts for each pace.
-    data[mode] =
-      data[mode].slice(-20);
+    data[route.key][mode] =
+      data[route.key][mode]
+        .slice(-20);
 
     saveMovementTests(data);
     saveActiveMovementTest(null);
+
+    movementTestRouteKey =
+      route.key;
+
+    localStorage.setItem(
+      MOVEMENT_TEST_ROUTE_KEY,
+      movementTestRouteKey
+    );
 
     updateMovementTestUi();
     updateMovementLiveTimers();
 
     if (els.testMessage) {
       els.testMessage.textContent =
-        `${MOVEMENT_TEST_MODES[mode]}: ${formatMovementElapsed(realSeconds)}, ${speedKmh.toFixed(2)} км/ч.`;
+        `${MOVEMENT_TEST_MODES[mode]} · ` +
+        `${route.shortLabel}: ` +
+        `${formatMovementElapsed(realSeconds)}, ` +
+        `${speedKmh.toFixed(2)} км/ч.`;
     }
   }
 
@@ -3942,6 +4937,33 @@ mapMeasureHint: $('mapMeasureHint'),
       }
     );
   });
+
+  if (els.movementTestRouteSelect) {
+    els.movementTestRouteSelect.addEventListener(
+      'change',
+      () => {
+        const nextKey =
+          els.movementTestRouteSelect.value;
+
+        if (
+          MOVEMENT_TEST_ROUTES[nextKey] &&
+          !loadActiveMovementTest()
+        ) {
+          movementTestRouteKey =
+            nextKey;
+
+          localStorage.setItem(
+            MOVEMENT_TEST_ROUTE_KEY,
+            movementTestRouteKey
+          );
+
+          updateMovementTestUi();
+          updateMovementLiveTimers();
+          updateMovementTestScreenGeometry();
+        }
+      }
+    );
+  }
 
   function updateMovementTestScreenGeometry() {
     if (
@@ -3962,14 +4984,17 @@ mapMeasureHint: $('mapMeasureHint'),
       return;
     }
 
+    const route =
+      getMovementTestRoute();
+
     const start =
       routePointToScreen(
-        MOVEMENT_TEST_START
+        route.start
       );
 
     const end =
       routePointToScreen(
-        MOVEMENT_TEST_END
+        route.end
       );
 
     els.mapMovementTestLine.setAttribute(
@@ -3981,6 +5006,7 @@ mapMeasureHint: $('mapMeasureHint'),
       'cx',
       start.x
     );
+
     els.mapMovementTestStart.setAttribute(
       'cy',
       start.y
@@ -3990,6 +5016,7 @@ mapMeasureHint: $('mapMeasureHint'),
       'cx',
       end.x
     );
+
     els.mapMovementTestEnd.setAttribute(
       'cy',
       end.y
@@ -4000,10 +5027,14 @@ mapMeasureHint: $('mapMeasureHint'),
         'x',
         start.x + 10
       );
+
       els.mapMovementTestStartLabel.setAttribute(
         'y',
         start.y - 10
       );
+
+      els.mapMovementTestStartLabel.textContent =
+        route.start.shortLabel;
     }
 
     if (els.mapMovementTestEndLabel) {
@@ -4011,29 +5042,42 @@ mapMeasureHint: $('mapMeasureHint'),
         'x',
         end.x + 10
       );
+
       els.mapMovementTestEndLabel.setAttribute(
         'y',
         end.y - 10
       );
+
+      els.mapMovementTestEndLabel.textContent =
+        route.end.shortLabel;
     }
 
-    if (els.mapMovementTestDistanceLabel) {
+    if (
+      els.mapMovementTestDistanceLabel
+    ) {
       els.mapMovementTestDistanceLabel.setAttribute(
         'x',
         (start.x + end.x) / 2
       );
+
       els.mapMovementTestDistanceLabel.setAttribute(
         'y',
         (start.y + end.y) / 2 - 10
       );
+
       els.mapMovementTestDistanceLabel.textContent =
         formatMapDistance(
-          movementTestDistanceMeters()
+          movementTestDistanceMeters(
+            route.key
+          )
         );
     }
   }
 
   function openMovementTestRouteOnMap() {
+    const route =
+      getMovementTestRoute();
+
     mapMovementTestVisible = true;
 
     if (
@@ -4076,17 +5120,20 @@ mapMeasureHint: $('mapMeasureHint'),
         window.setTimeout(() => {
           focusJourneyPoints(
             [
-              MOVEMENT_TEST_START,
-              MOVEMENT_TEST_END
+              route.start,
+              route.end
             ],
             850
           );
+
           updateMovementTestScreenGeometry();
         }, 120);
       });
     };
 
-    window.requestAnimationFrame(openMap);
+    window.requestAnimationFrame(
+      openMap
+    );
   }
 
   if (els.showMovementTestRouteBtn) {
@@ -4360,6 +5407,7 @@ mapMeasureHint: $('mapMeasureHint'),
     rows.push([]);
     rows.push(['ТЕСТ СКОРОСТИ ПЕРЕДВИЖЕНИЯ']);
     rows.push([
+      'Маршрут',
       'Темп',
       'Расстояние, м',
       'Реальное время, сек',
@@ -4372,25 +5420,36 @@ mapMeasureHint: $('mapMeasureHint'),
       'Дата записи'
     ]);
 
-    ['slow', 'fast', 'run'].forEach(mode => {
-      const runs = Array.isArray(movementTests[mode])
-        ? movementTests[mode]
-        : [];
+    Object.keys(
+      MOVEMENT_TEST_ROUTES
+    ).forEach(routeKey => {
+      ['slow', 'fast', 'run']
+        .forEach(mode => {
+          const runs =
+            movementModeRuns(
+              mode,
+              routeKey
+            );
 
-      runs.forEach(run => {
-        rows.push([
-          MOVEMENT_TEST_MODES[mode],
-          run.distanceMeters || '',
-          run.realSeconds || '',
-          run.zoneSeconds || '',
-          run.speedKmh || '',
-          run.startDay || '',
-          run.startTime || '',
-          run.endDay || '',
-          run.endTime || '',
-          run.capturedAt || ''
-        ]);
-      });
+          runs.forEach(run => {
+            rows.push([
+              run.routeLabel ||
+                MOVEMENT_TEST_ROUTES[
+                  routeKey
+                ].label,
+              MOVEMENT_TEST_MODES[mode],
+              run.distanceMeters || '',
+              run.realSeconds || '',
+              run.zoneSeconds || '',
+              run.speedKmh || '',
+              run.startDay || '',
+              run.startTime || '',
+              run.endDay || '',
+              run.endTime || '',
+              run.capturedAt || ''
+            ]);
+          });
+        });
     });
 
     const daylightMarks = loadDaylightMarks();
@@ -4416,7 +5475,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v91.csv';
+    link.download = 'zone-clock-test-v95.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();

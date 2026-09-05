@@ -3547,3 +3547,92 @@ button.zone-button-press:not(:disabled) {
     );
   background-size: 7px 7px;
 }
+
+
+/* PWA v92 — выбор контрольного маршрута теста скорости */
+.movement-test-route-select-wrap {
+  display: grid;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.movement-test-route-select-wrap > span {
+  color: var(--muted);
+  font-size: .56rem;
+  letter-spacing: .08em;
+}
+
+.movement-test-route-select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 7px 9px;
+  background: rgba(5, 13, 8, .88);
+  color: #e1eee0;
+  -webkit-text-fill-color: #e1eee0;
+  font: inherit;
+  font-size: .64rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color-scheme: dark;
+}
+
+.movement-test-route-select:disabled {
+  opacity: .62;
+}
+
+.movement-test-route-select option {
+  background: #07110b;
+  color: #e1eee0;
+}
+
+
+
+/* PWA v94 — переход к часам из карты */
+.map-clock-switch-btn {
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0 11px;
+  background: rgba(9, 18, 12, .68);
+  color: var(--text);
+  font: inherit;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  cursor: pointer;
+}
+
+.map-clock-switch-btn:active {
+  transform: scale(.96);
+}
+
+.map-dialog.map-fullscreen .map-clock-switch-btn {
+  min-height: 42px;
+}
+
+/* Начало маршрута — навигационная точка, не артефакт */
+#mapPresetRoutePoints .map-route-start-point {
+  fill: rgba(7, 18, 11, .98) !important;
+  stroke: #eef6a0 !important;
+  stroke-width: 2.6px !important;
+  opacity: 1 !important;
+  pointer-events: none;
+}
+
+#mapPresetRoutePoints .map-route-start-label {
+  fill: #f1f7b5;
+  stroke: rgba(3, 8, 4, .97);
+  stroke-width: 3px;
+  paint-order: stroke;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  font-weight: 900;
+  letter-spacing: .04em;
+  pointer-events: none;
+}
