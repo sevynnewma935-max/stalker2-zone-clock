@@ -4198,3 +4198,129 @@ button.zone-button-press:not(:disabled) {
     gap: 6px !important;
   }
 }
+
+
+/* PWA v106 — последовательный маршрут по местоположениям */
+.map-road-planner-location-grid-single {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.map-road-planner-sequence-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.map-road-planner-sequence-box {
+  display: grid;
+  gap: 5px;
+  padding: 9px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: rgba(4, 11, 7, .62);
+}
+
+.map-road-planner-sequence-box > span {
+  color: var(--muted);
+  font-size: .52rem;
+  letter-spacing: .08em;
+}
+
+.map-road-planner-sequence-box > strong {
+  color: #e7eee3;
+  font-size: .64rem;
+  font-weight: 700;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.map-road-planner-result {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.map-known-location.is-selected .map-known-location-pin {
+  fill: rgba(205, 220, 70, .98) !important;
+  stroke: #f2f7a8 !important;
+  stroke-width: 2.4px !important;
+}
+
+.map-known-location-sequence-number {
+  fill: #091008;
+  stroke: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 9px;
+  font-weight: 950;
+  pointer-events: none;
+}
+
+@media (max-width: 560px) {
+  .map-road-planner-sequence-actions {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .map-road-planner-sequence-actions .btn.primary {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+}
+
+
+/* PWA v106 — последовательный маршрут по местоположениям */
+.map-road-planner-location-grid-single {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.map-road-planner-sequence-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.map-road-planner-sequence-box {
+  display: grid;
+  gap: 5px;
+  padding: 9px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: rgba(4, 11, 7, .62);
+}
+
+.map-road-planner-sequence-box > span {
+  color: var(--muted);
+  font-size: .52rem;
+  letter-spacing: .08em;
+}
+
+.map-road-planner-sequence-box > strong {
+  color: #e7eee3;
+  font-size: .64rem;
+  font-weight: 700;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.map-road-planner-result {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.map-known-location.is-selected .map-known-location-pin {
+  fill: rgba(205, 220, 70, .98) !important;
+  stroke: #f2f7a8 !important;
+  stroke-width: 2.4px !important;
+}
+
+.map-known-location-sequence-number {
+  fill: #091008;
+  stroke: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 9px;
+  font-weight: 950;
+  pointer-events: none;
+}
+
+@media (max-width: 560px) {
+  .map-road-planner-sequence-actions {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .map-road-planner-sequence-actions .btn.primary {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+}

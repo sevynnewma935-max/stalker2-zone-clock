@@ -226,19 +226,10 @@
         Артефакты: нажмите точку после сбора. До 2 суток — СОБРАН, 2–3 суток — ВОЗМОЖНО ПОЯВИЛСЯ, после 3 суток — ПОРА ПРОВЕРИТЬ.
       </div>
 <details class="map-road-planner" id="mapRoadPlanner">
-<summary>
-<span>ПОСТРОИТЬ МАРШРУТ ПО ДОРОГАМ</span>
-<span aria-hidden="true">⌄</span>
-</summary>
+<summary><span>ПОСТРОИТЬ МАРШРУТ ПО МЕСТОПОЛОЖЕНИЯМ</span><span aria-hidden="true">⌄</span></summary>
 <div class="map-road-planner-body">
-<div class="map-road-planner-help">
-            На карте показаны точки мест. Можно выбирать несколько точек по порядку: нажмите точки на карте, и Zone Clock проложит маршрут по дорогам через них.
-          </div>
-<div class="map-road-planner-location-grid">
-<label>
-<span>МЕСТО А</span>
-<select class="map-road-planner-location-select" id="mapPlannerStartLocationSelect">
-<option value="">Указать на карте</option>
+<div class="map-road-planner-help">Выбирайте точки мест прямо на карте в нужной последовательности. После второй точки маршрут по дорогам строится автоматически; каждая следующая точка продолжает маршрут.</div>
+<div class="map-road-planner-location-grid map-road-planner-location-grid-single"><label><span>ДОБАВИТЬ МЕСТОПОЛОЖЕНИЕ</span><select class="map-road-planner-location-select" id="mapPlannerLocationSelect"><option value="">Выберите местоположение…</option>
 <option value="jupiter">Юпитер</option>
 <option value="yaniv">Янов</option>
 <option value="generators">ЧАЭС</option>
@@ -258,71 +249,16 @@
 <option value="duga">Дуга</option>
 <option value="zaton_varta">Затон Варта</option>
 <option value="zaton_sultan">Затон Султан</option>
-<option value="swamps">Болота</option>
-<option value="cement_bridge">Мост у Цементного завода</option>
-<option value="swyd_east">КПП SWYD-East</option>
-</select>
-</label>
-<label>
-<span>МЕСТО Б</span>
-<select class="map-road-planner-location-select" id="mapPlannerEndLocationSelect">
-<option value="">Указать на карте</option>
-<option value="jupiter">Юпитер</option>
-<option value="yaniv">Янов</option>
-<option value="generators">ЧАЭС</option>
-<option value="red_forest">Рыжий лес</option>
-<option value="iron_forest">Железный лес</option>
-<option value="cooling">Градирни</option>
-<option value="cement">Цементный завод</option>
-<option value="svalka">Свалка</option>
-<option value="rostok">Росток</option>
-<option value="yantar">Янтарь</option>
-<option value="malachite">Малахит</option>
-<option value="sircaa">НИИЧАЗ</option>
-<option value="wild_island">Дикий остров</option>
-<option value="chemical">Химический завод</option>
-<option value="lesser_zone">Залесье</option>
-<option value="burnt_forest">Горелый лес</option>
-<option value="duga">Дуга</option>
-<option value="zaton_varta">Затон Варта</option>
-<option value="zaton_sultan">Затон Султан</option>
-<option value="swamps">Болота</option>
-<option value="cement_bridge">Мост у Цементного завода</option>
-<option value="swyd_east">КПП SWYD-East</option>
-</select>
-</label>
-</div>
-<div class="map-road-planner-actions">
-<button class="btn" id="mapPlannerStartBtn" type="button">ТОЧКА А</button>
-<button class="btn" id="mapPlannerEndBtn" type="button">ТОЧКА Б</button>
-<button class="btn primary" id="mapPlannerBuildBtn" type="button">ПОСТРОИТЬ</button>
+<option value="swamps">Болота</option></select></label></div>
+<div class="map-road-planner-actions map-road-planner-sequence-actions">
+<button class="btn" id="mapPlannerUndoStopBtn" type="button">− ПОСЛЕДНЯЯ</button>
+<button class="btn primary" id="mapPlannerBuildBtn" type="button">ПЕРЕСТРОИТЬ</button>
 <button class="btn" id="mapPlannerClearBtn" type="button">СБРОС</button>
 </div>
-<div class="map-road-planner-points">
-<div>
-<span>А</span>
-<strong id="mapPlannerStartText">НЕ ВЫБРАНА</strong>
-</div>
-<div>
-<span>Б</span>
-<strong id="mapPlannerEndText">НЕ ВЫБРАНА</strong>
-</div>
-</div>
-<div class="map-road-planner-result">
-<div>
-<span>ДЛИНА</span>
-<strong id="mapPlannerDistance">—</strong>
-</div>
-<div>
-<span>ВРЕМЯ ЗОНЫ</span>
-<strong id="mapPlannerZoneTime">—</strong>
-</div>
-</div>
-<div class="map-road-planner-message" id="mapPlannerMessage">
-            Сначала выберите точку А и точку Б.
-          </div>
-</div>
-</details>
+<div class="map-road-planner-sequence-box"><span>ВЫБРАННЫЕ ТОЧКИ</span><strong id="mapPlannerSequenceText">Точки ещё не выбраны</strong></div>
+<div class="map-road-planner-result"><div><span>ТОЧЕК</span><strong id="mapPlannerSequenceCount">0</strong></div><div><span>ДЛИНА</span><strong id="mapPlannerDistance">—</strong></div><div><span>ВРЕМЯ ЗОНЫ</span><strong id="mapPlannerZoneTime">—</strong></div></div>
+<div class="map-road-planner-message" id="mapPlannerMessage">Нажмите первую точку местоположения на карте.</div>
+</div></details>
 <div aria-label="Интерактивная карта Зоны" class="map-viewport" id="mapViewport">
 <div class="zone-map-transform" id="zoneMapTransform">
 <img alt="" aria-hidden="true" class="zone-map-4096-image" draggable="false" id="zoneMapPreviewImage" src="./assets/zone-map-4096.jpg"/>
@@ -351,10 +287,6 @@
 <g class="map-known-locations-layer" id="mapKnownLocationsLayer" style="display:none"></g>
 <g class="map-road-planner-layer" id="mapRoadPlannerLayer" style="display:none">
 <path class="map-road-planner-path" d="" id="mapRoadPlannerPath"></path>
-<circle class="map-road-planner-point start" id="mapRoadPlannerStartPoint" r="6"></circle>
-<circle class="map-road-planner-point end" id="mapRoadPlannerEndPoint" r="6"></circle>
-<text class="map-road-planner-map-label" id="mapRoadPlannerStartLabel">А</text>
-<text class="map-road-planner-map-label" id="mapRoadPlannerEndLabel">Б</text>
 </g>
 <polyline fill="none" id="mapMeasureLine" points=""></polyline>
 <g id="mapMeasurePoints"></g>
@@ -721,7 +653,7 @@
 </div>
 <div class="settings-group version-group">
 <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.05</strong></div>
+<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.06</strong></div>
 <button class="btn update-app-btn" id="updateAppBtn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>
