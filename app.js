@@ -1545,6 +1545,7 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapRoadPlannerPlaceAKey = '';
   let mapRoadPlannerPlaceBKey = '';
   let mapRoadPlannerRoutePoints = [];
+  let mapRoadPlannerSequence = [];
   let mapRoadPlannerMeters = 0;
   let mapRoadPlannerCostGrid = null;
   let mapRoadPlannerCostPromise = null;
@@ -1708,7 +1709,8 @@ mapMeasureHint: $('mapMeasureHint'),
         mapRoadPlannerSelectMode ||
         mapRoadPlannerPointA ||
         mapRoadPlannerPointB ||
-        mapRoadPlannerRoutePoints.length
+        mapRoadPlannerRoutePoints.length ||
+        mapRoadPlannerSequence.length
       )
     );
   }
@@ -1806,31 +1808,126 @@ mapMeasureHint: $('mapMeasureHint'),
     });
   }
 
+  function addRoadPlannerSequenceStop(placeKeyOrPoint, customLabel = '') {
+    let point = null;
+    let label = customLabel || 'ТОЧКА';
+    let placeKey = '';
+
+    if (typeof placeKeyOrPoint === 'string') {
+      const place = MAP_KNOWN_LOCATIONS[placeKeyOrPoint];
+
+      if (!place) {
+        return;
+      }
+
+      point = {
+        x: place.x,
+        y: place.y
+      };
+      label = place.label;
+      placeKey = placeKeyOrPoint;
+    } else if (
+      placeKeyOrPoint &&
+      Number.isFinite(Number(placeKeyOrPoint.x)) &&
+      Number.isFinite(Number(placeKeyOrPoint.y))
+    ) {
+      point = {
+        x: Number(placeKeyOrPoint.x),
+        y: Number(placeKeyOrPoint.y)
+      };
+      label = customLabel || formatPlannerPoint(point);
+    }
+
+    if (!point) {
+      return;
+    }
+
+    const last =
+      mapRoadPlannerSequence[
+        mapRoadPlannerSequence.length - 1
+      ];
+
+    if (
+      last &&
+      Math.hypot(
+        last.x - point.x,
+        last.y - point.y
+      ) < 4
+    ) {
+      return;
+    }
+
+    mapRoadPlannerSequence.push({
+      x: point.x,
+      y: point.y,
+      label,
+      placeKey
+    });
+
+    mapRoadPlannerPointA = {
+      x: mapRoadPlannerSequence[0].x,
+      y: mapRoadPlannerSequence[0].y
+    };
+    mapRoadPlannerPointB = {
+      x: mapRoadPlannerSequence[
+        mapRoadPlannerSequence.length - 1
+      ].x,
+      y: mapRoadPlannerSequence[
+        mapRoadPlannerSequence.length - 1
+      ].y
+    };
+    mapRoadPlannerPlaceAKey =
+      mapRoadPlannerSequence[0].placeKey || '';
+    mapRoadPlannerPlaceBKey =
+      mapRoadPlannerSequence[
+        mapRoadPlannerSequence.length - 1
+      ].placeKey || '';
+    mapRoadPlannerRoutePoints = [];
+    mapRoadPlannerSequence = [];
+    mapRoadPlannerMeters = 0;
+
+    saveRoadPlannerState();
+    updateRoadPlannerUI();
+    updateMapInfo();
+  }
+
+  function describeRoadPlannerSequence() {
+    if (!mapRoadPlannerSequence.length) {
+      return 'Точки ещё не выбраны.';
+    }
+
+    return mapRoadPlannerSequence
+      .map(
+        (item, index) =>
+          `${index + 1}. ${item.label}`
+      )
+      .join(' → ');
+  }
+
   function pickRoadPlannerLocation(placeKey) {
     if (!MAP_KNOWN_LOCATIONS[placeKey]) {
       return;
     }
 
-    const targetPoint =
-      mapRoadPlannerSelectMode ||
-      (!mapRoadPlannerPointA
-        ? 'a'
-        : !mapRoadPlannerPointB
-          ? 'b'
-          : 'b');
+    if (!mapRoadPlannerSelectMode) {
+      addRoadPlannerSequenceStop(placeKey);
+
+      if (els.mapPlannerMessage) {
+        els.mapPlannerMessage.textContent =
+          `Выбрано точек: ${mapRoadPlannerSequence.length}. ${describeRoadPlannerSequence()}`;
+      }
+
+      return;
+    }
 
     setRoadPlannerKnownLocation(
-      targetPoint,
+      mapRoadPlannerSelectMode,
       placeKey
     );
 
-    if (
-      targetPoint === 'a' &&
-      !mapRoadPlannerPointB &&
-      els.mapPlannerMessage
-    ) {
+    if (els.mapPlannerMessage) {
       els.mapPlannerMessage.textContent =
-        `${MAP_KNOWN_LOCATIONS[placeKey].label}: точка А выбрана. Теперь выберите точку Б.`;
+        `${MAP_KNOWN_LOCATIONS[placeKey].label}: точка ${mapRoadPlannerSelectMode === 'a' ? 'А' : 'Б'} выбрана.`;
     }
   }
 
@@ -1951,6 +2048,7 @@ mapMeasureHint: $('mapMeasureHint'),
           placeA: mapRoadPlannerPlaceAKey,
           placeB: mapRoadPlannerPlaceBKey,
           route: mapRoadPlannerRoutePoints,
+          sequence: mapRoadPlannerSequence,
           meters: mapRoadPlannerMeters
         })
       );
@@ -2010,6 +2108,24 @@ mapMeasureHint: $('mapMeasureHint'),
               x: Number(point.x),
               y: Number(point.y)
             }));
+      }
+
+      if (Array.isArray(data.sequence)) {
+        mapRoadPlannerSequence =
+          data.sequence
+            .map(item => ({
+              x: Number(item?.x),
+              y: Number(item?.y),
+              label:
+                typeof item?.label === 'string'
+                  ? item.label
+                  : 'ТОЧКА',
+              placeKey:
+                typeof item?.placeKey === 'string'
+                  ? item.placeKey
+                  : ''
+            }))
+            .filter(validPoint);
       }
 
       if (
@@ -2757,18 +2873,22 @@ mapMeasureHint: $('mapMeasureHint'),
 
     if (els.mapPlannerStartText) {
       els.mapPlannerStartText.textContent =
-        formatPlannerPoint(
-          mapRoadPlannerPointA,
-          mapRoadPlannerPlaceAKey
-        );
+        mapRoadPlannerSequence.length
+          ? describeRoadPlannerSequence()
+          : formatPlannerPoint(
+              mapRoadPlannerPointA,
+              mapRoadPlannerPlaceAKey
+            );
     }
 
     if (els.mapPlannerEndText) {
       els.mapPlannerEndText.textContent =
-        formatPlannerPoint(
-          mapRoadPlannerPointB,
-          mapRoadPlannerPlaceBKey
-        );
+        mapRoadPlannerSequence.length
+          ? `${mapRoadPlannerSequence.length} ТОЧЕК`
+          : formatPlannerPoint(
+              mapRoadPlannerPointB,
+              mapRoadPlannerPlaceBKey
+            );
     }
 
     if (els.mapPlannerStartBtn) {
@@ -2800,10 +2920,16 @@ mapMeasureHint: $('mapMeasureHint'),
     }
 
     if (els.mapPlannerBuildBtn) {
+      const canBuildMulti =
+        mapRoadPlannerSequence.length >= 2;
+      const canBuildPair = Boolean(
+        mapRoadPlannerPointA &&
+        mapRoadPlannerPointB
+      );
+
       els.mapPlannerBuildBtn.disabled =
         mapRoadPlannerBusy ||
-        !mapRoadPlannerPointA ||
-        !mapRoadPlannerPointB;
+        !(canBuildMulti || canBuildPair);
 
       els.mapPlannerBuildBtn.textContent =
         mapRoadPlannerBusy
@@ -2830,6 +2956,30 @@ mapMeasureHint: $('mapMeasureHint'),
               zoneSeconds
             )
           : '—';
+    }
+
+    if (els.mapPlannerMessage && !mapRoadPlannerBusy) {
+      if (
+        mapRoadPlannerSequence.length >= 2 &&
+        !mapRoadPlannerRoutePoints.length
+      ) {
+        els.mapPlannerMessage.textContent =
+          `Выбрано точек: ${mapRoadPlannerSequence.length}. Нажмите «ПОСТРОИТЬ».`;
+      } else if (
+        mapRoadPlannerSequence.length === 1 &&
+        !mapRoadPlannerRoutePoints.length
+      ) {
+        els.mapPlannerMessage.textContent =
+          'Выбрана 1 точка. Добавьте ещё хотя бы одну.';
+      } else if (
+        !mapRoadPlannerSequence.length &&
+        !mapRoadPlannerPointA &&
+        !mapRoadPlannerPointB &&
+        !mapRoadPlannerRoutePoints.length
+      ) {
+        els.mapPlannerMessage.textContent =
+          'Нажмите точки мест на карте по порядку маршрута или выберите А и Б.';
+      }
     }
 
     updatePresetRouteScreenGeometry();
@@ -2967,6 +3117,7 @@ mapMeasureHint: $('mapMeasureHint'),
     clientY
   ) {
     ensureRoadPlannerLandscapeView();
+    mapRoadPlannerSequence = [];
 
     const logical =
       mapClientToLogical(
@@ -2987,6 +3138,7 @@ mapMeasureHint: $('mapMeasureHint'),
     }
 
     mapRoadPlannerRoutePoints = [];
+    mapRoadPlannerSequence = [];
     mapRoadPlannerMeters = 0;
     mapRoadPlannerSelectMode = null;
 
@@ -3007,6 +3159,7 @@ mapMeasureHint: $('mapMeasureHint'),
     placeKey
   ) {
     ensureRoadPlannerLandscapeView();
+    mapRoadPlannerSequence = [];
 
     const place =
       MAP_KNOWN_LOCATIONS[placeKey];
@@ -3052,16 +3205,21 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   async function buildRoadPlannerRoute() {
+    const hasSequence =
+      mapRoadPlannerSequence.length >= 2;
+    const hasPair = Boolean(
+      mapRoadPlannerPointA &&
+      mapRoadPlannerPointB
+    );
+
     if (
       mapRoadPlannerBusy ||
-      !mapRoadPlannerPointA ||
-      !mapRoadPlannerPointB
+      !(hasSequence || hasPair)
     ) {
       return;
     }
 
     ensureRoadPlannerLandscapeView();
-
     mapRoadPlannerBusy = true;
 
     if (els.mapPlannerMessage) {
@@ -3075,68 +3233,137 @@ mapMeasureHint: $('mapMeasureHint'),
       const grid =
         await loadRoadPlannerCostGrid();
 
-      const snappedA =
-        snapPlannerPointToRoad(
-          mapRoadPlannerPointA,
-          grid
+      const sourceStops = hasSequence
+        ? mapRoadPlannerSequence.map(item => ({
+            x: Number(item.x),
+            y: Number(item.y),
+            label: item.label,
+            placeKey: item.placeKey || ''
+          }))
+        : [
+            {
+              x: mapRoadPlannerPointA.x,
+              y: mapRoadPlannerPointA.y,
+              label: mapRoadPlannerPlaceAKey
+                ? MAP_KNOWN_LOCATIONS[
+                    mapRoadPlannerPlaceAKey
+                  ].label
+                : formatPlannerPoint(
+                    mapRoadPlannerPointA
+                  ),
+              placeKey: mapRoadPlannerPlaceAKey || ''
+            },
+            {
+              x: mapRoadPlannerPointB.x,
+              y: mapRoadPlannerPointB.y,
+              label: mapRoadPlannerPlaceBKey
+                ? MAP_KNOWN_LOCATIONS[
+                    mapRoadPlannerPlaceBKey
+                  ].label
+                : formatPlannerPoint(
+                    mapRoadPlannerPointB
+                  ),
+              placeKey: mapRoadPlannerPlaceBKey || ''
+            }
+          ];
+
+      const fullPath = [];
+      let totalMeters = 0;
+
+      for (let i = 0; i < sourceStops.length - 1; i += 1) {
+        const rawA = {
+          x: sourceStops[i].x,
+          y: sourceStops[i].y
+        };
+        const rawB = {
+          x: sourceStops[i + 1].x,
+          y: sourceStops[i + 1].y
+        };
+
+        const snappedA =
+          snapPlannerPointToRoad(
+            rawA,
+            grid
+          );
+        const snappedB =
+          snapPlannerPointToRoad(
+            rawB,
+            grid
+          );
+
+        const gridPath =
+          buildRoadPlannerGridPath(
+            grid,
+            snappedA.grid,
+            snappedB.grid
+          );
+
+        if (!gridPath || gridPath.length < 2) {
+          throw new Error('Путь не найден');
+        }
+
+        const logicalPath =
+          gridPath.map(point =>
+            plannerLogicalFromGrid(
+              point.x,
+              point.y
+            )
+          );
+
+        const simplifiedSegment =
+          simplifyRoadScreenPoints(
+            logicalPath,
+            2.2
+          );
+
+        if (fullPath.length) {
+          fullPath.push(
+            ...simplifiedSegment.slice(1)
+          );
+        } else {
+          fullPath.push(...simplifiedSegment);
+        }
+
+        totalMeters += plannerPathMeters(
+          simplifiedSegment
         );
 
-      const snappedB =
-        snapPlannerPointToRoad(
-          mapRoadPlannerPointB,
-          grid
-        );
-
-      const gridPath =
-        buildRoadPlannerGridPath(
-          grid,
-          snappedA.grid,
-          snappedB.grid
-        );
-
-      if (
-        !gridPath ||
-        gridPath.length < 2
-      ) {
-        throw new Error(
-          'Путь не найден'
-        );
+        sourceStops[i] = {
+          ...sourceStops[i],
+          x: snappedA.logical.x,
+          y: snappedA.logical.y
+        };
+        sourceStops[i + 1] = {
+          ...sourceStops[i + 1],
+          x: snappedB.logical.x,
+          y: snappedB.logical.y
+        };
       }
 
-      const logicalPath =
-        gridPath.map(point =>
-          plannerLogicalFromGrid(
-            point.x,
-            point.y
-          )
-        );
+      mapRoadPlannerRoutePoints = fullPath;
+      mapRoadPlannerMeters = totalMeters;
+      mapRoadPlannerPointA = {
+        x: sourceStops[0].x,
+        y: sourceStops[0].y
+      };
+      mapRoadPlannerPointB = {
+        x: sourceStops[sourceStops.length - 1].x,
+        y: sourceStops[sourceStops.length - 1].y
+      };
 
-      const simplified =
-        simplifyRoadScreenPoints(
-          logicalPath,
-          2.2
-        );
-
-      mapRoadPlannerPointA =
-        snappedA.logical;
-
-      mapRoadPlannerPointB =
-        snappedB.logical;
-
-      mapRoadPlannerRoutePoints =
-        simplified;
-
-      mapRoadPlannerMeters =
-        plannerPathMeters(
-          simplified
-        );
+      if (hasSequence) {
+        mapRoadPlannerSequence = sourceStops;
+        mapRoadPlannerPlaceAKey =
+          sourceStops[0].placeKey || '';
+        mapRoadPlannerPlaceBKey =
+          sourceStops[sourceStops.length - 1].placeKey || '';
+      }
 
       saveRoadPlannerState();
 
       if (els.mapPlannerMessage) {
         els.mapPlannerMessage.textContent =
-          `Маршрут построен по дорожной модели карты. ` +
-          `${formatMapDistance(mapRoadPlannerMeters)}.`;
+          `Маршрут построен по дорогам. Точек: ${sourceStops.length}. ${formatMapDistance(mapRoadPlannerMeters)}.`;
       }
     } catch (error) {
       console.error(
@@ -3159,6 +3386,7 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function clearRoadPlanner() {
+
     mapRoadPlannerSelectMode = null;
     mapRoadPlannerPointA = null;
     mapRoadPlannerPointB = null;
@@ -3175,7 +3403,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
     if (els.mapPlannerMessage) {
       els.mapPlannerMessage.textContent =
-        'Сначала выберите точку А и точку Б.';
+        'Нажмите точки мест на карте по порядку маршрута.';
     }
 
     updateRoadPlannerUI();
@@ -4796,8 +5024,10 @@ mapMeasureHint: $('mapMeasureHint'),
 
     const activeRoute = getPresetRoute();
     const isRoadRoute = Boolean(activeRoute.roadPath);
-    const hidePresetForPlanner =
-      roadPlannerIsEngaged();
+    const hidePresetForPlanner = Boolean(
+      els.mapRoadPlanner &&
+      els.mapRoadPlanner.open
+    );
 
     if (els.mapPresetRouteLayer) {
       els.mapPresetRouteLayer.style.display =
@@ -6067,6 +6297,10 @@ mapMeasureHint: $('mapMeasureHint'),
     els.mapRoadPlanner.addEventListener(
       'toggle',
       () => {
+        if (els.mapRoadPlanner.open) {
+          ensureRoadPlannerLandscapeView();
+        }
+
         updateRoadPlannerUI();
         updateMapInfo();
       }
