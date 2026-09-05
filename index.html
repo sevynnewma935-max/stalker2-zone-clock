@@ -1,14 +1,16 @@
 <!doctype html>
-<html lang="ru" data-theme="dark">
+<!DOCTYPE html>
+
+<html data-theme="dark" lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta id="themeColorMeta" name="theme-color" content="#111612">
-  <meta name="description" content="Часы времени и выбросов для S.T.A.L.K.E.R. 2">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Zone Clock">
-  <script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<meta content="#111612" id="themeColorMeta" name="theme-color"/>
+<meta content="Часы времени и выбросов для S.T.A.L.K.E.R. 2" name="description"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="Zone Clock" name="apple-mobile-web-app-title"/>
+<script>
     try {
       const savedTheme = localStorage.getItem('stalker2-zone-clock-theme');
       if (savedTheme === 'light' || savedTheme === 'dark') {
@@ -16,802 +18,720 @@
       }
     } catch (_) {}
   </script>
-  <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="icon" href="./icons/icon-192.png">
-  <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./style.css">
-  <title>S.T.A.L.K.E.R. 2 — Zone Clock</title>
+<link href="./manifest.webmanifest" rel="manifest"/>
+<link href="./icons/icon-192.png" rel="icon"/>
+<link href="./icons/icon-192.png" rel="apple-touch-icon"/>
+<link href="./style.css" rel="stylesheet"/>
+<title>S.T.A.L.K.E.R. 2 — Zone Clock</title>
 </head>
 <body>
-  <div class="background-grid" aria-hidden="true"></div>
-  <div id="emissionDangerOverlay" class="emission-danger-overlay" aria-hidden="true"></div>
+<div aria-hidden="true" class="background-grid"></div>
+<div aria-hidden="true" class="emission-danger-overlay" id="emissionDangerOverlay"></div>
+<main class="shell">
+<header class="topbar">
+<div class="brand map-brand-block clock-brand-block">
+<div class="map-brand-kicker">S.T.A.L.K.E.R. 2</div>
+<h1 class="map-brand-title clock-brand-title">ZONE CLOCK</h1>
+</div>
+<div class="top-actions">
+<button class="btn ghost hidden" id="installBtn" type="button">Установить</button>
+<button aria-label="Открыть карту Зоны" class="test-top-btn map-top-btn" id="mapBtn" title="Карта Зоны" type="button">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M3 5.5 8.2 3l7.6 2.4L21 3v15.5L15.8 21l-7.6-2.4L3 21V5.5Zm2 1.2v11.1l2.4-1.1V5.6L5 6.7Zm4.4-1v11.1l5.2 1.7V7.4L9.4 5.7Zm7.2 1.5v11.2l2.4-1.1V6.1l-2.4 1.1Z"></path>
+</svg>
+</button>
 
-  <main class="shell">
-    <header class="topbar">
-      <div class="brand map-brand-block clock-brand-block">
-        <div class="map-brand-kicker">S.T.A.L.K.E.R. 2</div>
-        <h1 class="map-brand-title clock-brand-title">ZONE CLOCK</h1>
-      </div>
-
-      <div class="top-actions">
-        <button id="installBtn" class="btn ghost hidden" type="button">Установить</button>
-        <button id="mapBtn" class="test-top-btn map-top-btn" type="button" aria-label="Открыть карту Зоны" title="Карта Зоны">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 5.5 8.2 3l7.6 2.4L21 3v15.5L15.8 21l-7.6-2.4L3 21V5.5Zm2 1.2v11.1l2.4-1.1V5.6L5 6.7Zm4.4-1v11.1l5.2 1.7V7.4L9.4 5.7Zm7.2 1.5v11.2l2.4-1.1V6.1l-2.4 1.1Z"/>
-          </svg>
-        </button>
-        <button id="settingsBtn" class="icon-btn" type="button" aria-label="Открыть настройки" title="Настройки">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-.03-.43-2.15-.78a7.64 7.64 0 0 0-.67-1.61l.98-2.07-.29-.32-1.63-1.63-.32-.29-2.07.98a7.64 7.64 0 0 0-1.61-.67L12.43 3h-.86l-.78 2.17a7.64 7.64 0 0 0-1.61.67l-2.07-.98-.32.29-1.63 1.63-.29.32.98 2.07a7.64 7.64 0 0 0-.67 1.61L3 11.57v.86l2.17.78c.16.56.38 1.1.67 1.61l-.98 2.07.29.32 1.63 1.63.32.29 2.07-.98c.51.29 1.05.51 1.61.67l.78 2.17h.86l.78-2.17c.56-.16 1.1-.38 1.61-.67l2.07.98.32-.29 1.63-1.63.29-.32-.98-2.07c.29-.51.51-1.05.67-1.61l2.17-.78L21 12Z"/>
-          </svg>
-        </button>
-      </div>
-    </header>
-
-    <section class="terminal-card hero">
-      <div class="terminal-corner tl"></div><div class="terminal-corner tr"></div>
-      <div class="terminal-corner bl"></div><div class="terminal-corner br"></div>
-
-      <div class="row between wrap top-line">
-        <span class="section-label">ВРЕМЯ В ЗОНЕ</span>
-        <span id="daypart" class="status-chip">ДЕНЬ</span>
-      </div>
-
-      <div id="clock" class="clock" aria-live="polite">18:47</div>
-      <div class="game-day-line">День <strong id="gameDay">1</strong></div>
-
-      <div class="hero-stats hero-stats-single">
-        <div class="align-right">
-          <span id="boundaryLabel" class="muted">До ночи</span>
-          <strong id="boundary">—</strong>
-        </div>
-      </div>
-
-      <div id="riskWrap" class="risk-zone hidden">
-        <div class="risk-head">
-          <span class="section-label">ВЕРОЯТНОСТЬ ВЫБРОСА</span>
-          <span id="riskBadge" class="risk-badge">НИЗКИЙ</span>
-        </div>
-
-        <div class="risk-title-row">
-          <div id="riskLabel" class="risk-title">Низкая вероятность</div>
-          <div id="riskPercent" class="risk-percent" aria-hidden="true">0%</div>
-        </div>
-
-        <div class="risk-track" aria-hidden="true">
-          <div id="riskProgress" class="risk-progress"></div>
-        </div>
-        <div class="risk-scale"><span>0%</span><span>50%</span><span>100%</span></div>
-
-        <p id="riskDetail" class="risk-detail"></p>
-        <p id="riskNext" class="risk-next"></p>
-        <p class="note">Ориентир, а не точный таймер. Сюжетный выброс и погодная логика игры могут изменить интервал.</p>
-      </div>
-    </section>
-
-    <section class="terminal-card emission">
-      <div class="terminal-corner tl"></div><div class="terminal-corner tr"></div>
-      <div class="terminal-corner bl"></div><div class="terminal-corner br"></div>
-
-      <div class="row between wrap gap">
-        <div>
-          <div class="section-label emission-label"><span class="radiation">☢</span> ПОСЛЕДНИЙ ВЫБРОС</div>
-          <div id="emissionTime" class="emission-time">Не отмечен</div>
-          <div id="emissionDay" class="emission-day muted"></div>
-        </div>
-        <button id="markEmissionBtn" class="btn outline-accent" type="button">ОТМЕТИТЬ ВЫБРОС</button>
-      </div>
-    </section>
-
-    <section class="terminal-card control-card">
-      <div class="terminal-corner tl"></div><div class="terminal-corner tr"></div>
-      <div class="terminal-corner bl"></div><div class="terminal-corner br"></div>
-
-      <div class="section-label">УПРАВЛЕНИЕ ЧАСАМИ</div>
-      <div id="runState" class="run-state muted">Часы идут</div>
-
-      <div class="grid two-buttons control-buttons">
-        <button id="pauseBtn" class="btn control-btn" type="button">Ⅱ&nbsp;&nbsp;ПАУЗА</button>
-        <button id="resumeBtn" class="btn control-btn" type="button">▶&nbsp;&nbsp;ПРОДОЛЖИТЬ</button>
-      </div>
-
-      <button id="sleepBtn" class="btn sleep-btn" type="button" aria-live="polite">
-        <span class="sleep-icon" aria-hidden="true">☾</span>
-        <span class="sleep-label">СОН</span>
-        <span class="sleep-hours">+8 Ч</span>
-      </button>
-    </section>
-
-    <section class="utility-panel">
-      <div class="row between correction-heading">
-        <div class="section-label">БЫСТРАЯ КОРРЕКЦИЯ</div>
-        <div class="correction-current-time">Сейчас <strong id="correctionCurrentTime">--:--</strong></div>
-      </div>
-
-      <div class="grid two-buttons correction-row">
-        <button class="btn utility-btn" type="button" data-shift="-30">−30 сек</button>
-        <button class="btn utility-btn" type="button" data-shift="30">+30 сек</button>
-      </div>
-
-      <div class="grid two-buttons correction-row">
-        <button class="btn utility-btn" type="button" data-shift="-60">−1 мин</button>
-        <button class="btn utility-btn" type="button" data-shift="60">+1 мин</button>
-      </div>
-
-      <div class="grid two-buttons correction-row">
-        <button class="btn utility-btn" type="button" data-shift="-3600">−1 час</button>
-        <button class="btn utility-btn" type="button" data-shift="3600">+1 час</button>
-      </div>
-
-      <div class="grid two-buttons correction-row">
-        <button id="dayMinusBtn" class="btn utility-btn" type="button">−1 день</button>
-        <button id="dayPlusBtn" class="btn utility-btn" type="button">+1 день</button>
-      </div>
-    </section>
-
-    <section class="status-footer">
-      <div>
-        <div class="section-label">СОСТОЯНИЕ</div>
-        <div id="saveState" class="muted">Данные сохраняются автоматически.</div>
-      </div>
-      <button id="resetBtn" class="btn text-btn" type="button">Сбросить всё</button>
-      <div id="message" class="message" aria-live="polite"></div>
-    </section>
-  </main>
-
-  <dialog id="mapDialog" class="map-dialog" aria-labelledby="mapDialogTitle">
-    <div class="map-modal">
-      <div class="map-modal-header">
-        <div class="map-brand-block">
-          <div class="map-brand-kicker">S.T.A.L.K.E.R. 2</div>
-          <h2 id="mapDialogTitle" class="map-brand-title">ZONE CLOCK</h2>
-          <div class="map-zone-time-line">
+<button aria-label="Открыть настройки" class="icon-btn" id="settingsBtn" title="Настройки" type="button">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-.03-.43-2.15-.78a7.64 7.64 0 0 0-.67-1.61l.98-2.07-.29-.32-1.63-1.63-.32-.29-2.07.98a7.64 7.64 0 0 0-1.61-.67L12.43 3h-.86l-.78 2.17a7.64 7.64 0 0 0-1.61.67l-2.07-.98-.32.29-1.63 1.63-.29.32.98 2.07a7.64 7.64 0 0 0-.67 1.61L3 11.57v.86l2.17.78c.16.56.38 1.1.67 1.61l-.98 2.07.29.32 1.63 1.63.32.29 2.07-.98c.51.29 1.05.51 1.61.67l.78 2.17h.86l.78-2.17c.56-.16 1.1-.38 1.61-.67l2.07.98.32-.29 1.63-1.63.29-.32-.98-2.07c.29-.51.51-1.05.67-1.61l2.17-.78L21 12Z"></path>
+</svg>
+</button></div>
+</header>
+<section class="terminal-card hero">
+<div class="terminal-corner tl"></div><div class="terminal-corner tr"></div>
+<div class="terminal-corner bl"></div><div class="terminal-corner br"></div>
+<div class="row between wrap top-line">
+<span class="section-label">ВРЕМЯ В ЗОНЕ</span>
+<span class="status-chip" id="daypart">ДЕНЬ</span>
+</div>
+<div aria-live="polite" class="clock" id="clock">18:47</div>
+<div class="game-day-line">День <strong id="gameDay">1</strong></div>
+<div class="hero-stats hero-stats-single">
+<div class="align-right">
+<span class="muted" id="boundaryLabel">До ночи</span>
+<strong id="boundary">—</strong>
+</div>
+</div>
+<div class="risk-zone hidden" id="riskWrap">
+<div class="risk-head">
+<span class="section-label">ВЕРОЯТНОСТЬ ВЫБРОСА</span>
+<span class="risk-badge" id="riskBadge">НИЗКИЙ</span>
+</div>
+<div class="risk-title-row">
+<div class="risk-title" id="riskLabel">Низкая вероятность</div>
+<div aria-hidden="true" class="risk-percent" id="riskPercent">0%</div>
+</div>
+<div aria-hidden="true" class="risk-track">
+<div class="risk-progress" id="riskProgress"></div>
+</div>
+<div class="risk-scale"><span>0%</span><span>50%</span><span>100%</span></div>
+<p class="risk-detail" id="riskDetail"></p>
+<p class="risk-next" id="riskNext"></p>
+<p class="note">Ориентир, а не точный таймер. Сюжетный выброс и погодная логика игры могут изменить интервал.</p>
+</div>
+</section>
+<section class="terminal-card emission">
+<div class="terminal-corner tl"></div><div class="terminal-corner tr"></div>
+<div class="terminal-corner bl"></div><div class="terminal-corner br"></div>
+<div class="row between wrap gap">
+<div>
+<div class="section-label emission-label"><span class="radiation">☢</span> ПОСЛЕДНИЙ ВЫБРОС</div>
+<div class="emission-time" id="emissionTime">Не отмечен</div>
+<div class="emission-day muted" id="emissionDay"></div>
+</div>
+<button class="btn outline-accent" id="markEmissionBtn" type="button">ОТМЕТИТЬ ВЫБРОС</button>
+</div>
+</section>
+<section class="terminal-card control-card">
+<div class="terminal-corner tl"></div><div class="terminal-corner tr"></div>
+<div class="terminal-corner bl"></div><div class="terminal-corner br"></div>
+<div class="section-label">УПРАВЛЕНИЕ ЧАСАМИ</div>
+<div class="run-state muted" id="runState">Часы идут</div>
+<div class="grid two-buttons control-buttons">
+<button class="btn control-btn" id="pauseBtn" type="button">Ⅱ  ПАУЗА</button>
+<button class="btn control-btn" id="resumeBtn" type="button">▶  ПРОДОЛЖИТЬ</button>
+</div>
+<button aria-live="polite" class="btn sleep-btn" id="sleepBtn" type="button">
+<span aria-hidden="true" class="sleep-icon">☾</span>
+<span class="sleep-label">СОН</span>
+<span class="sleep-hours">+8 Ч</span>
+</button>
+</section>
+<section class="utility-panel">
+<div class="row between correction-heading">
+<div class="section-label">БЫСТРАЯ КОРРЕКЦИЯ</div>
+<div class="correction-current-time">Сейчас <strong id="correctionCurrentTime">--:--</strong></div>
+</div>
+<div class="grid two-buttons correction-row">
+<button class="btn utility-btn" data-shift="-30" type="button">−30 сек</button>
+<button class="btn utility-btn" data-shift="30" type="button">+30 сек</button>
+</div>
+<div class="grid two-buttons correction-row">
+<button class="btn utility-btn" data-shift="-60" type="button">−1 мин</button>
+<button class="btn utility-btn" data-shift="60" type="button">+1 мин</button>
+</div>
+<div class="grid two-buttons correction-row">
+<button class="btn utility-btn" data-shift="-3600" type="button">−1 час</button>
+<button class="btn utility-btn" data-shift="3600" type="button">+1 час</button>
+</div>
+<div class="grid two-buttons correction-row">
+<button class="btn utility-btn" id="dayMinusBtn" type="button">−1 день</button>
+<button class="btn utility-btn" id="dayPlusBtn" type="button">+1 день</button>
+</div>
+</section>
+<section class="status-footer">
+<div>
+<div class="section-label">СОСТОЯНИЕ</div>
+<div class="muted" id="saveState">Данные сохраняются автоматически.</div>
+</div>
+<button class="btn text-btn" id="resetBtn" type="button">Сбросить всё</button>
+<div aria-live="polite" class="message" id="message"></div>
+</section>
+</main>
+<dialog aria-labelledby="mapDialogTitle" class="map-dialog" id="mapDialog">
+<div class="map-modal">
+<div class="map-modal-header">
+<div class="map-brand-block">
+<div class="map-brand-kicker">S.T.A.L.K.E.R. 2</div>
+<h2 class="map-brand-title" id="mapDialogTitle">ZONE CLOCK</h2>
+<div class="map-zone-time-line">
             ИГРОВОЕ ВРЕМЯ <strong id="mapZoneTime">--:--</strong>
-          </div>
-          <div id="mapJourneyHud" class="map-journey-hud" hidden>
-            <strong id="mapJourneyHudDistance">—</strong>
-            <span>·</span>
-            <strong id="mapJourneyHudTime">—</strong>
-          </div>
-        </div>
-        <div class="map-header-actions">
-          <button id="mapClockBtn" class="map-clock-switch-btn icon-only-map-switch" type="button" aria-label="Перейти к часам, сохранив карту" title="Часы">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2.75a9.25 9.25 0 1 0 0 18.5 9.25 9.25 0 0 0 0-18.5Zm0 2a7.25 7.25 0 1 1 0 14.5 7.25 7.25 0 0 1 0-14.5Zm-1 2.5h2v4.15l3.25 1.88-1 1.73L11 12.55v-5.3Z"/>
-            </svg>
-          </button>
-          <button class="icon-btn small screen-settings-btn" type="button" data-open-settings aria-label="Открыть настройки" title="Настройки">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-.03-.43-2.15-.78a7.64 7.64 0 0 0-.67-1.61l.98-2.07-.29-.32-1.63-1.63-.32-.29-2.07.98a7.64 7.64 0 0 0-1.61-.67L12.43 3h-.86l-.78 2.17a7.64 7.64 0 0 0-1.61.67l-2.07-.98-.32.29-1.63 1.63-.29.32.98 2.07a7.64 7.64 0 0 0-.67 1.61L3 11.57v.86l2.17.78c.16.56.38 1.1.67 1.61l-.98 2.07.29.32 1.63 1.63.32.29 2.07-.98c.51.29 1.05.51 1.61.67l.78 2.17h.86l.78-2.17c.56-.16 1.1-.38 1.61-.67l2.07.98.32-.29 1.63-1.63.29-.32-.98-2.07c.29-.51.51-1.05.67-1.61l2.17-.78L21 12Z"/>
-            </svg>
-          </button>
-          <button id="mapViewModeBtn" class="map-view-mode-btn" type="button" aria-label="Переключить вид карты" title="Вид карты">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m12 3 9 4.5-9 4.5-9-4.5L12 3Zm-6.7 8.1L12 14.45l6.7-3.35L21 12.25l-9 4.5-9-4.5 2.3-1.15Zm0 4.75L12 19.2l6.7-3.35L21 17l-9 4.5L3 17l2.3-1.15Z"/>
-            </svg>
-            <span id="mapViewModeLabel">ЛАНДШАФТ</span>
-          </button>
-          <button id="mapFullscreenBtn" class="icon-btn small" type="button" aria-label="Развернуть карту на весь экран" title="На весь экран">
-            <svg class="map-fullscreen-icon map-fullscreen-icon-expand" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 9V4h5v2H6v3H4Zm11-5h5v5h-2V6h-3V4ZM4 15h2v3h3v2H4v-5Zm14 0h2v5h-5v-2h3v-3Z"/>
-            </svg>
-            <svg class="map-fullscreen-icon map-fullscreen-icon-collapse" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M9 4v5H4V7h3V4h2Zm6 0h2v3h3v2h-5V4ZM4 15h5v5H7v-3H4v-2Zm11 0h5v2h-3v3h-2v-5Z"/>
-            </svg>
-          </button>
-        </div>
-      </div>
+</div>
+<div class="map-journey-hud" hidden="" id="mapJourneyHud">
+<strong id="mapJourneyHudDistance">—</strong>
+<span>·</span>
+<strong id="mapJourneyHudTime">—</strong>
+</div>
+</div>
+<div class="map-header-actions">
+<button aria-label="Перейти к часам, сохранив карту" class="map-clock-switch-btn icon-only-map-switch" id="mapClockBtn" title="Часы" type="button">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M12 2.75a9.25 9.25 0 1 0 0 18.5 9.25 9.25 0 0 0 0-18.5Zm0 2a7.25 7.25 0 1 1 0 14.5 7.25 7.25 0 0 1 0-14.5Zm-1 2.5h2v4.15l3.25 1.88-1 1.73L11 12.55v-5.3Z"></path>
+</svg>
+</button>
 
-      <div class="map-toolbar">
-        <button id="mapMeasureBtn" class="btn primary" type="button">ИЗМЕРИТЬ</button>
-        <button id="mapUndoBtn" class="btn" type="button">− ТОЧКА</button>
-        <button id="mapClearBtn" class="btn" type="button">СБРОС</button>
-        <button id="mapZoomOutBtn" class="btn map-zoom-btn" type="button" aria-label="Уменьшить карту">−</button>
-        <button id="mapFitBtn" class="btn" type="button">ВСЯ КАРТА</button>
-        <button id="mapZoomInBtn" class="btn map-zoom-btn" type="button" aria-label="Увеличить карту">+</button>
-        <button id="mapPresetRouteBtn" class="btn map-route-toggle active" type="button">МАРШРУТ: ВКЛ</button>
-        <label class="map-route-select-wrap" for="mapRouteSelect">
-          <span>ВЫБОР МАРШРУТА</span>
-          <select id="mapRouteSelect" class="map-route-select">
-            <option value="garbage_cement_cooling">СВАЛКА → ЦЕМЕНТНЫЙ ЗАВОД → ГРАДИРНИ</option>
-            <option value="rostok_redforest_yanov_jupiter_chemical">РОСТОК → РЫЖИЙ ЛЕС → ЯНОВ → ЮПИТЕР → ХИМЗАВОД</option>
-            <option value="road_planner">ПО МЕСТОПОЛОЖЕНИЯМ</option>
-            <option value="movement_test">ТЕСТОВЫЙ МАРШРУТ</option>
-          </select>
-        </label>
-        <label id="mapRouteStartWrap" class="map-route-select-wrap" for="mapRouteStartSelect">
-          <span id="mapRouteStartLabel">НАЧАЛО МАРШРУТА</span>
-          <select id="mapRouteStartSelect" class="map-route-select">
-            <option value="svalka">СВАЛКА</option>
-            <option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>
-          </select>
-        </label>
-        <button id="mapJourneyBtn" class="btn primary map-journey-btn" type="button">
+<button aria-label="Переключить вид карты" class="map-view-mode-btn" id="mapViewModeBtn" title="Вид карты" type="button">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="m12 3 9 4.5-9 4.5-9-4.5L12 3Zm-6.7 8.1L12 14.45l6.7-3.35L21 12.25l-9 4.5-9-4.5 2.3-1.15Zm0 4.75L12 19.2l6.7-3.35L21 17l-9 4.5L3 17l2.3-1.15Z"></path>
+</svg>
+<span id="mapViewModeLabel">ЛАНДШАФТ</span>
+</button>
+<button aria-label="Развернуть карту на весь экран" class="icon-btn small" id="mapFullscreenBtn" title="На весь экран" type="button">
+<svg aria-hidden="true" class="map-fullscreen-icon map-fullscreen-icon-expand" viewbox="0 0 24 24">
+<path d="M4 9V4h5v2H6v3H4Zm11-5h5v5h-2V6h-3V4ZM4 15h2v3h3v2H4v-5Zm14 0h2v5h-5v-2h3v-3Z"></path>
+</svg>
+<svg aria-hidden="true" class="map-fullscreen-icon map-fullscreen-icon-collapse" viewbox="0 0 24 24">
+<path d="M9 4v5H4V7h3V4h2Zm6 0h2v3h3v2h-5V4ZM4 15h5v5H7v-3H4v-2Zm11 0h5v2h-3v3h-2v-5Z"></path>
+</svg>
+</button>
+<button aria-label="Открыть настройки" class="icon-btn small screen-settings-btn" data-open-settings="" title="Настройки" type="button">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-.03-.43-2.15-.78a7.64 7.64 0 0 0-.67-1.61l.98-2.07-.29-.32-1.63-1.63-.32-.29-2.07.98a7.64 7.64 0 0 0-1.61-.67L12.43 3h-.86l-.78 2.17a7.64 7.64 0 0 0-1.61.67l-2.07-.98-.32.29-1.63 1.63-.29.32.98 2.07a7.64 7.64 0 0 0-.67 1.61L3 11.57v.86l2.17.78c.16.56.38 1.1.67 1.61l-.98 2.07.29.32 1.63 1.63.32.29 2.07-.98c.51.29 1.05.51 1.61.67l.78 2.17h.86l.78-2.17c.56-.16 1.1-.38 1.61-.67l2.07.98.32-.29 1.63-1.63.29-.32-.98-2.07c.29-.51.51-1.05.67-1.61l2.17-.78L21 12Z"></path>
+</svg>
+</button></div>
+</div>
+<div class="map-toolbar">
+<button class="btn primary" id="mapMeasureBtn" type="button">ИЗМЕРИТЬ</button>
+<button class="btn" id="mapUndoBtn" type="button">− ТОЧКА</button>
+<button class="btn" id="mapClearBtn" type="button">СБРОС</button>
+<button aria-label="Уменьшить карту" class="btn map-zoom-btn" id="mapZoomOutBtn" type="button">−</button>
+<button class="btn" id="mapFitBtn" type="button">ВСЯ КАРТА</button>
+<button aria-label="Увеличить карту" class="btn map-zoom-btn" id="mapZoomInBtn" type="button">+</button>
+<button class="btn map-route-toggle active" id="mapPresetRouteBtn" type="button">МАРШРУТ: ВКЛ</button>
+<label class="map-route-select-wrap" for="mapRouteSelect">
+<span>ВЫБОР МАРШРУТА</span>
+<select class="map-route-select" id="mapRouteSelect">
+<option value="garbage_cement_cooling">СВАЛКА → ЦЕМЕНТНЫЙ ЗАВОД → ГРАДИРНИ</option>
+<option value="rostok_redforest_yanov_jupiter_chemical">РОСТОК → РЫЖИЙ ЛЕС → ЯНОВ → ЮПИТЕР → ХИМЗАВОД</option>
+<option value="road_planner">ПО МЕСТОПОЛОЖЕНИЯМ</option>
+<option value="movement_test">ТЕСТОВЫЙ МАРШРУТ</option>
+</select>
+</label>
+<label class="map-route-select-wrap" for="mapRouteStartSelect" id="mapRouteStartWrap">
+<span id="mapRouteStartLabel">НАЧАЛО МАРШРУТА</span>
+<select class="map-route-select" id="mapRouteStartSelect">
+<option value="svalka">СВАЛКА</option>
+<option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>
+</select>
+</label>
+<button class="btn primary map-journey-btn" id="mapJourneyBtn" type="button">
           В ПУТЬ
         </button>
-      </div>
-
-      <div class="map-info-strip">
-        <div>
-          <span class="map-info-label">РАССТОЯНИЕ</span>
-          <strong id="mapDistance">—</strong>
-        </div>
-        <div>
-          <span class="map-info-label">ТОЧЕК</span>
-          <strong id="mapPointCount">0</strong>
-        </div>
-      </div>
-
-      <div id="mapPresetRouteLabel" class="map-preset-route-label">
+</div>
+<div class="map-info-strip">
+<div>
+<span class="map-info-label">РАССТОЯНИЕ</span>
+<strong id="mapDistance">—</strong>
+</div>
+<div>
+<span class="map-info-label">ТОЧЕК</span>
+<strong id="mapPointCount">0</strong>
+</div>
+</div>
+<div class="map-preset-route-label" id="mapPresetRouteLabel">
         СВАЛКА → ЦЕМЕНТНЫЙ ЗАВОД → ГРАДИРНИ
       </div>
-      <div id="mapArtifactVisitHint" class="map-artifact-visit-hint">
+<div class="map-artifact-visit-hint" id="mapArtifactVisitHint">
         Артефакты: нажмите точку после сбора. До 2 суток — СОБРАН, 2–3 суток — ВОЗМОЖНО ПОЯВИЛСЯ, после 3 суток — ПОРА ПРОВЕРИТЬ.
       </div>
-
-      <details id="mapRoadPlanner" class="map-road-planner">
-        <summary>
-          <span>ПОСТРОИТЬ МАРШРУТ ПО ДОРОГАМ</span>
-          <span aria-hidden="true">⌄</span>
-        </summary>
-
-        <div class="map-road-planner-body">
-          <div class="map-road-planner-help">
+<details class="map-road-planner" id="mapRoadPlanner">
+<summary>
+<span>ПОСТРОИТЬ МАРШРУТ ПО ДОРОГАМ</span>
+<span aria-hidden="true">⌄</span>
+</summary>
+<div class="map-road-planner-body">
+<div class="map-road-planner-help">
             На карте показаны точки мест. Можно выбирать несколько точек по порядку: нажмите точки на карте, и Zone Clock проложит маршрут по дорогам через них.
           </div>
-
-          <div class="map-road-planner-location-grid">
-            <label>
-              <span>МЕСТО А</span>
-              <select id="mapPlannerStartLocationSelect" class="map-road-planner-location-select">
-                <option value="">УКАЗАТЬ НА КАРТЕ</option>
-                <option value="pripyat">ПРИПЯТЬ</option>
-                <option value="generators">ГЕНЕРАТОРЫ</option>
-                <option value="jupiter">ЮПИТЕР</option>
-                <option value="yaniv">ЯНОВ</option>
-                <option value="red_forest">РЫЖИЙ ЛЕС</option>
-                <option value="yantar">ЯНТАРЬ</option>
-                <option value="rostok">РОСТОК</option>
-                <option value="svalka">СВАЛКА</option>
-                <option value="cooling">ГРАДИРНИ</option>
-                <option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>
-                <option value="sircaa">НИИЧАЗ</option>
-                <option value="malachite">МАЛАХИТ</option>
-                <option value="duga">ДУГА</option>
-                <option value="chemical">ХИМЗАВОД</option>
-                <option value="lesser_zone">МАЛАЯ ЗОНА</option>
-                <option value="cordon">КОРДОН</option>
-                <option value="wild_island">ДИКИЙ ОСТРОВ</option>
-                <option value="zaton">ЗАТОН</option>
-                <option value="swamps">БОЛОТА</option>
-                <option value="burnt_forest">ГОРЕЛЫЙ ЛЕС</option>
-                <option value="cement_bridge">МОСТ У ЦЕМЕНТНОГО ЗАВОДА</option>
-                <option value="swyd_east">КПП SWYD-EAST</option>
-              </select>
-            </label>
-            <label>
-              <span>МЕСТО Б</span>
-              <select id="mapPlannerEndLocationSelect" class="map-road-planner-location-select">
-                <option value="">УКАЗАТЬ НА КАРТЕ</option>
-                <option value="pripyat">ПРИПЯТЬ</option>
-                <option value="generators">ГЕНЕРАТОРЫ</option>
-                <option value="jupiter">ЮПИТЕР</option>
-                <option value="yaniv">ЯНОВ</option>
-                <option value="red_forest">РЫЖИЙ ЛЕС</option>
-                <option value="yantar">ЯНТАРЬ</option>
-                <option value="rostok">РОСТОК</option>
-                <option value="svalka">СВАЛКА</option>
-                <option value="cooling">ГРАДИРНИ</option>
-                <option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>
-                <option value="sircaa">НИИЧАЗ</option>
-                <option value="malachite">МАЛАХИТ</option>
-                <option value="duga">ДУГА</option>
-                <option value="chemical">ХИМЗАВОД</option>
-                <option value="lesser_zone">МАЛАЯ ЗОНА</option>
-                <option value="cordon">КОРДОН</option>
-                <option value="wild_island">ДИКИЙ ОСТРОВ</option>
-                <option value="zaton">ЗАТОН</option>
-                <option value="swamps">БОЛОТА</option>
-                <option value="burnt_forest">ГОРЕЛЫЙ ЛЕС</option>
-                <option value="cement_bridge">МОСТ У ЦЕМЕНТНОГО ЗАВОДА</option>
-                <option value="swyd_east">КПП SWYD-EAST</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="map-road-planner-actions">
-            <button id="mapPlannerStartBtn" class="btn" type="button">ТОЧКА А</button>
-            <button id="mapPlannerEndBtn" class="btn" type="button">ТОЧКА Б</button>
-            <button id="mapPlannerBuildBtn" class="btn primary" type="button">ПОСТРОИТЬ</button>
-            <button id="mapPlannerClearBtn" class="btn" type="button">СБРОС</button>
-          </div>
-
-          <div class="map-road-planner-points">
-            <div>
-              <span>А</span>
-              <strong id="mapPlannerStartText">НЕ ВЫБРАНА</strong>
-            </div>
-            <div>
-              <span>Б</span>
-              <strong id="mapPlannerEndText">НЕ ВЫБРАНА</strong>
-            </div>
-          </div>
-
-          <div class="map-road-planner-result">
-            <div>
-              <span>ДЛИНА</span>
-              <strong id="mapPlannerDistance">—</strong>
-            </div>
-            <div>
-              <span>ВРЕМЯ ЗОНЫ</span>
-              <strong id="mapPlannerZoneTime">—</strong>
-            </div>
-          </div>
-
-          <div id="mapPlannerMessage" class="map-road-planner-message">
+<div class="map-road-planner-location-grid">
+<label>
+<span>МЕСТО А</span>
+<select class="map-road-planner-location-select" id="mapPlannerStartLocationSelect">
+<option value="">УКАЗАТЬ НА КАРТЕ</option>
+<option value="pripyat">ПРИПЯТЬ</option>
+<option value="generators">ГЕНЕРАТОРЫ</option>
+<option value="jupiter">ЮПИТЕР</option>
+<option value="yaniv">ЯНОВ</option>
+<option value="red_forest">РЫЖИЙ ЛЕС</option>
+<option value="yantar">ЯНТАРЬ</option>
+<option value="rostok">РОСТОК</option>
+<option value="svalka">СВАЛКА</option>
+<option value="cooling">ГРАДИРНИ</option>
+<option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>
+<option value="sircaa">НИИЧАЗ</option>
+<option value="malachite">МАЛАХИТ</option>
+<option value="duga">ДУГА</option>
+<option value="chemical">ХИМЗАВОД</option>
+<option value="lesser_zone">МАЛАЯ ЗОНА</option>
+<option value="cordon">КОРДОН</option>
+<option value="wild_island">ДИКИЙ ОСТРОВ</option>
+<option value="zaton">ЗАТОН</option>
+<option value="swamps">БОЛОТА</option>
+<option value="burnt_forest">ГОРЕЛЫЙ ЛЕС</option>
+<option value="cement_bridge">МОСТ У ЦЕМЕНТНОГО ЗАВОДА</option>
+<option value="swyd_east">КПП SWYD-EAST</option>
+</select>
+</label>
+<label>
+<span>МЕСТО Б</span>
+<select class="map-road-planner-location-select" id="mapPlannerEndLocationSelect">
+<option value="">УКАЗАТЬ НА КАРТЕ</option>
+<option value="pripyat">ПРИПЯТЬ</option>
+<option value="generators">ГЕНЕРАТОРЫ</option>
+<option value="jupiter">ЮПИТЕР</option>
+<option value="yaniv">ЯНОВ</option>
+<option value="red_forest">РЫЖИЙ ЛЕС</option>
+<option value="yantar">ЯНТАРЬ</option>
+<option value="rostok">РОСТОК</option>
+<option value="svalka">СВАЛКА</option>
+<option value="cooling">ГРАДИРНИ</option>
+<option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>
+<option value="sircaa">НИИЧАЗ</option>
+<option value="malachite">МАЛАХИТ</option>
+<option value="duga">ДУГА</option>
+<option value="chemical">ХИМЗАВОД</option>
+<option value="lesser_zone">МАЛАЯ ЗОНА</option>
+<option value="cordon">КОРДОН</option>
+<option value="wild_island">ДИКИЙ ОСТРОВ</option>
+<option value="zaton">ЗАТОН</option>
+<option value="swamps">БОЛОТА</option>
+<option value="burnt_forest">ГОРЕЛЫЙ ЛЕС</option>
+<option value="cement_bridge">МОСТ У ЦЕМЕНТНОГО ЗАВОДА</option>
+<option value="swyd_east">КПП SWYD-EAST</option>
+</select>
+</label>
+</div>
+<div class="map-road-planner-actions">
+<button class="btn" id="mapPlannerStartBtn" type="button">ТОЧКА А</button>
+<button class="btn" id="mapPlannerEndBtn" type="button">ТОЧКА Б</button>
+<button class="btn primary" id="mapPlannerBuildBtn" type="button">ПОСТРОИТЬ</button>
+<button class="btn" id="mapPlannerClearBtn" type="button">СБРОС</button>
+</div>
+<div class="map-road-planner-points">
+<div>
+<span>А</span>
+<strong id="mapPlannerStartText">НЕ ВЫБРАНА</strong>
+</div>
+<div>
+<span>Б</span>
+<strong id="mapPlannerEndText">НЕ ВЫБРАНА</strong>
+</div>
+</div>
+<div class="map-road-planner-result">
+<div>
+<span>ДЛИНА</span>
+<strong id="mapPlannerDistance">—</strong>
+</div>
+<div>
+<span>ВРЕМЯ ЗОНЫ</span>
+<strong id="mapPlannerZoneTime">—</strong>
+</div>
+</div>
+<div class="map-road-planner-message" id="mapPlannerMessage">
             Сначала выберите точку А и точку Б.
           </div>
-        </div>
-      </details>
-
-      <div id="mapViewport" class="map-viewport" aria-label="Интерактивная карта Зоны">
-        <div id="zoneMapTransform" class="zone-map-transform">
-          <img id="zoneMapPreviewImage" class="zone-map-4096-image" src="./assets/zone-map-4096.jpg" alt="" aria-hidden="true" draggable="false">
-          <img id="zoneMapImage" class="zone-map-8192-image" src="./assets/zone-map-8192.jpg" alt="Карта Зоны S.T.A.L.K.E.R. 2" draggable="false">
-          <img id="zoneMapSchematicImage" class="zone-map-schematic-image" src="./assets/zone-map-schematic-4096.jpg" alt="Схематическая карта Зоны" draggable="false">
-          <svg class="map-road-route-svg" viewBox="0 0 2048 2048" aria-hidden="true">
-            <path id="mapRoadRoutePath" class="map-road-route-path" d=""></path>
-          </svg>
-        </div>
-        <svg id="mapOverlay" class="map-overlay map-screen-overlay" aria-hidden="true">
-          <g id="mapMovementTestLayer" class="map-movement-test-layer" style="display:none">
-            <polyline id="mapMovementTestLine" class="map-movement-test-line" points="" fill="none"></polyline>
-            <circle id="mapMovementTestStart" class="map-movement-test-point start" r="6"></circle>
-            <circle id="mapMovementTestEnd" class="map-movement-test-point end" r="6"></circle>
-            <text id="mapMovementTestStartLabel" class="map-movement-test-label">МОСТ</text>
-            <text id="mapMovementTestEndLabel" class="map-movement-test-label">SWYD-EAST</text>
-            <text id="mapMovementTestDistanceLabel" class="map-movement-test-distance-label"></text>
-          </g>
-          <g id="mapPresetRouteLayer" class="map-preset-route-layer">
-            <path id="mapPresetRoadPath" class="map-preset-route-line map-preset-road-path" d=""></path>
-            <polyline id="mapPresetRouteMain" class="map-preset-route-line" points="" fill="none"></polyline>
-            <polyline id="mapPresetRouteBranch" class="map-preset-route-line" points="" fill="none"></polyline>
-            <g id="mapPresetRoutePoints"></g>
-            <g id="mapArtifactVisitPoints"></g>
-          </g>
-          <g id="mapKnownLocationsLayer" class="map-known-locations-layer" style="display:none"></g>
-          <g id="mapRoadPlannerLayer" class="map-road-planner-layer" style="display:none">
-            <path id="mapRoadPlannerPath" class="map-road-planner-path" d=""></path>
-            <circle id="mapRoadPlannerStartPoint" class="map-road-planner-point start" r="6"></circle>
-            <circle id="mapRoadPlannerEndPoint" class="map-road-planner-point end" r="6"></circle>
-            <text id="mapRoadPlannerStartLabel" class="map-road-planner-map-label">А</text>
-            <text id="mapRoadPlannerEndLabel" class="map-road-planner-map-label">Б</text>
-          </g>
-          <polyline id="mapMeasureLine" points="" fill="none"></polyline>
-          <g id="mapMeasurePoints"></g>
-        </svg>
-        <div id="mapFullscreenZoomControls" class="map-fullscreen-zoom-controls" aria-label="Масштаб карты">
-          <button id="mapFullscreenZoomInBtn" type="button" aria-label="Увеличить карту">+</button>
-          <button id="mapFullscreenZoomOutBtn" type="button" aria-label="Уменьшить карту">−</button>
-        </div>
-        <div id="mapMeasureHint" class="map-measure-hint">
+</div>
+</details>
+<div aria-label="Интерактивная карта Зоны" class="map-viewport" id="mapViewport">
+<div class="zone-map-transform" id="zoneMapTransform">
+<img alt="" aria-hidden="true" class="zone-map-4096-image" draggable="false" id="zoneMapPreviewImage" src="./assets/zone-map-4096.jpg"/>
+<img alt="Карта Зоны S.T.A.L.K.E.R. 2" class="zone-map-8192-image" draggable="false" id="zoneMapImage" src="./assets/zone-map-8192.jpg"/>
+<img alt="Схематическая карта Зоны" class="zone-map-schematic-image" draggable="false" id="zoneMapSchematicImage" src="./assets/zone-map-schematic-4096.jpg"/>
+<svg aria-hidden="true" class="map-road-route-svg" viewbox="0 0 2048 2048">
+<path class="map-road-route-path" d="" id="mapRoadRoutePath"></path>
+</svg>
+</div>
+<svg aria-hidden="true" class="map-overlay map-screen-overlay" id="mapOverlay">
+<g class="map-movement-test-layer" id="mapMovementTestLayer" style="display:none">
+<polyline class="map-movement-test-line" fill="none" id="mapMovementTestLine" points=""></polyline>
+<circle class="map-movement-test-point start" id="mapMovementTestStart" r="6"></circle>
+<circle class="map-movement-test-point end" id="mapMovementTestEnd" r="6"></circle>
+<text class="map-movement-test-label" id="mapMovementTestStartLabel">МОСТ</text>
+<text class="map-movement-test-label" id="mapMovementTestEndLabel">SWYD-EAST</text>
+<text class="map-movement-test-distance-label" id="mapMovementTestDistanceLabel"></text>
+</g>
+<g class="map-preset-route-layer" id="mapPresetRouteLayer">
+<path class="map-preset-route-line map-preset-road-path" d="" id="mapPresetRoadPath"></path>
+<polyline class="map-preset-route-line" fill="none" id="mapPresetRouteMain" points=""></polyline>
+<polyline class="map-preset-route-line" fill="none" id="mapPresetRouteBranch" points=""></polyline>
+<g id="mapPresetRoutePoints"></g>
+<g id="mapArtifactVisitPoints"></g>
+</g>
+<g class="map-known-locations-layer" id="mapKnownLocationsLayer" style="display:none"></g>
+<g class="map-road-planner-layer" id="mapRoadPlannerLayer" style="display:none">
+<path class="map-road-planner-path" d="" id="mapRoadPlannerPath"></path>
+<circle class="map-road-planner-point start" id="mapRoadPlannerStartPoint" r="6"></circle>
+<circle class="map-road-planner-point end" id="mapRoadPlannerEndPoint" r="6"></circle>
+<text class="map-road-planner-map-label" id="mapRoadPlannerStartLabel">А</text>
+<text class="map-road-planner-map-label" id="mapRoadPlannerEndLabel">Б</text>
+</g>
+<polyline fill="none" id="mapMeasureLine" points=""></polyline>
+<g id="mapMeasurePoints"></g>
+</svg>
+<div aria-label="Масштаб карты" class="map-fullscreen-zoom-controls" id="mapFullscreenZoomControls">
+<button aria-label="Увеличить карту" id="mapFullscreenZoomInBtn" type="button">+</button>
+<button aria-label="Уменьшить карту" id="mapFullscreenZoomOutBtn" type="button">−</button>
+</div>
+<div class="map-measure-hint" id="mapMeasureHint">
           Карту можно увеличивать двумя пальцами, кнопками +/− или колёсиком. Для маршрута включите «ИЗМЕРИТЬ».
         </div>
-      </div>
-
-      <details class="map-calibration">
-        <summary>
-          <span>КАЛИБРОВКА МАСШТАБА</span>
-          <span aria-hidden="true">⌄</span>
-        </summary>
-        <div class="map-calibration-body">
-          <p>Для точной калибровки повторите на карте известный маршрут, укажите его реальную длину в километрах и примените калибровку.</p>
-
-          <label>
-            <span>Известное расстояние, км</span>
-            <input id="mapKnownDistanceKm" type="number" inputmode="decimal" min="0.01" max="100" step="0.01" value="2.36">
-          </label>
-
-          <div class="map-calibration-actions">
-            <button id="mapApplyCalibrationBtn" class="btn primary" type="button">ПРИМЕНИТЬ ПО МАРШРУТУ</button>
-            <button id="mapResetCalibrationBtn" class="btn" type="button">СБРОСИТЬ КАЛИБРОВКУ</button>
-          </div>
-
-          <div id="mapCalibrationMessage" class="map-calibration-message">
+</div>
+<details class="map-calibration">
+<summary>
+<span>КАЛИБРОВКА МАСШТАБА</span>
+<span aria-hidden="true">⌄</span>
+</summary>
+<div class="map-calibration-body">
+<p>Для точной калибровки повторите на карте известный маршрут, укажите его реальную длину в километрах и примените калибровку.</p>
+<label>
+<span>Известное расстояние, км</span>
+<input id="mapKnownDistanceKm" inputmode="decimal" max="100" min="0.01" step="0.01" type="number" value="2.36"/>
+</label>
+<div class="map-calibration-actions">
+<button class="btn primary" id="mapApplyCalibrationBtn" type="button">ПРИМЕНИТЬ ПО МАРШРУТУ</button>
+<button class="btn" id="mapResetCalibrationBtn" type="button">СБРОСИТЬ КАЛИБРОВКУ</button>
+</div>
+<div class="map-calibration-message" id="mapCalibrationMessage">
             Контрольный маршрут на второй картинке — 2,36 км.
           </div>
-        </div>
-      </details>
-    </div>
-  </dialog>
+</div>
+</details>
+</div>
+</dialog>
+<dialog aria-labelledby="mapJourneyDialogTitle" class="journey-dialog" id="mapJourneyDialog">
+<div class="journey-modal">
+<div class="journey-modal-header">
+<div>
+<div class="eyebrow">ZONE CLOCK / МАРШРУТ</div>
+<h2 id="mapJourneyDialogTitle">ПЕРЕД ВЫХОДОМ</h2>
+</div>
+<div class="dialog-header-actions">
 
-  <dialog id="mapJourneyDialog" class="journey-dialog" aria-labelledby="mapJourneyDialogTitle">
-    <div class="journey-modal">
-      <div class="journey-modal-header">
-        <div>
-          <div class="eyebrow">ZONE CLOCK / МАРШРУТ</div>
-          <h2 id="mapJourneyDialogTitle">ПЕРЕД ВЫХОДОМ</h2>
-        </div>
-        <div class="dialog-header-actions">
-          <button class="icon-btn small screen-settings-btn" type="button" data-open-settings aria-label="Открыть настройки" title="Настройки">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-.03-.43-2.15-.78a7.64 7.64 0 0 0-.67-1.61l.98-2.07-.29-.32-1.63-1.63-.32-.29-2.07.98a7.64 7.64 0 0 0-1.61-.67L12.43 3h-.86l-.78 2.17a7.64 7.64 0 0 0-1.61.67l-2.07-.98-.32.29-1.63 1.63-.29.32.98 2.07a7.64 7.64 0 0 0-.67 1.61L3 11.57v.86l2.17.78c.16.56.38 1.1.67 1.61l-.98 2.07.29.32 1.63 1.63.32.29 2.07-.98c.51.29 1.05.51 1.61.67l.78 2.17h.86l.78-2.17c.56-.16 1.1-.38 1.61-.67l2.07.98.32-.29 1.63-1.63.29-.32-.98-2.07c.29-.51.51-1.05.67-1.61l2.17-.78L21 12Z"/></svg>
-          </button>
-          <button id="closeJourneyBtn" class="icon-btn small" type="button" aria-label="Закрыть" title="Закрыть">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="journey-content">
-        <div id="mapJourneyWish" class="journey-wish"></div>
-        <div class="journey-stat-grid">
-          <div class="journey-stat">
-            <span>МАРШРУТ</span>
-            <strong id="mapJourneyRouteName">—</strong>
-          </div>
-          <div class="journey-stat">
-            <span>ДЛИНА</span>
-            <strong id="mapJourneyDistance">—</strong>
-          </div>
-          <div class="journey-stat">
-            <span>ПРИМЕРНОЕ ВРЕМЯ ЗОНЫ</span>
-            <strong id="mapJourneyTime">—</strong>
-          </div>
-        </div>
-        <div id="mapJourneyEmission" class="journey-warning"></div>
-        <div id="mapJourneyNight" class="journey-warning journey-night" hidden></div>
-        <div class="journey-estimate-note">
+<button aria-label="Закрыть" class="icon-btn small" id="closeJourneyBtn" title="Закрыть" type="button">
+<svg aria-hidden="true" viewbox="0 0 24 24"><path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"></path></svg>
+</button>
+<button aria-label="Открыть настройки" class="icon-btn small screen-settings-btn" data-open-settings="" title="Настройки" type="button">
+<svg aria-hidden="true" viewbox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-.03-.43-2.15-.78a7.64 7.64 0 0 0-.67-1.61l.98-2.07-.29-.32-1.63-1.63-.32-.29-2.07.98a7.64 7.64 0 0 0-1.61-.67L12.43 3h-.86l-.78 2.17a7.64 7.64 0 0 0-1.61.67l-2.07-.98-.32.29-1.63 1.63-.29.32.98 2.07a7.64 7.64 0 0 0-.67 1.61L3 11.57v.86l2.17.78c.16.56.38 1.1.67 1.61l-.98 2.07.29.32 1.63 1.63.32.29 2.07-.98c.51.29 1.05.51 1.61.67l.78 2.17h.86l.78-2.17c.56-.16 1.1-.38 1.61-.67l2.07.98.32-.29 1.63-1.63.29-.32-.98-2.07c.29-.51.51-1.05.67-1.61l2.17-.78L21 12Z"></path></svg>
+</button></div>
+</div>
+<div class="journey-content">
+<div class="journey-wish" id="mapJourneyWish"></div>
+<div class="journey-stat-grid">
+<div class="journey-stat">
+<span>МАРШРУТ</span>
+<strong id="mapJourneyRouteName">—</strong>
+</div>
+<div class="journey-stat">
+<span>ДЛИНА</span>
+<strong id="mapJourneyDistance">—</strong>
+</div>
+<div class="journey-stat">
+<span>ПРИМЕРНОЕ ВРЕМЯ ЗОНЫ</span>
+<strong id="mapJourneyTime">—</strong>
+</div>
+</div>
+<div class="journey-warning" id="mapJourneyEmission"></div>
+<div class="journey-warning journey-night" hidden="" id="mapJourneyNight"></div>
+<div class="journey-estimate-note">
           Расчёт основан на среднем темпе около 8 км/ч с короткими остановками, а затем переведён во время Зоны по текущей модели Patch 2.0. Бои, перегруз и обходы увеличат длительность.
         </div>
-        <button id="startJourneyBtn" class="btn primary wide journey-start-btn" type="button">
+<button class="btn primary wide journey-start-btn" id="startJourneyBtn" type="button">
           НАЧАТЬ ПУТЬ
         </button>
-      </div>
-    </div>
-  </dialog>
-
-  <dialog id="chronometryDialog" class="chronometry-dialog" aria-labelledby="chronometryDialogTitle">
-    <div class="chronometry-modal">
-      <div class="chronometry-header">
-        <div>
-          <div class="eyebrow">ZONE CLOCK / НАБЛЮДЕНИЯ</div>
-          <h2 id="chronometryDialogTitle">ХРОНОМЕТРИЯ ЗОНЫ</h2>
-          <div class="chronometry-header-note">
+</div>
+</div>
+</dialog>
+<dialog aria-labelledby="chronometryDialogTitle" class="chronometry-dialog" id="chronometryDialog">
+<div class="chronometry-modal">
+<div class="chronometry-header">
+<div>
+<div class="eyebrow">ZONE CLOCK / НАБЛЮДЕНИЯ</div>
+<h2 id="chronometryDialogTitle">ХРОНОМЕТРИЯ ЗОНЫ</h2>
+<div class="chronometry-header-note">
             Полевые наблюдения за изменением скорости времени в течение суток.
           </div>
-        </div>
-        <div class="dialog-header-actions">
-          <button class="icon-btn small screen-settings-btn" type="button" data-open-settings aria-label="Открыть настройки" title="Настройки">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-.03-.43-2.15-.78a7.64 7.64 0 0 0-.67-1.61l.98-2.07-.29-.32-1.63-1.63-.32-.29-2.07.98a7.64 7.64 0 0 0-1.61-.67L12.43 3h-.86l-.78 2.17a7.64 7.64 0 0 0-1.61.67l-2.07-.98-.32.29-1.63 1.63-.29.32.98 2.07a7.64 7.64 0 0 0-.67 1.61L3 11.57v.86l2.17.78c.16.56.38 1.1.67 1.61l-.98 2.07.29.32 1.63 1.63.32.29 2.07-.98c.51.29 1.05.51 1.61.67l.78 2.17h.86l.78-2.17c.56-.16 1.1-.38 1.61-.67l2.07.98.32-.29 1.63-1.63.29-.32-.98-2.07c.29-.51.51-1.05.67-1.61l2.17-.78L21 12Z"/></svg>
-          </button>
-          <button id="closeChronometryBtn" class="icon-btn small" type="button" aria-label="Закрыть" title="Закрыть">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/></svg>
-          </button>
-        </div>
-      </div>
+</div>
+<div class="dialog-header-actions">
 
-      <div class="chronometry-content">
-        <section class="chronometry-chart-section">
-          <div class="chronometry-chart-title">
+<button aria-label="Закрыть" class="icon-btn small" id="closeChronometryBtn" title="Закрыть" type="button">
+<svg aria-hidden="true" viewbox="0 0 24 24"><path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"></path></svg>
+</button>
+<button aria-label="Открыть настройки" class="icon-btn small screen-settings-btn" data-open-settings="" title="Настройки" type="button">
+<svg aria-hidden="true" viewbox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-.03-.43-2.15-.78a7.64 7.64 0 0 0-.67-1.61l.98-2.07-.29-.32-1.63-1.63-.32-.29-2.07.98a7.64 7.64 0 0 0-1.61-.67L12.43 3h-.86l-.78 2.17a7.64 7.64 0 0 0-1.61.67l-2.07-.98-.32.29-1.63 1.63-.29.32.98 2.07a7.64 7.64 0 0 0-.67 1.61L3 11.57v.86l2.17.78c.16.56.38 1.1.67 1.61l-.98 2.07.29.32 1.63 1.63.32.29 2.07-.98c.51.29 1.05.51 1.61.67l.78 2.17h.86l.78-2.17c.56-.16 1.1-.38 1.61-.67l2.07.98.32-.29 1.63-1.63.29-.32-.98-2.07c.29-.51.51-1.05.67-1.61l2.17-.78L21 12Z"></path></svg>
+</button></div>
+</div>
+<div class="chronometry-content">
+<section class="chronometry-chart-section">
+<div class="chronometry-chart-title">
             ИЗМЕНЕНИЕ СКОРОСТИ ВРЕМЕНИ В ТЕЧЕНИЕ СУТОК
           </div>
-
-          <div class="chronometry-chart-frame">
-            <svg id="chronometryChart" class="chronometry-chart" viewBox="0 0 760 400" role="img" aria-label="График изменения скорости времени Зоны в течение суток"></svg>
-          </div>
-
-          <div class="chronometry-legend">
-            <span><i class="chronometry-zone-line"></i> Наблюдаемая скорость времени</span>
-            <span><i class="chronometry-real-line"></i> Среднее за сутки</span>
-            <span><i class="chronometry-gap-fill"></i> Контрольные точки наблюдений</span>
-          </div>
-
-          <div id="chronometrySummary" class="chronometry-summary"></div>
-        </section>
-
-        <article class="chronometry-article">
-          <h3>Почему реальное время так сильно отличается от времени Зоны</h3>
-
-          <p>
+<div class="chronometry-chart-frame">
+<svg aria-label="График изменения скорости времени Зоны в течение суток" class="chronometry-chart" id="chronometryChart" role="img" viewbox="0 0 760 400"></svg>
+</div>
+<div class="chronometry-legend">
+<span><i class="chronometry-zone-line"></i> Наблюдаемая скорость времени</span>
+<span><i class="chronometry-real-line"></i> Среднее за сутки</span>
+<span><i class="chronometry-gap-fill"></i> Контрольные точки наблюдений</span>
+</div>
+<div class="chronometry-summary" id="chronometrySummary"></div>
+</section>
+<article class="chronometry-article">
+<h3>Почему реальное время так сильно отличается от времени Зоны</h3>
+<p>
             Главное отличие Зоны от обычного пространства состоит в том, что её внутреннее время не обязано идти с той же скоростью, что и часы за Периметром. Внешний наблюдатель продолжает жить по обычной шкале, а внутри Зоны действует собственный хронометрический режим. Поэтому одна и та же реальная минута может соответствовать сразу нескольким минутам времени Зоны.
           </p>
-
-          <p>
+<p>
             Проще всего представить это как постоянное сжатие внешнего времени. Человек внутри Зоны не чувствует, что сам движется в несколько раз быстрее: шаг остаётся шагом, бой занимает привычное количество действий, а усталость накапливается естественно. Но окружающая среда — положение солнца, смена дня и ночи, внутренние часы и события Зоны — развивается значительно быстрее относительно часов за Периметром.
           </p>
-
-          <p>
+<p>
             Причиной такого расхождения может быть общее аномальное поле, охватывающее весь Периметр. Оно влияет не только на вещество, электромагнитные процессы и пси-активность, но и на саму локальную шкалу времени. В результате внутри Зоны формируется собственная система отсчёта, которая как будто отделена от обычного течения времени внешнего мира.
           </p>
-
-          <p>
+<p>
             Чем сильнее это поле, тем больше времени успевает пройти внутри Зоны за одну реальную минуту. Именно поэтому полные сутки Зоны могут укладываться примерно в полтора часа внешнего времени. Это не означает, что человек субъективно проживает сутки за полтора часа. Скорее сама среда Зоны прокручивает свой суточный цикл гораздо быстрее, чем внешний мир.
           </p>
-
-          <p>
+<p>
             При этом степень такого сжатия не остаётся постоянной. Наблюдения показывают, что в разные часы расхождение усиливается или ослабевает. Утром время Зоны идёт заметно медленнее относительно своего ночного режима, днём выходит на более устойчивое состояние, а поздним вечером снова резко ускоряется. Поэтому разница между реальным и внутризонным временем постоянно меняется.
           </p>
-
-          <p>
+<p>
             Такая нестабильность может возникать из-за того, что аномальное поле связано сразу с несколькими источниками энергии. На него воздействуют крупные аномалии, подземные комплексы, пси-активные зоны, остаточная энергия выбросов и состояние атмосферы. Все эти источники накладываются друг на друга и создают общий хронометрический фон.
           </p>
-
-          <p>
+<p>
             Особенно важны рассвет и закат. В эти периоды быстро меняются освещённость, температура поверхности, электрические свойства атмосферы и уровень ионизации воздуха. Если временная составляющая аномального поля зависит от этих факторов, то именно в переходные часы скорость времени должна перестраиваться сильнее всего. На графике это проявляется как заметные изгибы и резкие изменения хода кривой.
           </p>
-
-          <p>
+<p>
             Выбросы способны усиливать расхождение ещё сильнее. Во время выброса через Зону проходит мощный энергетический импульс, после которого аномальные области меняют активность, а распределение энергии внутри Периметра перестраивается. Вместе с этим может изменяться и локальный хронометрический фон. Поэтому время Зоны нельзя считать жёстко привязанным к одной постоянной скорости.
           </p>
-
-          <p>
+<p>
             Получается, что реальное время и время Зоны существуют как две связанные, но не совпадающие шкалы. Внешние часы показывают физическое время наблюдателя за Периметром, а Zone Clock отслеживает внутреннее время среды, ускоренное аномальным полем. Чем сильнее хронометрическое искажение, тем быстрее расходятся эти две шкалы.
           </p>
-
-          <p>
+<p>
             Именно поэтому обычного среднего коэффициента недостаточно. Он может объяснить общую разницу за сутки, но не показывает, что скорость расхождения сама меняется в течение дня. Zone Clock учитывает эти изменения и рассчитывает время как динамическую величину: в каждый момент Зона может идти быстрее или медленнее относительно реального мира.
           </p>
-        </article>
-      </div>
-    </div>
-  </dialog>
+</article>
+</div>
+</div>
+</dialog>
+<dialog aria-labelledby="testDialogTitle" class="test-dialog" id="testDialog">
+<div class="test-modal">
+<div class="test-modal-header">
+<div>
+<div class="eyebrow">ZONE CLOCK</div>
+<div class="test-title-row">
+<h2 id="testDialogTitle">ТЕСТ ВРЕМЕНИ</h2>
+<div class="test-current-time">Время <strong id="testCurrentTime">--:--</strong></div>
+</div>
+</div>
+<div class="dialog-header-actions">
 
-  <dialog id="testDialog" class="test-dialog" aria-labelledby="testDialogTitle">
-    <div class="test-modal">
-      <div class="test-modal-header">
-        <div>
-          <div class="eyebrow">ZONE CLOCK</div>
-          <div class="test-title-row">
-            <h2 id="testDialogTitle">ТЕСТ ВРЕМЕНИ</h2>
-            <div class="test-current-time">Время <strong id="testCurrentTime">--:--</strong></div>
-          </div>
-        </div>
-        <div class="dialog-header-actions">
-          <button class="icon-btn small screen-settings-btn" type="button" data-open-settings aria-label="Открыть настройки" title="Настройки">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-.03-.43-2.15-.78a7.64 7.64 0 0 0-.67-1.61l.98-2.07-.29-.32-1.63-1.63-.32-.29-2.07.98a7.64 7.64 0 0 0-1.61-.67L12.43 3h-.86l-.78 2.17a7.64 7.64 0 0 0-1.61.67l-2.07-.98-.32.29-1.63 1.63-.29.32.98 2.07a7.64 7.64 0 0 0-.67 1.61L3 11.57v.86l2.17.78c.16.56.38 1.1.67 1.61l-.98 2.07.29.32 1.63 1.63.32.29 2.07-.98c.51.29 1.05.51 1.61.67l.78 2.17h.86l.78-2.17c.56-.16 1.1-.38 1.61-.67l2.07.98.32-.29 1.63-1.63.29-.32-.98-2.07c.29-.51.51-1.05.67-1.61l2.17-.78L21 12Z"/></svg>
-          </button>
-          <button id="closeTestBtn" class="icon-btn small" type="button" aria-label="Закрыть тест" title="Закрыть">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <div class="test-content">
-        <section class="movement-test-block">
-          <div class="movement-test-head">
-            <div>
-              <div class="daylight-test-title">ТЕСТ СКОРОСТИ ПЕРЕДВИЖЕНИЯ</div>
-              <label class="movement-test-route-select-wrap" for="movementTestRouteSelect">
-                <span>ТЕСТОВЫЙ МАРШРУТ</span>
-                <select id="movementTestRouteSelect" class="movement-test-route-select">
-                  <option value="cement_swyd">МОСТ У ЦЕМЕНТНОГО ЗАВОДА → SWYD-EAST CHECKPOINT</option>
-                  <option value="cooling_diagonal">ГРАДИРНИ · КОНТРОЛЬНЫЙ ОТРЕЗОК 2</option>
-                </select>
-              </label>
-              <div id="movementTestRouteName" class="movement-test-route">
+<button aria-label="Закрыть тест" class="icon-btn small" id="closeTestBtn" title="Закрыть" type="button">
+<svg aria-hidden="true" viewbox="0 0 24 24"><path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"></path></svg>
+</button>
+<button aria-label="Открыть настройки" class="icon-btn small screen-settings-btn" data-open-settings="" title="Настройки" type="button">
+<svg aria-hidden="true" viewbox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-.03-.43-2.15-.78a7.64 7.64 0 0 0-.67-1.61l.98-2.07-.29-.32-1.63-1.63-.32-.29-2.07.98a7.64 7.64 0 0 0-1.61-.67L12.43 3h-.86l-.78 2.17a7.64 7.64 0 0 0-1.61.67l-2.07-.98-.32.29-1.63 1.63-.29.32.98 2.07a7.64 7.64 0 0 0-.67 1.61L3 11.57v.86l2.17.78c.16.56.38 1.1.67 1.61l-.98 2.07.29.32 1.63 1.63.32.29 2.07-.98c.51.29 1.05.51 1.61.67l.78 2.17h.86l.78-2.17c.56-.16 1.1-.38 1.61-.67l2.07.98.32-.29 1.63-1.63.29-.32-.98-2.07c.29-.51.51-1.05.67-1.61l2.17-.78L21 12Z"></path></svg>
+</button></div>
+</div>
+<div class="test-content">
+<section class="movement-test-block">
+<div class="movement-test-head">
+<div>
+<div class="daylight-test-title">ТЕСТ СКОРОСТИ ПЕРЕДВИЖЕНИЯ</div>
+<label class="movement-test-route-select-wrap" for="movementTestRouteSelect">
+<span>ТЕСТОВЫЙ МАРШРУТ</span>
+<select class="movement-test-route-select" id="movementTestRouteSelect">
+<option value="cement_swyd">МОСТ У ЦЕМЕНТНОГО ЗАВОДА → SWYD-EAST CHECKPOINT</option>
+<option value="cooling_diagonal">ГРАДИРНИ · КОНТРОЛЬНЫЙ ОТРЕЗОК 2</option>
+</select>
+</label>
+<div class="movement-test-route" id="movementTestRouteName">
                 МОСТ У ЦЕМЕНТНОГО ЗАВОДА → SWYD-EAST CHECKPOINT, ЖЕЛЕЗНЫЙ ЛЕС
               </div>
-            </div>
-            <button id="showMovementTestRouteBtn" class="btn movement-map-btn" type="button">
+</div>
+<button class="btn movement-map-btn" id="showMovementTestRouteBtn" type="button">
               ПОКАЗАТЬ НА КАРТЕ
             </button>
-          </div>
-
-          <div class="movement-test-distance-row">
-            <span>КОНТРОЛЬНОЕ РАССТОЯНИЕ</span>
-            <strong id="movementTestDistance">—</strong>
-          </div>
-
-          <div id="movementTestHelp" class="movement-test-help">
+</div>
+<div class="movement-test-distance-row">
+<span>КОНТРОЛЬНОЕ РАССТОЯНИЕ</span>
+<strong id="movementTestDistance">—</strong>
+</div>
+<div class="movement-test-help" id="movementTestHelp">
             Встаньте у контрольной точки на мосту, выберите темп и нажмите «СТАРТ». Переключитесь в игру и двигайтесь до SWYD-East Checkpoint без остановок. На финише вернитесь в Zone Clock и нажмите «ФИНИШ».
           </div>
-
-          <div class="movement-test-modes">
-            <div class="movement-test-card" data-movement-mode="slow">
-              <div class="movement-test-mode-title">МЕДЛЕННЫЙ ШАГ</div>
-              <div class="movement-live-time" data-movement-live="slow">00:00</div>
-              <div class="movement-test-result" data-movement-result="slow">Нет замеров</div>
-              <button class="btn primary movement-test-action" data-movement-action="slow" type="button">СТАРТ</button>
-            </div>
-
-            <div class="movement-test-card" data-movement-mode="fast">
-              <div class="movement-test-mode-title">БЫСТРЫЙ ШАГ</div>
-              <div class="movement-live-time" data-movement-live="fast">00:00</div>
-              <div class="movement-test-result" data-movement-result="fast">Нет замеров</div>
-              <button class="btn primary movement-test-action" data-movement-action="fast" type="button">СТАРТ</button>
-            </div>
-
-            <div class="movement-test-card" data-movement-mode="run">
-              <div class="movement-test-mode-title">БЕГ</div>
-              <div class="movement-live-time" data-movement-live="run">00:00</div>
-              <div class="movement-test-result" data-movement-result="run">Нет замеров</div>
-              <button class="btn primary movement-test-action" data-movement-action="run" type="button">СТАРТ</button>
-            </div>
-          </div>
-
-          <div id="movementTestStatus" class="movement-test-status">
+<div class="movement-test-modes">
+<div class="movement-test-card" data-movement-mode="slow">
+<div class="movement-test-mode-title">МЕДЛЕННЫЙ ШАГ</div>
+<div class="movement-live-time" data-movement-live="slow">00:00</div>
+<div class="movement-test-result" data-movement-result="slow">Нет замеров</div>
+<button class="btn primary movement-test-action" data-movement-action="slow" type="button">СТАРТ</button>
+</div>
+<div class="movement-test-card" data-movement-mode="fast">
+<div class="movement-test-mode-title">БЫСТРЫЙ ШАГ</div>
+<div class="movement-live-time" data-movement-live="fast">00:00</div>
+<div class="movement-test-result" data-movement-result="fast">Нет замеров</div>
+<button class="btn primary movement-test-action" data-movement-action="fast" type="button">СТАРТ</button>
+</div>
+<div class="movement-test-card" data-movement-mode="run">
+<div class="movement-test-mode-title">БЕГ</div>
+<div class="movement-live-time" data-movement-live="run">00:00</div>
+<div class="movement-test-result" data-movement-result="run">Нет замеров</div>
+<button class="btn primary movement-test-action" data-movement-action="run" type="button">СТАРТ</button>
+</div>
+</div>
+<div class="movement-test-status" id="movementTestStatus">
             Выберите темп и начните замер у моста.
           </div>
-        </section>
-
-        <div class="test-toolbar">
-          <div class="daylight-test-block">
-            <div class="daylight-test-title">ОСВЕЩЕНИЕ</div>
-            <div class="daylight-test-buttons">
-              <button class="daylight-mark-btn" type="button" data-daylight-event="dawn_start">НАЧАЛСЯ РАССВЕТ</button>
-              <button class="daylight-mark-btn" type="button" data-daylight-event="daylight">СТАЛО СВЕТЛО</button>
-              <button class="daylight-mark-btn" type="button" data-daylight-event="sunset_start">НАЧАЛСЯ ЗАКАТ</button>
-              <button class="daylight-mark-btn" type="button" data-daylight-event="dark">СТАЛО ТЕМНО</button>
-            </div>
-            <div id="daylightMarksList" class="daylight-marks-list">
+</section>
+<div class="test-toolbar">
+<div class="daylight-test-block">
+<div class="daylight-test-title">ОСВЕЩЕНИЕ</div>
+<div class="daylight-test-buttons">
+<button class="daylight-mark-btn" data-daylight-event="dawn_start" type="button">НАЧАЛСЯ РАССВЕТ</button>
+<button class="daylight-mark-btn" data-daylight-event="daylight" type="button">СТАЛО СВЕТЛО</button>
+<button class="daylight-mark-btn" data-daylight-event="sunset_start" type="button">НАЧАЛСЯ ЗАКАТ</button>
+<button class="daylight-mark-btn" data-daylight-event="dark" type="button">СТАЛО ТЕМНО</button>
+</div>
+<div class="daylight-marks-list" id="daylightMarksList">
               Отметок пока нет.
             </div>
-          </div>
-
-          <div class="test-actions">
-            <button id="exportTestBtn" class="btn primary" type="button">ЭКСПОРТ CSV</button>
-            <button id="clearTestBtn" class="btn" type="button">Очистить</button>
-          </div>
-        </div>
-
-        <details id="dayCalibrationDetails" class="day-calibration-details">
-          <summary>
-            <span>КАЛИБРОВКА СУТОК</span>
-            <span class="day-calibration-arrow" aria-hidden="true">⌄</span>
-          </summary>
-
-          <div class="day-calibration-body">
-            <div class="test-help">
+</div>
+<div class="test-actions">
+<button class="btn primary" id="exportTestBtn" type="button">ЭКСПОРТ CSV</button>
+<button class="btn" id="clearTestBtn" type="button">Очистить</button>
+</div>
+</div>
+<details class="day-calibration-details" id="dayCalibrationDetails">
+<summary>
+<span>КАЛИБРОВКА СУТОК</span>
+<span aria-hidden="true" class="day-calibration-arrow">⌄</span>
+</summary>
+<div class="day-calibration-body">
+<div class="test-help">
               Слева — время в игре. Справа вписывайте время, которое показывает ZONE CLOCK в тот же момент.
             </div>
-
-            <div class="test-table-wrap">
-              <table class="test-table">
-                <thead>
-                  <tr>
-                    <th>ИГРА</th>
-                    <th>ZONE CLOCK</th>
-                  </tr>
-                </thead>
-                <tbody id="testTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </details>
-      </div>
-
-      <div id="testMessage" class="test-message" aria-live="polite">
+<div class="test-table-wrap">
+<table class="test-table">
+<thead>
+<tr>
+<th>ИГРА</th>
+<th>ZONE CLOCK</th>
+</tr>
+</thead>
+<tbody id="testTableBody"></tbody>
+</table>
+</div>
+</div>
+</details>
+</div>
+<div aria-live="polite" class="test-message" id="testMessage">
         Значения сохраняются автоматически.
       </div>
-    </div>
-  </dialog>
-
-  <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsDialogTitle">
-    <div class="settings-modal">
-      <div class="settings-modal-header">
-        <div>
-          <div class="eyebrow">ZONE CLOCK</div>
-          <h2 id="settingsDialogTitle">НАСТРОЙКИ</h2>
-        </div>
-        <button id="closeSettingsBtn" class="icon-btn small" type="button" aria-label="Закрыть настройки" title="Закрыть">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/>
-          </svg>
-        </button>
-      </div>
-
-      <div class="settings-content modal-content">
-        <div class="settings-group">
-          <div class="settings-heading">СИНХРОНИЗАЦИЯ</div>
-          <form id="syncForm" class="settings-sync-form">
-            <div class="form-grid">
-              <label>
-                <span>Игровых дней прошло</span>
-                <input id="dayInput" type="number" min="0" max="99999" step="1" value="1" inputmode="numeric">
-              </label>
-              <label>
-                <span>Время в игре</span>
-                <input id="timeInput" type="time" step="60" value="12:00">
-              </label>
-            </div>
-            <button class="btn primary wide" type="submit">СИНХРОНИЗИРОВАТЬ</button>
-          </form>
-        </div>
-
-        <div class="settings-group">
-          <div class="settings-heading">ПРОФИЛЬ ВРЕМЕНИ</div>
-          <label>
-            <select id="profileInput">
-              <option value="vanilla">Patch 2.0 — калибровка по таблице 15 мин</option>
-              <option value="uniform24">Равномерно ×24 — 60 мин/сутки</option>
-              <option value="custom">Своя длительность суток</option>
-            </select>
-          </label>
-
-          <label id="customWrap" class="hidden">
-            <span>Реальных минут на игровые сутки</span>
-            <input id="customMinutes" type="number" min="10" max="1440" step="1" value="60">
-          </label>
-        </div>
-
-        <div class="settings-group">
-          <div class="settings-heading">ОФОРМЛЕНИЕ</div>
-          <div class="theme-switch" role="group" aria-label="Цветовая тема">
-            <button id="darkThemeBtn" class="theme-option" type="button" data-theme-choice="dark" aria-pressed="true">
-              <span aria-hidden="true">☾</span>
-              <span>Тёмная</span>
-            </button>
-            <button id="lightThemeBtn" class="theme-option" type="button" data-theme-choice="light" aria-pressed="false">
-              <span aria-hidden="true">☀</span>
-              <span>Светлая</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="settings-group">
-          <div class="settings-heading">УВЕДОМЛЕНИЯ</div>
-          <div class="notification-settings">
-            <div>
-              <div class="notification-title">Сообщения Зоны</div>
-              <div id="notificationStatus" class="notification-status">Не включены</div>
-            </div>
-            <button id="enableNotificationsBtn" class="btn outline-accent" type="button">ВКЛЮЧИТЬ</button>
-          </div>
-
-          <label class="notification-interval-field">
-            <span>Интервал сообщений</span>
-            <select id="notificationIntervalSelect">
-              <option value="random">Рандомный — 1–6 ч, со сдвигом</option>
-              <option value="1">Каждый час</option>
-              <option value="2">Каждые 2 часа</option>
-              <option value="4">Каждые 4 часа</option>
-              <option value="8">Каждые 8 часов</option>
-              <option value="12">Каждые 12 часов</option>
-              <option value="24">Раз в день</option>
-            </select>
-          </label>
-
-          <div class="notification-note">Рассвет, день, закат и ночь сообщаются отдельно. За час до и час после этих событий обычные сообщения не приходят независимо от выбранного интервала.</div>
-        </div>
-
-        <div class="settings-group">
-          <div class="settings-heading">ТЕСТ И КАЛИБРОВКА</div>
-          <button id="settingsTestBtn" class="btn settings-test-btn" type="button">
+</div>
+</dialog>
+<dialog aria-labelledby="settingsDialogTitle" class="settings-dialog" id="settingsDialog">
+<div class="settings-modal">
+<div class="settings-modal-header">
+<div>
+<div class="eyebrow">ZONE CLOCK</div>
+<h2 id="settingsDialogTitle">НАСТРОЙКИ</h2>
+</div>
+<button aria-label="Закрыть настройки" class="icon-btn small" id="closeSettingsBtn" title="Закрыть" type="button">
+<svg aria-hidden="true" viewbox="0 0 24 24">
+<path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"></path>
+</svg>
+</button>
+</div>
+<div class="settings-content modal-content">
+<div class="settings-group">
+<div class="settings-heading">СИНХРОНИЗАЦИЯ</div>
+<form class="settings-sync-form" id="syncForm">
+<div class="form-grid">
+<label>
+<span>Игровых дней прошло</span>
+<input id="dayInput" inputmode="numeric" max="99999" min="0" step="1" type="number" value="1"/>
+</label>
+<label>
+<span>Время в игре</span>
+<input id="timeInput" step="60" type="time" value="12:00"/>
+</label>
+</div>
+<button class="btn primary wide" type="submit">СИНХРОНИЗИРОВАТЬ</button>
+</form>
+</div>
+<div class="settings-group">
+<div class="settings-heading">ПРОФИЛЬ ВРЕМЕНИ</div>
+<label>
+<select id="profileInput">
+<option value="vanilla">Patch 2.0 — калибровка по таблице 15 мин</option>
+<option value="uniform24">Равномерно ×24 — 60 мин/сутки</option>
+<option value="custom">Своя длительность суток</option>
+</select>
+</label>
+<label class="hidden" id="customWrap">
+<span>Реальных минут на игровые сутки</span>
+<input id="customMinutes" max="1440" min="10" step="1" type="number" value="60"/>
+</label>
+</div>
+<div class="settings-group">
+<div class="settings-heading">ОФОРМЛЕНИЕ</div>
+<div aria-label="Цветовая тема" class="theme-switch" role="group">
+<button aria-pressed="true" class="theme-option" data-theme-choice="dark" id="darkThemeBtn" type="button">
+<span aria-hidden="true">☾</span>
+<span>Тёмная</span>
+</button>
+<button aria-pressed="false" class="theme-option" data-theme-choice="light" id="lightThemeBtn" type="button">
+<span aria-hidden="true">☀</span>
+<span>Светлая</span>
+</button>
+</div>
+</div>
+<div class="settings-group">
+<div class="settings-heading">УВЕДОМЛЕНИЯ</div>
+<div class="notification-settings">
+<div>
+<div class="notification-title">Сообщения Зоны</div>
+<div class="notification-status" id="notificationStatus">Не включены</div>
+</div>
+<button class="btn outline-accent" id="enableNotificationsBtn" type="button">ВКЛЮЧИТЬ</button>
+</div>
+<label class="notification-interval-field">
+<span>Интервал сообщений</span>
+<select id="notificationIntervalSelect">
+<option value="random">Рандомный — 1–6 ч, со сдвигом</option>
+<option value="1">Каждый час</option>
+<option value="2">Каждые 2 часа</option>
+<option value="4">Каждые 4 часа</option>
+<option value="8">Каждые 8 часов</option>
+<option value="12">Каждые 12 часов</option>
+<option value="24">Раз в день</option>
+</select>
+</label>
+<div class="notification-note">Рассвет, день, закат и ночь сообщаются отдельно. За час до и час после этих событий обычные сообщения не приходят независимо от выбранного интервала.</div>
+</div>
+<div class="settings-group">
+<div class="settings-heading">ТЕСТ И КАЛИБРОВКА</div>
+<button class="btn settings-test-btn" id="settingsTestBtn" type="button">
             ОТКРЫТЬ ТЕСТ
           </button>
-          <div class="settings-subnote">
+<div class="settings-subnote">
             Проверка времени, калибровка суток и отметки освещения.
           </div>
-        </div>
-
-        <div class="settings-group">
-          <div class="settings-heading">ИНФОРМАЦИЯ</div>
-          <button id="openChronometryBtn" class="btn settings-info-btn" type="button">
+</div>
+<div class="settings-group">
+<div class="settings-heading">ИНФОРМАЦИЯ</div>
+<button class="btn settings-info-btn" id="openChronometryBtn" type="button">
             ХРОНОМЕТРИЯ ЗОНЫ
           </button>
-          <div class="settings-subnote">
+<div class="settings-subnote">
             Большой график расхождения времени Зоны и реального времени.
           </div>
-        </div>
-
-        <div class="settings-group version-group">
-          <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v1.01</strong></div>
-          <button id="updateAppBtn" class="btn update-app-btn" type="button">
+</div>
+<div class="settings-group version-group">
+<div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
+<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.02</strong></div>
+<button class="btn update-app-btn" id="updateAppBtn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>
-          <div id="updateAppStatus" class="update-app-status" aria-live="polite">
+<div aria-live="polite" class="update-app-status" id="updateAppStatus">
             Принудительно загрузит свежие файлы приложения и перезапустит Zone Clock.
           </div>
-        </div>
-      </div>
-    </div>
-  </dialog>
-
-  <div id="zoneToast" class="zone-toast hidden" role="status" aria-live="polite">
-    <div class="zone-toast-time"></div>
-    <div class="zone-toast-text"></div>
-  </div>
-
-  <script src="./app.js" defer></script>
+</div>
+</div>
+</div>
+</dialog>
+<div aria-live="polite" class="zone-toast hidden" id="zoneToast" role="status">
+<div class="zone-toast-time"></div>
+<div class="zone-toast-text"></div>
+</div>
+<script defer="" src="./app.js"></script>
 </body>
 </html>
