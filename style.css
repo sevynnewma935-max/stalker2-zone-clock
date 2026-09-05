@@ -4324,3 +4324,25 @@ button.zone-button-press:not(:disabled) {
     grid-row: 1;
   }
 }
+
+
+/* PWA v107 — точки местоположений не исчезают после выбора */
+.map-known-locations-layer {
+  display: block;
+  opacity: 1;
+  visibility: visible;
+}
+
+.map-known-location {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.map-known-location:not(.is-selected) .map-known-location-pin {
+  opacity: 1 !important;
+}
+
+.map-known-location.is-selected .map-known-location-label,
+.map-known-location:not(.is-selected) .map-known-location-label {
+  opacity: 1 !important;
+}

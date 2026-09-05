@@ -1758,9 +1758,15 @@ mapMeasureHint: $('mapMeasureHint'),
   function renderKnownLocationsLayer() {
     if (!els.mapKnownLocationsLayer) return;
 
-    const shouldShow = Boolean(
-      els.mapRoadPlanner && els.mapRoadPlanner.open
-    );
+    /*
+     * Точки местоположений относятся к самому режиму маршрута,
+     * а не к раскрытому/свёрнутому состоянию панели управления.
+     * Поэтому в полноэкранной карте и после выбора первой точки
+     * остальные точки продолжают оставаться видимыми.
+     */
+    const shouldShow =
+      mapSelectedRouteKey ===
+      MAP_ROUTE_MODE_ROAD_PLANNER;
 
     els.mapKnownLocationsLayer.style.display = shouldShow ? '' : 'none';
     if (!shouldShow) {
@@ -7139,7 +7145,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v106.csv';
+    link.download = 'zone-clock-test-v107.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
