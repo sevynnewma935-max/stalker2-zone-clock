@@ -4138,4 +4138,63 @@ button.zone-button-press:not(:disabled) {
     gap: 6px;
   }
 }
-\n\n/* PWA v102 — настройки всегда справа и одинаковый логотип */\n.clock-brand-block .map-brand-kicker {\n  font-size: .58rem !important;\n  line-height: 1.1 !important;\n  letter-spacing: .16em !important;\n}\n\n.clock-brand-block .clock-brand-title {\n  margin: 3px 0 0 !important;\n  font-size: 1.02rem !important;\n  line-height: 1.05 !important;\n  letter-spacing: .13em !important;\n  font-weight: 800 !important;\n}\n\n.top-actions,\n.map-header-actions,\n.dialog-header-actions {\n  display: flex;\n  align-items: center;\n  flex-wrap: nowrap !important;\n  justify-content: flex-end;\n}\n\n#settingsBtn,\n.screen-settings-btn {\n  order: 999 !important;\n  flex: 0 0 auto;\n}\n\n@media (max-width: 520px) {\n  .clock-brand-block .map-brand-kicker {\n    font-size: .58rem !important;\n  }\n\n  .clock-brand-block .clock-brand-title {\n    font-size: 1.02rem !important;\n  }\n\n  .map-header-actions {\n    gap: 6px !important;\n  }\n}\n
+
+/* PWA v103 — унификация логотипа и настройки справа */
+
+.clock-brand-block {
+  min-width: 0;
+}
+
+.clock-brand-block .map-brand-kicker {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .58rem !important;
+  line-height: 1.1 !important;
+  letter-spacing: .16em !important;
+  font-weight: 400 !important;
+}
+
+.clock-brand-block .clock-brand-title,
+.clock-brand-block .map-brand-title {
+  margin: 3px 0 0 !important;
+  color: var(--text) !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+  font-size: 1.02rem !important;
+  line-height: 1.05 !important;
+  letter-spacing: .13em !important;
+  font-weight: 800 !important;
+}
+
+.top-actions,
+.map-header-actions,
+.dialog-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap !important;
+  justify-content: flex-end;
+}
+
+#settingsBtn,
+.screen-settings-btn {
+  order: 999 !important;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 520px) {
+  .clock-brand-block .map-brand-kicker {
+    font-size: .58rem !important;
+    letter-spacing: .16em !important;
+  }
+
+  .clock-brand-block .clock-brand-title,
+  .clock-brand-block .map-brand-title {
+    font-size: 1.02rem !important;
+    letter-spacing: .13em !important;
+  }
+
+  .map-header-actions,
+  .dialog-header-actions,
+  .top-actions {
+    gap: 6px !important;
+  }
+}
