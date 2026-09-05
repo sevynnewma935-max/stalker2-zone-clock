@@ -4639,3 +4639,58 @@ button.zone-button-press:not(:disabled) {
   display: grid !important;
   overflow: hidden !important;
 }
+
+
+/* PWA v114 — усиленная видимая пульсация непосещённых артефактов */
+@keyframes zoneArtifactCorePulseV114 {
+  0%, 100% {
+    fill: rgba(18, 150, 42, 1);
+    stroke: #5dff78;
+    stroke-width: 2.5px;
+    filter: drop-shadow(0 0 2px rgba(66, 255, 96, .65));
+  }
+  50% {
+    fill: rgba(48, 255, 85, 1);
+    stroke: #d3ffda;
+    stroke-width: 4.5px;
+    filter:
+      drop-shadow(0 0 5px rgba(73, 255, 102, 1))
+      drop-shadow(0 0 11px rgba(73, 255, 102, .9));
+  }
+}
+
+@keyframes zoneArtifactRingPulseV114 {
+  0% {
+    r: 6px;
+    opacity: .95;
+    stroke-width: 4px;
+  }
+  70% {
+    r: 15px;
+    opacity: .24;
+    stroke-width: 2px;
+  }
+  100% {
+    r: 18px;
+    opacity: 0;
+    stroke-width: 1px;
+  }
+}
+
+#mapPresetRoutePoints .map-artifact-visit-point:not(.visited),
+#mapCustomArtifactPoints .map-artifact-visit-point:not(.visited):not(.is-custom-selected) {
+  animation: zoneArtifactCorePulseV114 1.25s ease-in-out infinite !important;
+}
+
+.map-artifact-pulse-ring {
+  fill: none !important;
+  stroke: #54ff72 !important;
+  pointer-events: none !important;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: zoneArtifactRingPulseV114 1.25s ease-out infinite !important;
+  filter: drop-shadow(0 0 5px rgba(66, 255, 96, .95));
+}
+
+/* Пульсация остаётся мягкой, но не отключается системным Reduce motion,
+   потому что это статусный визуальный индикатор доступного артефакта. */

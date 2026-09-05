@@ -3756,6 +3756,19 @@ mapMeasureHint: $('mapMeasureHint'),
           toggleCustomArtifactSelection(candidate);
         }
       });
+
+      if (!isVisited && selectedIndex < 0) {
+        const pulseRing = document.createElementNS(
+          'http://www.w3.org/2000/svg',
+          'circle'
+        );
+        pulseRing.setAttribute('class', 'map-artifact-pulse-ring map-custom-artifact-pulse-ring');
+        pulseRing.setAttribute('data-custom-artifact-id', candidate.id);
+        pulseRing.setAttribute('r', '7');
+        pulseRing.setAttribute('aria-hidden', 'true');
+        els.mapCustomArtifactPoints.appendChild(pulseRing);
+      }
+
       els.mapCustomArtifactPoints.appendChild(circle);
 
       if (selectedIndex >= 0) {
@@ -3797,6 +3810,16 @@ mapMeasureHint: $('mapMeasureHint'),
         const screen = routePointToScreen(candidate);
         circle.setAttribute('cx', screen.x);
         circle.setAttribute('cy', screen.y);
+      });
+
+    els.mapCustomArtifactPoints
+      .querySelectorAll('.map-custom-artifact-pulse-ring')
+      .forEach(ring => {
+        const candidate = candidateMap.get(ring.getAttribute('data-custom-artifact-id'));
+        if (!candidate) return;
+        const screen = routePointToScreen(candidate);
+        ring.setAttribute('cx', screen.x);
+        ring.setAttribute('cy', screen.y);
       });
 
     els.mapCustomArtifactPoints
@@ -5378,6 +5401,10 @@ mapMeasureHint: $('mapMeasureHint'),
       '.map-route-start-label'
     );
 
+    const artifactPulseRings = els.mapPresetRoutePoints.querySelectorAll(
+      '.map-artifact-pulse-ring'
+    );
+
     const routeZoomRatio =
       mapFitZoom > 0 ? mapZoom / mapFitZoom : 1;
     const showDistanceLabels =
@@ -5392,6 +5419,13 @@ mapMeasureHint: $('mapMeasureHint'),
         circle.setAttribute('cx', screen.x);
         circle.setAttribute('cy', screen.y);
       }
+
+      Array.from(artifactPulseRings)
+        .filter(ring => Number(ring.getAttribute('data-point-index')) === index)
+        .forEach(ring => {
+          ring.setAttribute('cx', screen.x);
+          ring.setAttribute('cy', screen.y);
+        });
 
       const artifactStatusLabel =
         Array.from(
@@ -5619,6 +5653,18 @@ mapMeasureHint: $('mapMeasureHint'),
               }
             }
           );
+        }
+
+        if (!isStartPoint && !isVisited) {
+          const pulseRing = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'circle'
+          );
+          pulseRing.setAttribute('class', 'map-artifact-pulse-ring');
+          pulseRing.setAttribute('data-point-index', String(index));
+          pulseRing.setAttribute('r', '7');
+          pulseRing.setAttribute('aria-hidden', 'true');
+          els.mapPresetRoutePoints.appendChild(pulseRing);
         }
 
         els.mapPresetRoutePoints
@@ -7934,7 +7980,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v113.csv';
+    link.download = 'zone-clock-test-v114.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
