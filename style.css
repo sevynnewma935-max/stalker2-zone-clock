@@ -3636,3 +3636,188 @@ button.zone-button-press:not(:disabled) {
   letter-spacing: .04em;
   pointer-events: none;
 }
+
+
+/* PWA v96 — автоматическое построение маршрутов по дорогам */
+.map-modal {
+  grid-template-areas:
+    "header"
+    "toolbar"
+    "info"
+    "route"
+    "artifactHint"
+    "planner"
+    "map"
+    "calibration" !important;
+
+  grid-template-rows:
+    auto
+    auto
+    auto
+    auto
+    auto
+    auto
+    minmax(120px, 1fr)
+    auto !important;
+}
+
+.map-road-planner {
+  grid-area: planner;
+  min-height: 0;
+  border-top: 1px solid rgba(39, 212, 68, .14);
+  border-bottom: 1px solid rgba(39, 212, 68, .14);
+  background: rgba(8, 18, 11, .92);
+}
+
+.map-road-planner > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+  padding: 8px 12px;
+  color: #dce8da;
+  cursor: pointer;
+  list-style: none;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  font-size: .64rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.map-road-planner > summary::-webkit-details-marker {
+  display: none;
+}
+
+.map-road-planner-body {
+  display: grid;
+  gap: 9px;
+  padding: 0 12px 11px;
+}
+
+.map-road-planner-help {
+  color: var(--muted);
+  font-size: .63rem;
+  line-height: 1.42;
+}
+
+.map-road-planner-actions {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.map-road-planner-actions .btn {
+  min-height: 40px;
+  padding-inline: 6px;
+  font-size: .61rem;
+}
+
+.map-road-planner-points,
+.map-road-planner-result {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.map-road-planner-points > div,
+.map-road-planner-result > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  background: rgba(4, 11, 7, .55);
+}
+
+.map-road-planner-points span,
+.map-road-planner-result span {
+  color: var(--muted);
+  font-size: .52rem;
+  letter-spacing: .07em;
+}
+
+.map-road-planner-points strong,
+.map-road-planner-result strong {
+  overflow: hidden;
+  color: #e3eee1;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  font-size: .66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-road-planner-message {
+  min-height: 1.4em;
+  color: #bac7b8;
+  font-size: .62rem;
+  line-height: 1.42;
+}
+
+.map-road-planner-layer {
+  pointer-events: none;
+}
+
+.map-road-planner-path {
+  fill: none;
+  stroke: #71d7ff;
+  stroke-width: 3px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter:
+    drop-shadow(0 0 1px rgba(0,0,0,.95))
+    drop-shadow(0 0 3px rgba(113,215,255,.44));
+}
+
+.map-road-planner-point {
+  fill: rgba(5, 16, 19, .96);
+  stroke-width: 2.5px;
+}
+
+.map-road-planner-point.start {
+  stroke: #7fe8ff;
+}
+
+.map-road-planner-point.end {
+  stroke: #e9ee88;
+}
+
+.map-road-planner-map-label {
+  fill: #f1fbff;
+  stroke: rgba(3, 8, 8, .97);
+  stroke-width: 3px;
+  paint-order: stroke;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  font-size: 11px;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+.map-dialog.map-fullscreen .map-road-planner {
+  display: none !important;
+}
+
+@media (max-width: 560px) {
+  .map-road-planner-actions {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}

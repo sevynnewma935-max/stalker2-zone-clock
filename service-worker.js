@@ -1,4 +1,4 @@
-const APP_CACHE = 'stalker2-zone-clock-v95';
+const APP_CACHE = 'stalker2-zone-clock-v96';
 const MAP_CACHE = 'stalker2-zone-map-8192-v1';
 
 const APP_ASSETS = [
@@ -13,7 +13,8 @@ const APP_ASSETS = [
 
 const MAP_ASSETS = [
   './assets/zone-map-8192.jpg',
-  './assets/zone-map-4096.jpg'
+  './assets/zone-map-4096.jpg',
+  './assets/zone-road-cost-512.png'
 ];
 
 self.addEventListener('install', event => {
@@ -48,7 +49,10 @@ self.addEventListener('message', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
-  const isMap = url.pathname.endsWith('/assets/zone-map-8192.jpg');
+  const isMap =
+    url.pathname.endsWith('/assets/zone-map-8192.jpg') ||
+    url.pathname.endsWith('/assets/zone-map-4096.jpg') ||
+    url.pathname.endsWith('/assets/zone-road-cost-512.png');
   const cacheName = isMap ? MAP_CACHE : APP_CACHE;
 
   event.respondWith(

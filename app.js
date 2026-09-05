@@ -87,6 +87,22 @@
     mapPresetRoutePoints: $('mapPresetRoutePoints'),
     mapArtifactVisitPoints: $('mapArtifactVisitPoints'),
     mapArtifactVisitHint: $('mapArtifactVisitHint'),
+    mapRoadPlanner: $('mapRoadPlanner'),
+    mapPlannerStartBtn: $('mapPlannerStartBtn'),
+    mapPlannerEndBtn: $('mapPlannerEndBtn'),
+    mapPlannerBuildBtn: $('mapPlannerBuildBtn'),
+    mapPlannerClearBtn: $('mapPlannerClearBtn'),
+    mapPlannerStartText: $('mapPlannerStartText'),
+    mapPlannerEndText: $('mapPlannerEndText'),
+    mapPlannerDistance: $('mapPlannerDistance'),
+    mapPlannerZoneTime: $('mapPlannerZoneTime'),
+    mapPlannerMessage: $('mapPlannerMessage'),
+    mapRoadPlannerLayer: $('mapRoadPlannerLayer'),
+    mapRoadPlannerPath: $('mapRoadPlannerPath'),
+    mapRoadPlannerStartPoint: $('mapRoadPlannerStartPoint'),
+    mapRoadPlannerEndPoint: $('mapRoadPlannerEndPoint'),
+    mapRoadPlannerStartLabel: $('mapRoadPlannerStartLabel'),
+    mapRoadPlannerEndLabel: $('mapRoadPlannerEndLabel'),
     mapZoneTime: $('mapZoneTime'),
     mapJourneyHud: $('mapJourneyHud'),
     mapJourneyHudDistance: $('mapJourneyHudDistance'),
@@ -1199,6 +1215,13 @@ mapMeasureHint: $('mapMeasureHint'),
   const MAP_IMAGE_SIZE = 2048;
   const DEFAULT_MAP_METERS_PER_PIXEL = 6.5;
 
+  const MAP_ROAD_PLANNER_STORAGE_KEY =
+    'stalker2-zone-clock-road-planner-v1';
+
+  const MAP_ROAD_COST_GRID_SIZE = 512;
+  const MAP_ROAD_COST_ASSET =
+    './assets/zone-road-cost-512.png';
+
   // Контрольные отрезки для замера скорости перемещения.
   // Координаты находятся в логической системе карты Zone Clock 2048 × 2048.
   const MOVEMENT_TEST_ROUTES = {
@@ -1362,6 +1385,16 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapFullscreenMode = false;
   let mapParkedForClock = false;
   let mapMovementTestVisible = false;
+
+  let mapRoadPlannerSelectMode = null;
+  let mapRoadPlannerPointA = null;
+  let mapRoadPlannerPointB = null;
+  let mapRoadPlannerRoutePoints = [];
+  let mapRoadPlannerMeters = 0;
+  let mapRoadPlannerCostGrid = null;
+  let mapRoadPlannerCostPromise = null;
+  let mapRoadPlannerBusy = false;
+
   let mapJourneyActive = false;
   let mapJourneyPlan = null;
   let mapJourneySequence = [];
@@ -1467,15 +1500,24 @@ mapMeasureHint: $('mapMeasureHint'),
     }
 
     if (els.mapMeasureHint) {
-      if (mapMeasureMode) {
+      if (mapRoadPlannerSelectMode === 'a') {
+        els.mapMeasureHint.textContent =
+          'ПОСТРОИТЬ МАРШРУТ: нажмите на карте место старта — точку А.';
+      } else if (mapRoadPlannerSelectMode === 'b') {
+        els.mapMeasureHint.textContent =
+          'ПОСТРОИТЬ МАРШРУТ: нажмите на карте место назначения — точку Б.';
+      } else if (mapMeasureMode) {
         els.mapMeasureHint.textContent =
           'Нажимайте на карту для добавления точек. Перетаскивание двигает карту.';
+      } else if (mapRoadPlannerRoutePoints.length >= 2) {
+        els.mapMeasureHint.textContent =
+          `Дорожный маршрут: ${formatMapDistance(mapRoadPlannerMeters)}.`;
       } else if (mapMeasurePoints.length >= 2) {
         els.mapMeasureHint.textContent =
           `Маршрут: ${formatMapDistance(mapRouteMeters())}.`;
       } else {
         els.mapMeasureHint.textContent =
-          'Увеличение: два пальца, кнопки +/− или колёсико. Для маршрута включите «ИЗМЕРИТЬ».';
+          'Увеличение: два пальца, кнопки +/− или колёсико. Новый раздел «ПОСТРОИТЬ МАРШРУТ» строит путь по дорогам.';
       }
     }
   }
@@ -1488,9 +1530,1223 @@ mapMeasureHint: $('mapMeasureHint'),
     };
   }
 
+
+  function mapClientToLogical(
+    clientX,
+    clientY
+  ) {
+    if (!els.mapViewport) return null;
+
+    const rect =
+      els.mapViewport.getBoundingClientRect();
+
+    return {
+      x: Math.max(
+        0,
+        Math.min(
+          MAP_IMAGE_SIZE,
+          (
+            clientX -
+            rect.left -
+            mapPanX
+          ) / mapZoom
+        )
+      ),
+      y: Math.max(
+        0,
+        Math.min(
+          MAP_IMAGE_SIZE,
+          (
+            clientY -
+            rect.top -
+            mapPanY
+          ) / mapZoom
+        )
+      )
+    };
+  }
+
+  function formatPlannerPoint(point) {
+    if (!point) return 'НЕ ВЫБРАНА';
+
+    return (
+      `X ${Math.round(point.x)} · ` +
+      `Y ${Math.round(point.y)}`
+    );
+  }
+
+  function saveRoadPlannerState() {
+    try {
+      localStorage.setItem(
+        MAP_ROAD_PLANNER_STORAGE_KEY,
+        JSON.stringify({
+          a: mapRoadPlannerPointA,
+          b: mapRoadPlannerPointB,
+          route: mapRoadPlannerRoutePoints,
+          meters: mapRoadPlannerMeters
+        })
+      );
+    } catch (_) {}
+  }
+
+  function loadRoadPlannerState() {
+    try {
+      const data = JSON.parse(
+        localStorage.getItem(
+          MAP_ROAD_PLANNER_STORAGE_KEY
+        ) || 'null'
+      );
+
+      if (!data) return;
+
+      const validPoint = point =>
+        point &&
+        Number.isFinite(Number(point.x)) &&
+        Number.isFinite(Number(point.y));
+
+      if (validPoint(data.a)) {
+        mapRoadPlannerPointA = {
+          x: Number(data.a.x),
+          y: Number(data.a.y)
+        };
+      }
+
+      if (validPoint(data.b)) {
+        mapRoadPlannerPointB = {
+          x: Number(data.b.x),
+          y: Number(data.b.y)
+        };
+      }
+
+      if (Array.isArray(data.route)) {
+        mapRoadPlannerRoutePoints =
+          data.route
+            .filter(validPoint)
+            .map(point => ({
+              x: Number(point.x),
+              y: Number(point.y)
+            }));
+      }
+
+      if (
+        Number.isFinite(Number(data.meters)) &&
+        Number(data.meters) >= 0
+      ) {
+        mapRoadPlannerMeters =
+          Number(data.meters);
+      }
+    } catch (_) {}
+  }
+
+  async function loadRoadPlannerCostGrid() {
+    if (mapRoadPlannerCostGrid) {
+      return mapRoadPlannerCostGrid;
+    }
+
+    if (mapRoadPlannerCostPromise) {
+      return mapRoadPlannerCostPromise;
+    }
+
+    mapRoadPlannerCostPromise =
+      new Promise((resolve, reject) => {
+        const image = new Image();
+
+        const finish = () => {
+          try {
+            const canvas =
+              document.createElement('canvas');
+
+            canvas.width =
+              MAP_ROAD_COST_GRID_SIZE;
+
+            canvas.height =
+              MAP_ROAD_COST_GRID_SIZE;
+
+            const context =
+              canvas.getContext(
+                '2d',
+                {
+                  willReadFrequently: true
+                }
+              );
+
+            if (!context) {
+              throw new Error(
+                'Canvas недоступен'
+              );
+            }
+
+            context.drawImage(
+              image,
+              0,
+              0,
+              MAP_ROAD_COST_GRID_SIZE,
+              MAP_ROAD_COST_GRID_SIZE
+            );
+
+            const imageData =
+              context.getImageData(
+                0,
+                0,
+                MAP_ROAD_COST_GRID_SIZE,
+                MAP_ROAD_COST_GRID_SIZE
+              ).data;
+
+            const grid =
+              new Uint8Array(
+                MAP_ROAD_COST_GRID_SIZE *
+                MAP_ROAD_COST_GRID_SIZE
+              );
+
+            for (
+              let index = 0;
+              index < grid.length;
+              index++
+            ) {
+              grid[index] =
+                imageData[index * 4];
+            }
+
+            mapRoadPlannerCostGrid =
+              grid;
+
+            resolve(grid);
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        image.onload = finish;
+
+        image.onerror = () => {
+          reject(
+            new Error(
+              'Не удалось загрузить дорожную модель карты'
+            )
+          );
+        };
+
+        image.src =
+          MAP_ROAD_COST_ASSET;
+
+        if (
+          typeof image.decode ===
+          'function'
+        ) {
+          image.decode()
+            .then(finish)
+            .catch(() => {});
+        }
+      })
+      .catch(error => {
+        mapRoadPlannerCostPromise = null;
+        throw error;
+      });
+
+    return mapRoadPlannerCostPromise;
+  }
+
+  function plannerGridIndex(
+    x,
+    y
+  ) {
+    return (
+      y * MAP_ROAD_COST_GRID_SIZE +
+      x
+    );
+  }
+
+  function plannerGridPointFromLogical(
+    point
+  ) {
+    const scale =
+      MAP_IMAGE_SIZE /
+      MAP_ROAD_COST_GRID_SIZE;
+
+    return {
+      x: Math.max(
+        0,
+        Math.min(
+          MAP_ROAD_COST_GRID_SIZE - 1,
+          Math.round(point.x / scale)
+        )
+      ),
+      y: Math.max(
+        0,
+        Math.min(
+          MAP_ROAD_COST_GRID_SIZE - 1,
+          Math.round(point.y / scale)
+        )
+      )
+    };
+  }
+
+  function plannerLogicalFromGrid(
+    x,
+    y
+  ) {
+    const scale =
+      MAP_IMAGE_SIZE /
+      MAP_ROAD_COST_GRID_SIZE;
+
+    return {
+      x:
+        Math.max(
+          0,
+          Math.min(
+            MAP_IMAGE_SIZE,
+            x * scale
+          )
+        ),
+      y:
+        Math.max(
+          0,
+          Math.min(
+            MAP_IMAGE_SIZE,
+            y * scale
+          )
+        )
+    };
+  }
+
+  function roadPlannerCellCost(
+    byteValue
+  ) {
+    return (
+      1 +
+      (
+        Number(byteValue) /
+        255
+      ) * 79
+    );
+  }
+
+  function snapPlannerPointToRoad(
+    logicalPoint,
+    grid
+  ) {
+    const center =
+      plannerGridPointFromLogical(
+        logicalPoint
+      );
+
+    const maxRadius = 20;
+    let best = null;
+
+    for (
+      let radius = 0;
+      radius <= maxRadius;
+      radius++
+    ) {
+      const minX =
+        Math.max(
+          0,
+          center.x - radius
+        );
+
+      const maxX =
+        Math.min(
+          MAP_ROAD_COST_GRID_SIZE - 1,
+          center.x + radius
+        );
+
+      const minY =
+        Math.max(
+          0,
+          center.y - radius
+        );
+
+      const maxY =
+        Math.min(
+          MAP_ROAD_COST_GRID_SIZE - 1,
+          center.y + radius
+        );
+
+      const visitCell = (
+        x,
+        y
+      ) => {
+        const byteValue =
+          grid[
+            plannerGridIndex(
+              x,
+              y
+            )
+          ];
+
+        const distance =
+          Math.hypot(
+            x - center.x,
+            y - center.y
+          );
+
+        const score =
+          byteValue +
+          distance * 3.2;
+
+        if (
+          !best ||
+          score < best.score
+        ) {
+          best = {
+            x,
+            y,
+            score,
+            byteValue,
+            distance
+          };
+        }
+      };
+
+      for (
+        let x = minX;
+        x <= maxX;
+        x++
+      ) {
+        visitCell(x, minY);
+
+        if (maxY !== minY) {
+          visitCell(x, maxY);
+        }
+      }
+
+      for (
+        let y = minY + 1;
+        y < maxY;
+        y++
+      ) {
+        visitCell(minX, y);
+
+        if (maxX !== minX) {
+          visitCell(maxX, y);
+        }
+      }
+
+      if (
+        best &&
+        best.byteValue <= 34 &&
+        radius >= 3
+      ) {
+        break;
+      }
+    }
+
+    if (!best) {
+      return {
+        logical: logicalPoint,
+        grid: center
+      };
+    }
+
+    return {
+      logical:
+        plannerLogicalFromGrid(
+          best.x,
+          best.y
+        ),
+      grid: {
+        x: best.x,
+        y: best.y
+      }
+    };
+  }
+
+  class RoadPlannerMinHeap {
+    constructor() {
+      this.nodes = [];
+      this.priorities = [];
+    }
+
+    get size() {
+      return this.nodes.length;
+    }
+
+    push(
+      node,
+      priority
+    ) {
+      let index =
+        this.nodes.length;
+
+      this.nodes.push(node);
+      this.priorities.push(priority);
+
+      while (index > 0) {
+        const parent =
+          Math.floor(
+            (index - 1) / 2
+          );
+
+        if (
+          this.priorities[parent] <=
+          priority
+        ) {
+          break;
+        }
+
+        this.nodes[index] =
+          this.nodes[parent];
+
+        this.priorities[index] =
+          this.priorities[parent];
+
+        index = parent;
+      }
+
+      this.nodes[index] = node;
+      this.priorities[index] =
+        priority;
+    }
+
+    pop() {
+      if (!this.nodes.length) {
+        return null;
+      }
+
+      const node =
+        this.nodes[0];
+
+      const priority =
+        this.priorities[0];
+
+      const lastNode =
+        this.nodes.pop();
+
+      const lastPriority =
+        this.priorities.pop();
+
+      if (this.nodes.length) {
+        let index = 0;
+
+        while (true) {
+          const left =
+            index * 2 + 1;
+
+          const right =
+            left + 1;
+
+          if (
+            left >=
+            this.nodes.length
+          ) {
+            break;
+          }
+
+          let child = left;
+
+          if (
+            right <
+              this.nodes.length &&
+            this.priorities[right] <
+              this.priorities[left]
+          ) {
+            child = right;
+          }
+
+          if (
+            this.priorities[child] >=
+            lastPriority
+          ) {
+            break;
+          }
+
+          this.nodes[index] =
+            this.nodes[child];
+
+          this.priorities[index] =
+            this.priorities[child];
+
+          index = child;
+        }
+
+        this.nodes[index] =
+          lastNode;
+
+        this.priorities[index] =
+          lastPriority;
+      }
+
+      return {
+        node,
+        priority
+      };
+    }
+  }
+
+  function buildRoadPlannerGridPath(
+    grid,
+    start,
+    goal
+  ) {
+    const width =
+      MAP_ROAD_COST_GRID_SIZE;
+
+    const height =
+      MAP_ROAD_COST_GRID_SIZE;
+
+    const cellCount =
+      width * height;
+
+    const gScore =
+      new Float64Array(
+        cellCount
+      );
+
+    gScore.fill(
+      Number.POSITIVE_INFINITY
+    );
+
+    const previous =
+      new Int32Array(
+        cellCount
+      );
+
+    previous.fill(-1);
+
+    const closed =
+      new Uint8Array(
+        cellCount
+      );
+
+    const startIndex =
+      plannerGridIndex(
+        start.x,
+        start.y
+      );
+
+    const goalIndex =
+      plannerGridIndex(
+        goal.x,
+        goal.y
+      );
+
+    const heap =
+      new RoadPlannerMinHeap();
+
+    const heuristic = (
+      x,
+      y
+    ) =>
+      Math.hypot(
+        goal.x - x,
+        goal.y - y
+      );
+
+    gScore[startIndex] = 0;
+
+    heap.push(
+      startIndex,
+      heuristic(
+        start.x,
+        start.y
+      )
+    );
+
+    const directions = [
+      [1, 0, 1],
+      [-1, 0, 1],
+      [0, 1, 1],
+      [0, -1, 1],
+      [1, 1, Math.SQRT2],
+      [1, -1, Math.SQRT2],
+      [-1, 1, Math.SQRT2],
+      [-1, -1, Math.SQRT2]
+    ];
+
+    let expanded = 0;
+    const maxExpanded =
+      240000;
+
+    while (
+      heap.size &&
+      expanded < maxExpanded
+    ) {
+      const item =
+        heap.pop();
+
+      if (!item) break;
+
+      const currentIndex =
+        item.node;
+
+      if (closed[currentIndex]) {
+        continue;
+      }
+
+      closed[currentIndex] = 1;
+      expanded++;
+
+      if (
+        currentIndex ===
+        goalIndex
+      ) {
+        break;
+      }
+
+      const x =
+        currentIndex % width;
+
+      const y =
+        Math.floor(
+          currentIndex / width
+        );
+
+      const currentCost =
+        roadPlannerCellCost(
+          grid[currentIndex]
+        );
+
+      for (
+        const [
+          dx,
+          dy,
+          stepLength
+        ] of directions
+      ) {
+        const nx = x + dx;
+        const ny = y + dy;
+
+        if (
+          nx < 0 ||
+          ny < 0 ||
+          nx >= width ||
+          ny >= height
+        ) {
+          continue;
+        }
+
+        const nextIndex =
+          plannerGridIndex(
+            nx,
+            ny
+          );
+
+        if (closed[nextIndex]) {
+          continue;
+        }
+
+        const nextCost =
+          roadPlannerCellCost(
+            grid[nextIndex]
+          );
+
+        const tentative =
+          gScore[currentIndex] +
+          stepLength *
+          (
+            currentCost +
+            nextCost
+          ) /
+          2;
+
+        if (
+          tentative <
+          gScore[nextIndex]
+        ) {
+          gScore[nextIndex] =
+            tentative;
+
+          previous[nextIndex] =
+            currentIndex;
+
+          heap.push(
+            nextIndex,
+            tentative +
+            heuristic(
+              nx,
+              ny
+            )
+          );
+        }
+      }
+    }
+
+    if (
+      !closed[goalIndex]
+    ) {
+      return null;
+    }
+
+    const reversed = [];
+    let cursor =
+      goalIndex;
+
+    let guard = 0;
+
+    while (
+      cursor >= 0 &&
+      guard++ <
+        cellCount
+    ) {
+      const x =
+        cursor % width;
+
+      const y =
+        Math.floor(
+          cursor / width
+        );
+
+      reversed.push({
+        x,
+        y
+      });
+
+      if (
+        cursor ===
+        startIndex
+      ) {
+        break;
+      }
+
+      cursor =
+        previous[cursor];
+    }
+
+    if (
+      !reversed.length ||
+      cursor !==
+        startIndex
+    ) {
+      return null;
+    }
+
+    return reversed.reverse();
+  }
+
+  function plannerPathMeters(
+    points
+  ) {
+    let logicalLength = 0;
+
+    for (
+      let index = 1;
+      index < points.length;
+      index++
+    ) {
+      logicalLength +=
+        Math.hypot(
+          points[index].x -
+            points[index - 1].x,
+          points[index].y -
+            points[index - 1].y
+        );
+    }
+
+    return (
+      logicalLength *
+      mapMetersPerPixel
+    );
+  }
+
+  function plannerZoneTravelSeconds() {
+    if (!(mapRoadPlannerMeters > 0)) {
+      return 0;
+    }
+
+    const distanceKm =
+      mapRoadPlannerMeters /
+      1000;
+
+    const realSeconds =
+      (
+        distanceKm /
+        ROUTE_TRAVEL_SPEED_KMH
+      ) *
+      3600;
+
+    return projectZoneAdvanceForRealSeconds(
+      realSeconds,
+      gameSeconds
+    );
+  }
+
+  function updateRoadPlannerUI() {
+    if (els.mapPlannerStartText) {
+      els.mapPlannerStartText.textContent =
+        formatPlannerPoint(
+          mapRoadPlannerPointA
+        );
+    }
+
+    if (els.mapPlannerEndText) {
+      els.mapPlannerEndText.textContent =
+        formatPlannerPoint(
+          mapRoadPlannerPointB
+        );
+    }
+
+    if (els.mapPlannerStartBtn) {
+      els.mapPlannerStartBtn.classList.toggle(
+        'active',
+        mapRoadPlannerSelectMode ===
+          'a'
+      );
+
+      els.mapPlannerStartBtn.textContent =
+        mapRoadPlannerSelectMode ===
+          'a'
+          ? 'УКАЖИТЕ А НА КАРТЕ'
+          : 'ТОЧКА А';
+    }
+
+    if (els.mapPlannerEndBtn) {
+      els.mapPlannerEndBtn.classList.toggle(
+        'active',
+        mapRoadPlannerSelectMode ===
+          'b'
+      );
+
+      els.mapPlannerEndBtn.textContent =
+        mapRoadPlannerSelectMode ===
+          'b'
+          ? 'УКАЖИТЕ Б НА КАРТЕ'
+          : 'ТОЧКА Б';
+    }
+
+    if (els.mapPlannerBuildBtn) {
+      els.mapPlannerBuildBtn.disabled =
+        mapRoadPlannerBusy ||
+        !mapRoadPlannerPointA ||
+        !mapRoadPlannerPointB;
+
+      els.mapPlannerBuildBtn.textContent =
+        mapRoadPlannerBusy
+          ? 'СТРОЮ...'
+          : 'ПОСТРОИТЬ';
+    }
+
+    if (els.mapPlannerDistance) {
+      els.mapPlannerDistance.textContent =
+        mapRoadPlannerMeters > 0
+          ? formatMapDistance(
+              mapRoadPlannerMeters
+            )
+          : '—';
+    }
+
+    if (els.mapPlannerZoneTime) {
+      const zoneSeconds =
+        plannerZoneTravelSeconds();
+
+      els.mapPlannerZoneTime.textContent =
+        zoneSeconds > 0
+          ? formatJourneyZoneTime(
+              zoneSeconds
+            )
+          : '—';
+    }
+
+    updateRoadPlannerScreenGeometry();
+  }
+
+  function updateRoadPlannerScreenGeometry() {
+    if (
+      !els.mapRoadPlannerLayer ||
+      !els.mapRoadPlannerPath
+    ) {
+      return;
+    }
+
+    const hasAnything =
+      Boolean(
+        mapRoadPlannerPointA ||
+        mapRoadPlannerPointB ||
+        mapRoadPlannerRoutePoints.length
+      );
+
+    els.mapRoadPlannerLayer.style.display =
+      hasAnything
+        ? ''
+        : 'none';
+
+    if (!hasAnything) {
+      els.mapRoadPlannerPath.setAttribute(
+        'd',
+        ''
+      );
+
+      return;
+    }
+
+    const routeScreen =
+      mapRoadPlannerRoutePoints
+        .map(routePointToScreen);
+
+    if (routeScreen.length >= 2) {
+      const simplified =
+        simplifyRoadScreenPoints(
+          routeScreen,
+          1.8
+        );
+
+      els.mapRoadPlannerPath.setAttribute(
+        'd',
+        buildSmoothScreenChain(
+          simplified
+        )
+      );
+    } else {
+      els.mapRoadPlannerPath.setAttribute(
+        'd',
+        ''
+      );
+    }
+
+    const placeMarker = (
+      point,
+      circle,
+      label,
+      labelText
+    ) => {
+      if (
+        !circle ||
+        !label
+      ) {
+        return;
+      }
+
+      if (!point) {
+        circle.style.display =
+          'none';
+
+        label.style.display =
+          'none';
+
+        return;
+      }
+
+      const screen =
+        routePointToScreen(
+          point
+        );
+
+      circle.style.display = '';
+      label.style.display = '';
+
+      circle.setAttribute(
+        'cx',
+        screen.x
+      );
+
+      circle.setAttribute(
+        'cy',
+        screen.y
+      );
+
+      label.setAttribute(
+        'x',
+        screen.x + 9
+      );
+
+      label.setAttribute(
+        'y',
+        screen.y - 9
+      );
+
+      label.textContent =
+        labelText;
+    };
+
+    placeMarker(
+      mapRoadPlannerPointA,
+      els.mapRoadPlannerStartPoint,
+      els.mapRoadPlannerStartLabel,
+      'А'
+    );
+
+    placeMarker(
+      mapRoadPlannerPointB,
+      els.mapRoadPlannerEndPoint,
+      els.mapRoadPlannerEndLabel,
+      'Б'
+    );
+  }
+
+  function setRoadPlannerPoint(
+    which,
+    clientX,
+    clientY
+  ) {
+    const logical =
+      mapClientToLogical(
+        clientX,
+        clientY
+      );
+
+    if (!logical) return;
+
+    if (which === 'a') {
+      mapRoadPlannerPointA =
+        logical;
+    } else {
+      mapRoadPlannerPointB =
+        logical;
+    }
+
+    mapRoadPlannerRoutePoints = [];
+    mapRoadPlannerMeters = 0;
+    mapRoadPlannerSelectMode = null;
+
+    if (els.mapPlannerMessage) {
+      els.mapPlannerMessage.textContent =
+        which === 'a'
+          ? 'Точка А выбрана. Теперь укажите точку Б.'
+          : 'Точка Б выбрана. Можно строить маршрут.';
+    }
+
+    saveRoadPlannerState();
+    updateRoadPlannerUI();
+    updateMapInfo();
+  }
+
+  async function buildRoadPlannerRoute() {
+    if (
+      mapRoadPlannerBusy ||
+      !mapRoadPlannerPointA ||
+      !mapRoadPlannerPointB
+    ) {
+      return;
+    }
+
+    mapRoadPlannerBusy = true;
+
+    if (els.mapPlannerMessage) {
+      els.mapPlannerMessage.textContent =
+        'Анализирую карту и ищу путь по дорогам...';
+    }
+
+    updateRoadPlannerUI();
+
+    try {
+      const grid =
+        await loadRoadPlannerCostGrid();
+
+      const snappedA =
+        snapPlannerPointToRoad(
+          mapRoadPlannerPointA,
+          grid
+        );
+
+      const snappedB =
+        snapPlannerPointToRoad(
+          mapRoadPlannerPointB,
+          grid
+        );
+
+      const gridPath =
+        buildRoadPlannerGridPath(
+          grid,
+          snappedA.grid,
+          snappedB.grid
+        );
+
+      if (
+        !gridPath ||
+        gridPath.length < 2
+      ) {
+        throw new Error(
+          'Путь не найден'
+        );
+      }
+
+      const logicalPath =
+        gridPath.map(point =>
+          plannerLogicalFromGrid(
+            point.x,
+            point.y
+          )
+        );
+
+      const simplified =
+        simplifyRoadScreenPoints(
+          logicalPath,
+          2.2
+        );
+
+      mapRoadPlannerPointA =
+        snappedA.logical;
+
+      mapRoadPlannerPointB =
+        snappedB.logical;
+
+      mapRoadPlannerRoutePoints =
+        simplified;
+
+      mapRoadPlannerMeters =
+        plannerPathMeters(
+          simplified
+        );
+
+      saveRoadPlannerState();
+
+      if (els.mapPlannerMessage) {
+        els.mapPlannerMessage.textContent =
+          `Маршрут построен по дорожной модели карты. ` +
+          `${formatMapDistance(mapRoadPlannerMeters)}.`;
+      }
+    } catch (error) {
+      console.error(
+        'Zone Clock road planner error:',
+        error
+      );
+
+      mapRoadPlannerRoutePoints = [];
+      mapRoadPlannerMeters = 0;
+
+      if (els.mapPlannerMessage) {
+        els.mapPlannerMessage.textContent =
+          'Не удалось построить путь. Попробуйте выбрать точки ближе к видимой дороге.';
+      }
+    } finally {
+      mapRoadPlannerBusy = false;
+      updateRoadPlannerUI();
+      updateMapInfo();
+    }
+  }
+
+  function clearRoadPlanner() {
+    mapRoadPlannerSelectMode = null;
+    mapRoadPlannerPointA = null;
+    mapRoadPlannerPointB = null;
+    mapRoadPlannerRoutePoints = [];
+    mapRoadPlannerMeters = 0;
+
+    try {
+      localStorage.removeItem(
+        MAP_ROAD_PLANNER_STORAGE_KEY
+      );
+    } catch (_) {}
+
+    if (els.mapPlannerMessage) {
+      els.mapPlannerMessage.textContent =
+        'Сначала выберите точку А и точку Б.';
+    }
+
+    updateRoadPlannerUI();
+    updateMapInfo();
+  }
+
+
   function updateMapZoneTime() {
-    if (!els.mapZoneTime) return;
-    els.mapZoneTime.textContent = formatClock(gameSeconds);
+    if (els.mapZoneTime) {
+      els.mapZoneTime.textContent =
+        formatClock(gameSeconds);
+    }
+
+    if (
+      mapRoadPlannerMeters > 0 &&
+      els.mapPlannerZoneTime
+    ) {
+      const zoneSeconds =
+        plannerZoneTravelSeconds();
+
+      els.mapPlannerZoneTime.textContent =
+        zoneSeconds > 0
+          ? formatJourneyZoneTime(
+              zoneSeconds
+            )
+          : '—';
+    }
   }
 
   function saveVisitedArtifacts() {
@@ -3545,6 +4801,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
     updatePresetRouteScreenGeometry();
     updateMovementTestScreenGeometry();
+    updateRoadPlannerScreenGeometry();
   }
 
   function renderMapMeasurement() {
@@ -4174,6 +5431,86 @@ mapMeasureHint: $('mapMeasureHint'),
     );
   }
 
+  if (els.mapPlannerStartBtn) {
+    els.mapPlannerStartBtn.addEventListener(
+      'click',
+      () => {
+        mapMeasureMode = false;
+
+        mapRoadPlannerSelectMode =
+          mapRoadPlannerSelectMode === 'a'
+            ? null
+            : 'a';
+
+        if (els.mapRoadPlanner) {
+          els.mapRoadPlanner.open = true;
+        }
+
+        if (els.mapPlannerMessage) {
+          els.mapPlannerMessage.textContent =
+            mapRoadPlannerSelectMode === 'a'
+              ? 'Нажмите на карте место старта.'
+              : 'Выбор точки А отменён.';
+        }
+
+        updateRoadPlannerUI();
+        updateMapInfo();
+      }
+    );
+  }
+
+  if (els.mapPlannerEndBtn) {
+    els.mapPlannerEndBtn.addEventListener(
+      'click',
+      () => {
+        mapMeasureMode = false;
+
+        mapRoadPlannerSelectMode =
+          mapRoadPlannerSelectMode === 'b'
+            ? null
+            : 'b';
+
+        if (els.mapRoadPlanner) {
+          els.mapRoadPlanner.open = true;
+        }
+
+        if (els.mapPlannerMessage) {
+          els.mapPlannerMessage.textContent =
+            mapRoadPlannerSelectMode === 'b'
+              ? 'Нажмите на карте место назначения.'
+              : 'Выбор точки Б отменён.';
+        }
+
+        updateRoadPlannerUI();
+        updateMapInfo();
+      }
+    );
+  }
+
+  if (els.mapPlannerBuildBtn) {
+    els.mapPlannerBuildBtn.addEventListener(
+      'click',
+      buildRoadPlannerRoute
+    );
+  }
+
+  if (els.mapPlannerClearBtn) {
+    els.mapPlannerClearBtn.addEventListener(
+      'click',
+      clearRoadPlanner
+    );
+  }
+
+  if (els.mapRoadPlanner) {
+    els.mapRoadPlanner.addEventListener(
+      'toggle',
+      () => {
+        updateRoadPlannerUI();
+        updateMapInfo();
+      }
+    );
+  }
+
   if (els.mapZoomOutBtn) {
     els.mapZoomOutBtn.addEventListener('click', () => zoomZoneMap(1 / 1.35));
   }
@@ -4292,6 +5629,21 @@ mapMeasureHint: $('mapMeasureHint'),
       mapPointerState = null;
 
       if (!wasMoved) {
+        if (mapRoadPlannerSelectMode) {
+          const selectedMode =
+            mapRoadPlannerSelectMode;
+
+          mapLastTapAt = 0;
+
+          setRoadPlannerPoint(
+            selectedMode,
+            event.clientX,
+            event.clientY
+          );
+
+          return;
+        }
+
         const now = performance.now();
         const nearPreviousTap =
           now - mapLastTapAt < 320 &&
@@ -5475,7 +6827,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v95.csv';
+    link.download = 'zone-clock-test-v96.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -6142,6 +7494,10 @@ mapMeasureHint: $('mapMeasureHint'),
   applyTheme(currentTheme(), false);
 
   const restored = loadState();
+
+  loadRoadPlannerState();
+  updateRoadPlannerUI();
+
   if (restored) els.message.textContent = 'Состояние восстановлено.';
   render();
   saveState(true);

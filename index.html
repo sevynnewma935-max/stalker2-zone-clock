@@ -235,6 +235,52 @@
         Артефакты: нажмите точку после сбора. До 2 суток — СОБРАН, 2–3 суток — ВОЗМОЖНО ПОЯВИЛСЯ, после 3 суток — ПОРА ПРОВЕРИТЬ.
       </div>
 
+      <details id="mapRoadPlanner" class="map-road-planner">
+        <summary>
+          <span>ПОСТРОИТЬ МАРШРУТ</span>
+          <span aria-hidden="true">⌄</span>
+        </summary>
+
+        <div class="map-road-planner-body">
+          <div class="map-road-planner-help">
+            Укажите две точки на карте. Zone Clock построит путь по дорожной сети карты.
+          </div>
+
+          <div class="map-road-planner-actions">
+            <button id="mapPlannerStartBtn" class="btn" type="button">ТОЧКА А</button>
+            <button id="mapPlannerEndBtn" class="btn" type="button">ТОЧКА Б</button>
+            <button id="mapPlannerBuildBtn" class="btn primary" type="button">ПОСТРОИТЬ</button>
+            <button id="mapPlannerClearBtn" class="btn" type="button">СБРОС</button>
+          </div>
+
+          <div class="map-road-planner-points">
+            <div>
+              <span>А</span>
+              <strong id="mapPlannerStartText">НЕ ВЫБРАНА</strong>
+            </div>
+            <div>
+              <span>Б</span>
+              <strong id="mapPlannerEndText">НЕ ВЫБРАНА</strong>
+            </div>
+          </div>
+
+          <div class="map-road-planner-result">
+            <div>
+              <span>ДЛИНА</span>
+              <strong id="mapPlannerDistance">—</strong>
+            </div>
+            <div>
+              <span>ВРЕМЯ ЗОНЫ</span>
+              <strong id="mapPlannerZoneTime">—</strong>
+            </div>
+          </div>
+
+          <div id="mapPlannerMessage" class="map-road-planner-message">
+            Сначала выберите точку А и точку Б.
+          </div>
+        </div>
+      </details>
+
       <div id="mapViewport" class="map-viewport" aria-label="Интерактивная карта Зоны">
         <div id="zoneMapTransform" class="zone-map-transform">
           <img id="zoneMapPreviewImage" class="zone-map-4096-image" src="./assets/zone-map-4096.jpg" alt="" aria-hidden="true" draggable="false">
@@ -258,6 +304,13 @@
             <polyline id="mapPresetRouteBranch" class="map-preset-route-line" points="" fill="none"></polyline>
             <g id="mapPresetRoutePoints"></g>
             <g id="mapArtifactVisitPoints"></g>
+          </g>
+          <g id="mapRoadPlannerLayer" class="map-road-planner-layer" style="display:none">
+            <path id="mapRoadPlannerPath" class="map-road-planner-path" d=""></path>
+            <circle id="mapRoadPlannerStartPoint" class="map-road-planner-point start" r="6"></circle>
+            <circle id="mapRoadPlannerEndPoint" class="map-road-planner-point end" r="6"></circle>
+            <text id="mapRoadPlannerStartLabel" class="map-road-planner-map-label">А</text>
+            <text id="mapRoadPlannerEndLabel" class="map-road-planner-map-label">Б</text>
           </g>
           <polyline id="mapMeasureLine" points="" fill="none"></polyline>
           <g id="mapMeasurePoints"></g>
@@ -654,7 +707,7 @@
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v0.95</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v0.96</strong></div>
           <button id="updateAppBtn" class="btn update-app-btn" type="button">
             ОБНОВИТЬ ПРИЛОЖЕНИЕ
           </button>
