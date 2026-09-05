@@ -4346,3 +4346,76 @@ button.zone-button-press:not(:disabled) {
 .map-known-location:not(.is-selected) .map-known-location-label {
   opacity: 1 !important;
 }
+
+
+/* PWA v108 — единый блок управления картой рядом с + / − */
+.map-fullscreen-zoom-controls {
+  display: flex !important;
+  position: absolute;
+  z-index: 44;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.map-fullscreen-zoom-controls > button {
+  width: 52px !important;
+  height: 52px !important;
+  min-width: 52px !important;
+  min-height: 52px !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 1px solid rgba(220, 235, 218, .34) !important;
+  border-radius: 14px !important;
+  background: rgba(7, 15, 10, .88) !important;
+  color: #eef5ec !important;
+  -webkit-text-fill-color: #eef5ec !important;
+  backdrop-filter: blur(5px);
+}
+
+.map-fullscreen-zoom-controls > button > svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.map-fullscreen-zoom-controls .map-view-mode-btn span {
+  display: none !important;
+}
+
+.map-fullscreen-zoom-controls .map-view-mode-btn.active {
+  border-color: rgba(198, 210, 91, .72) !important;
+  color: #e9f39b !important;
+  -webkit-text-fill-color: #e9f39b !important;
+}
+
+.map-fullscreen-reset-points {
+  display: none !important;
+}
+
+.map-dialog.map-fullscreen .map-fullscreen-reset-points {
+  display: grid !important;
+}
+
+.map-fullscreen-reset-points:disabled {
+  opacity: .32;
+  cursor: default;
+}
+
+/* В шапке карты остаются только переход к часам и настройки. */
+.map-header-actions #mapViewModeBtn,
+.map-header-actions #mapFullscreenBtn {
+  display: none !important;
+}
+
+/* Настройки — узнаваемая шестерёнка на каждом экране. */
+#settingsBtn svg,
+.screen-settings-btn svg {
+  width: 23px !important;
+  height: 23px !important;
+  fill: currentColor !important;
+}

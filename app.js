@@ -74,6 +74,7 @@
     mapZoomInBtn: $('mapZoomInBtn'), mapFitBtn: $('mapFitBtn'),
     mapFullscreenZoomInBtn: $('mapFullscreenZoomInBtn'),
     mapFullscreenZoomOutBtn: $('mapFullscreenZoomOutBtn'),
+    mapFullscreenResetPointsBtn: $('mapFullscreenResetPointsBtn'),
     mapPresetRouteBtn: $('mapPresetRouteBtn'),
     mapRouteSelect: $('mapRouteSelect'),
     mapJourneyBtn: $('mapJourneyBtn'),
@@ -2887,6 +2888,11 @@ mapMeasureHint: $('mapMeasureHint'),
 
     updatePresetRouteScreenGeometry();
     updateRoadPlannerScreenGeometry();
+
+    if (els.mapFullscreenResetPointsBtn) {
+      els.mapFullscreenResetPointsBtn.disabled =
+        !(mapRoadPlannerSequence.length || mapMeasurePoints.length);
+    }
   }
 
   function updateRoadPlannerScreenGeometry() {
@@ -5226,6 +5232,21 @@ mapMeasureHint: $('mapMeasureHint'),
       ? 'Обычный размер'
       : 'На весь экран';
 
+    if (els.mapFullscreenResetPointsBtn) {
+      const hasSelectedLocationPoints =
+        mapRoadPlannerSequence.length > 0;
+      const hasMeasuredPoints =
+        mapMeasurePoints.length > 0;
+
+      els.mapFullscreenResetPointsBtn.disabled =
+        !(hasSelectedLocationPoints || hasMeasuredPoints);
+
+      els.mapFullscreenResetPointsBtn.title =
+        hasSelectedLocationPoints
+          ? 'Сбросить выбранные точки маршрута'
+          : 'Сбросить выбранные точки';
+    }
+
     updateJourneyHud();
   }
 
@@ -5513,6 +5534,11 @@ mapMeasureHint: $('mapMeasureHint'),
   function clearMapMeasurement() {
     mapMeasurePoints = [];
     renderMapMeasurement();
+
+    if (els.mapFullscreenResetPointsBtn) {
+      els.mapFullscreenResetPointsBtn.disabled =
+        !mapRoadPlannerSequence.length;
+    }
   }
 
   if (els.mapBtn) {
@@ -5634,6 +5660,21 @@ mapMeasureHint: $('mapMeasureHint'),
     els.mapFullscreenZoomOutBtn.addEventListener(
       'click',
       () => zoomZoneMap(1 / 1.35)
+    );
+  }
+
+  if (els.mapFullscreenResetPointsBtn) {
+    els.mapFullscreenResetPointsBtn.addEventListener(
+      'click',
+      () => {
+        if (mapRoadPlannerSequence.length) {
+          clearRoadPlanner();
+        } else {
+          clearMapMeasurement();
+        }
+
+        updateMapFullscreenUI();
+      }
     );
   }
 
@@ -7145,7 +7186,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v107.csv';
+    link.download = 'zone-clock-test-v108.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
