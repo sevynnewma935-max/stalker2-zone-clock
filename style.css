@@ -4470,3 +4470,40 @@ button.zone-button-press:not(:disabled) {
   opacity: 1 !important;
   font-weight: 950;
 }
+
+
+/* PWA v111 — полноэкранная кнопка на обычной карте + калибровка в настройках */
+.map-header-fullscreen-btn {
+  display: grid !important;
+  place-items: center;
+}
+
+.map-dialog.map-fullscreen .map-header-fullscreen-btn {
+  display: none !important;
+}
+
+.map-header-fullscreen-btn .map-fullscreen-icon {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.settings-map-calibration .map-calibration-body {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+}
+
+.settings-map-calibration .map-calibration-body > p {
+  margin: 0;
+}
+
+.settings-map-calibration .map-calibration-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.settings-map-calibration .map-calibration-message {
+  margin-top: 0;
+}

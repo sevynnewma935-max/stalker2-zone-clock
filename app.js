@@ -65,6 +65,7 @@
     mapClockBtn: $('mapClockBtn'),
     mapViewModeBtn: $('mapViewModeBtn'), mapViewModeLabel: $('mapViewModeLabel'),
     mapFullscreenBtn: $('mapFullscreenBtn'),
+    mapHeaderFullscreenBtn: $('mapHeaderFullscreenBtn'),
     mapViewport: $('mapViewport'), zoneMapTransform: $('zoneMapTransform'),
     zoneMapPreviewImage: $('zoneMapPreviewImage'),
     zoneMapImage: $('zoneMapImage'), zoneMapSchematicImage: $('zoneMapSchematicImage'), mapOverlay: $('mapOverlay'),
@@ -5538,6 +5539,23 @@ mapMeasureHint: $('mapMeasureHint'),
       ? 'Обычный размер'
       : 'На весь экран';
 
+
+    if (els.mapHeaderFullscreenBtn) {
+      els.mapHeaderFullscreenBtn.classList.toggle(
+        'active',
+        mapFullscreenMode
+      );
+      els.mapHeaderFullscreenBtn.setAttribute(
+        'aria-label',
+        mapFullscreenMode
+          ? 'Выйти из полноэкранной карты'
+          : 'Развернуть карту на весь экран'
+      );
+      els.mapHeaderFullscreenBtn.title = mapFullscreenMode
+        ? 'Обычный размер'
+        : 'На весь экран';
+    }
+
     if (els.mapFullscreenResetPointsBtn) {
       const hasSelectedLocationPoints =
         mapRoadPlannerSequence.length > 0;
@@ -5961,6 +5979,14 @@ mapMeasureHint: $('mapMeasureHint'),
 
   if (els.mapFullscreenBtn) {
     els.mapFullscreenBtn.addEventListener('click', toggleMapFullscreen);
+  }
+
+
+  if (els.mapHeaderFullscreenBtn) {
+    els.mapHeaderFullscreenBtn.addEventListener(
+      'click',
+      toggleMapFullscreen
+    );
   }
 
   if (els.mapViewModeBtn) {
@@ -7514,7 +7540,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v110.csv';
+    link.download = 'zone-clock-test-v111.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
