@@ -1,5 +1,5 @@
-const APP_CACHE = 'stalker2-zone-clock-v98';
-const MAP_CACHE = 'stalker2-zone-map-8192-v1';
+const APP_CACHE = 'stalker2-zone-clock-app-v99';
+const MAP_CACHE = 'stalker2-zone-clock-map-v99';
 
 const APP_ASSETS = [
   './',
@@ -7,81 +7,74 @@ const APP_ASSETS = [
   './style.css',
   './app.js',
   './manifest.webmanifest',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
+  './assets/icon-192.png',
+  './assets/icon-512.png',
+  './assets/background-main.jpg',
+  './assets/zone-map-4096.jpg',
+  './assets/zone-map-schematic-4096.jpg',
+  './assets/zone-road-cost-512.png',
+  './assets/worldview-side-left.webp',
+  './assets/worldview-side-right.webp',
+  './assets/worldview-center.webp',
+  './assets/artefacts/artefact-fireball.png',
+  './assets/artefacts/artefact-urchin.png',
+  './assets/artefacts/artefact-mama-beads.png',
+  './assets/artefacts/artefact-stone-blood.png',
+  './assets/artefacts/artefact-slug.png',
+  './assets/artefacts/artefact-night-star.png',
+  './assets/artefacts/artefact-goldfish.png',
+  './assets/artefacts/artefact-crystal-thorn.png',
+  './assets/artefacts/artefact-flash.png',
+  './assets/artefacts/artefact-weird-water.png',
+  './assets/artefacts/artefact-weird-ball.png',
+  './assets/artefacts/artefact-weird-flower.png',
+  './assets/artefacts/artefact-weird-bolt.png',
+  './assets/artefacts/artefact-weird-pot.png',
+  './assets/artefacts/artefact-weird-nut.png'
 ];
 
 const MAP_ASSETS = [
-  './assets/zone-map-8192.jpg',
   './assets/zone-map-4096.jpg',
   './assets/zone-map-schematic-4096.jpg',
   './assets/zone-road-cost-512.png'
 ];
 
-async function refreshAppCache() {
-  const cache = await caches.open(APP_CACHE);
-
-  await Promise.all(
-    APP_ASSETS.map(async asset => {
-      const request = new Request(
-        asset,
-        { cache: 'reload' }
-      );
-
-      const response = await fetch(request);
-
-      if (response.ok) {
-        await cache.put(
-          asset,
-          response.clone()
-        );
-      }
-    })
+function isAppShellRequest(requestUrl) {
+  const pathname = requestUrl.pathname || '';
+  return (
+    pathname.endsWith('/') ||
+    pathname.endsWith('/index.html') ||
+    pathname.endsWith('/style.css') ||
+    pathname.endsWith('/app.js') ||
+    pathname.endsWith('/manifest.webmanifest')
   );
-}
-
-async function ensurePersistentMapCache() {
-  const cache = await caches.open(MAP_CACHE);
-
-  for (const asset of MAP_ASSETS) {
-    const existing =
-      await cache.match(asset);
-
-    if (existing) continue;
-
-    const response =
-      await fetch(asset);
-
-    if (response.ok) {
-      await cache.put(
-        asset,
-        response.clone()
-      );
-    }
-  }
 }
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    Promise.all([
-      refreshAppCache(),
-      ensurePersistentMapCache()
-    ])
+    (async () => {
+      const cache = await caches.open(APP_CACHE);
+      await cache.addAll(APP_ASSETS);
+      self.skipWaiting();
+    })()
   );
-
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys
-        .filter(key =>
-          (key.startsWith('stalker2-zone-clock-') && key !== APP_CACHE) ||
-          (key.startsWith('stalker2-zone-map-') && key !== MAP_CACHE)
-        )
-        .map(key => caches.delete(key))
-    )).then(() => self.clients.claim())
+    (async () => {
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames
+          .filter(name =>
+            name.startsWith('stalker2-zone-clock-') &&
+            name !== APP_CACHE &&
+            name !== MAP_CACHE
+          )
+          .map(name => caches.delete(name))
+      );
+      await self.clients.claim();
+    })()
   );
 });
 
@@ -92,44 +85,45 @@ self.addEventListener('message', event => {
 });
 
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-  const url = new URL(event.request.url);
-  const isMap =
-    url.pathname.endsWith('/assets/zone-map-8192.jpg') ||
-    url.pathname.endsWith('/assets/zone-map-4096.jpg') ||
-    url.pathname.endsWith('/assets/zone-map-schematic-4096.jpg') ||
-    url.pathname.endsWith('/assets/zone-road-cost-512.png');
-  const cacheName = isMap ? MAP_CACHE : APP_CACHE;
+  const { request } = event;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+
+  if (url.origin !== self.location.origin) return;
+
+  if (isAppShellRequest(url)) {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(APP_CACHE);
+        try {
+          const response = await fetch(request, { cache: 'no-store' });
+          cache.put(request, response.clone());
+          return response;
+        } catch (_) {
+          const cached = await cache.match(request);
+          if (cached) return cached;
+          const fallback = await cache.match('./index.html');
+          if (fallback) return fallback;
+          throw _;
+        }
+      })()
+    );
+    return;
+  }
+
+  const targetCache = MAP_ASSETS.some(asset => url.pathname.endsWith(asset.replace('./', '/')))
+    ? MAP_CACHE
+    : APP_CACHE;
 
   event.respondWith(
-    caches.open(cacheName).then(async cache => {
-      const cached = await cache.match(event.request);
+    (async () => {
+      const cache = await caches.open(targetCache);
+      const cached = await cache.match(request);
       if (cached) return cached;
-      try {
-        const response = await fetch(event.request);
-        if (response.ok) cache.put(event.request, response.clone());
-        return response;
-      } catch (_) {
-        if (!isMap) return cache.match('./index.html');
-        return Response.error();
-      }
-    })
-  );
-});
-
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || './';
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
-      for (const client of windowClients) {
-        if ('focus' in client) {
-          client.navigate(targetUrl).catch(() => {});
-          return client.focus();
-        }
-      }
-      if (clients.openWindow) return clients.openWindow(targetUrl);
-      return undefined;
-    })
+      const response = await fetch(request);
+      cache.put(request, response.clone());
+      return response;
+    })()
   );
 });

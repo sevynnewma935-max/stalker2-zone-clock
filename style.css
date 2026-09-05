@@ -3811,6 +3811,60 @@ button.zone-button-press:not(:disabled) {
   pointer-events: none;
 }
 
+.map-known-locations-layer {
+  pointer-events: auto;
+}
+
+.map-known-location {
+  cursor: pointer;
+}
+
+.map-known-location-pin {
+  fill: rgba(31, 77, 57, .96);
+  stroke: rgba(240, 248, 240, .96);
+  stroke-width: 1.8px;
+  filter:
+    drop-shadow(0 0 1px rgba(0,0,0,.95))
+    drop-shadow(0 0 5px rgba(96, 191, 132, .34));
+}
+
+.map-known-location-core {
+  fill: #f4f8ef;
+  stroke: none;
+}
+
+.map-known-location.is-point-a .map-known-location-pin {
+  fill: rgba(26, 110, 125, .98);
+  stroke: #7fe8ff;
+}
+
+.map-known-location.is-point-b .map-known-location-pin {
+  fill: rgba(104, 98, 27, .98);
+  stroke: #e9ee88;
+}
+
+.map-known-location-label {
+  fill: rgba(242, 248, 238, .98);
+  stroke: rgba(3, 8, 8, .98);
+  stroke-width: 3px;
+  paint-order: stroke;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  pointer-events: none;
+}
+
+.map-known-location:focus-visible .map-known-location-pin,
+.map-known-location:hover .map-known-location-pin {
+  stroke-width: 2.3px;
+}
+
 .map-dialog.map-fullscreen .map-road-planner {
   display: none !important;
 }

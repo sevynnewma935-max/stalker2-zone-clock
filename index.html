@@ -258,32 +258,56 @@
               <span>МЕСТО А</span>
               <select id="mapPlannerStartLocationSelect" class="map-road-planner-location-select">
                 <option value="">УКАЗАТЬ НА КАРТЕ</option>
-                <option value="svalka">СВАЛКА</option>
-                <option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>
-                <option value="cooling">ГРАДИРНИ</option>
-                <option value="rostok">РОСТОК</option>
-                <option value="red_forest">РЫЖИЙ ЛЕС</option>
-                <option value="yaniv">ЯНОВ</option>
+                <option value="pripyat">ПРИПЯТЬ</option>
+                <option value="generators">ГЕНЕРАТОРЫ</option>
                 <option value="jupiter">ЮПИТЕР</option>
+                <option value="yaniv">ЯНОВ</option>
+                <option value="red_forest">РЫЖИЙ ЛЕС</option>
+                <option value="yantar">ЯНТАРЬ</option>
+                <option value="rostok">РОСТОК</option>
+                <option value="svalka">СВАЛКА</option>
+                <option value="cooling">ГРАДИРНИ</option>
+                <option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>
+                <option value="sircaa">НИИЧАЗ</option>
+                <option value="malachite">МАЛАХИТ</option>
+                <option value="duga">ДУГА</option>
                 <option value="chemical">ХИМЗАВОД</option>
+                <option value="lesser_zone">МАЛАЯ ЗОНА</option>
+                <option value="cordon">КОРДОН</option>
+                <option value="wild_island">ДИКИЙ ОСТРОВ</option>
+                <option value="zaton">ЗАТОН</option>
+                <option value="swamps">БОЛОТА</option>
+                <option value="burnt_forest">ГОРЕЛЫЙ ЛЕС</option>
                 <option value="cement_bridge">МОСТ У ЦЕМЕНТНОГО ЗАВОДА</option>
-                <option value="swyd_east">SWYD-EAST CHECKPOINT</option>
+                <option value="swyd_east">КПП SWYD-EAST</option>
               </select>
             </label>
             <label>
               <span>МЕСТО Б</span>
               <select id="mapPlannerEndLocationSelect" class="map-road-planner-location-select">
                 <option value="">УКАЗАТЬ НА КАРТЕ</option>
-                <option value="svalka">СВАЛКА</option>
-                <option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>
-                <option value="cooling">ГРАДИРНИ</option>
-                <option value="rostok">РОСТОК</option>
-                <option value="red_forest">РЫЖИЙ ЛЕС</option>
-                <option value="yaniv">ЯНОВ</option>
+                <option value="pripyat">ПРИПЯТЬ</option>
+                <option value="generators">ГЕНЕРАТОРЫ</option>
                 <option value="jupiter">ЮПИТЕР</option>
+                <option value="yaniv">ЯНОВ</option>
+                <option value="red_forest">РЫЖИЙ ЛЕС</option>
+                <option value="yantar">ЯНТАРЬ</option>
+                <option value="rostok">РОСТОК</option>
+                <option value="svalka">СВАЛКА</option>
+                <option value="cooling">ГРАДИРНИ</option>
+                <option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>
+                <option value="sircaa">НИИЧАЗ</option>
+                <option value="malachite">МАЛАХИТ</option>
+                <option value="duga">ДУГА</option>
                 <option value="chemical">ХИМЗАВОД</option>
+                <option value="lesser_zone">МАЛАЯ ЗОНА</option>
+                <option value="cordon">КОРДОН</option>
+                <option value="wild_island">ДИКИЙ ОСТРОВ</option>
+                <option value="zaton">ЗАТОН</option>
+                <option value="swamps">БОЛОТА</option>
+                <option value="burnt_forest">ГОРЕЛЫЙ ЛЕС</option>
                 <option value="cement_bridge">МОСТ У ЦЕМЕНТНОГО ЗАВОДА</option>
-                <option value="swyd_east">SWYD-EAST CHECKPOINT</option>
+                <option value="swyd_east">КПП SWYD-EAST</option>
               </select>
             </label>
           </div>
@@ -348,6 +372,7 @@
             <g id="mapPresetRoutePoints"></g>
             <g id="mapArtifactVisitPoints"></g>
           </g>
+          <g id="mapKnownLocationsLayer" class="map-known-locations-layer" style="display:none"></g>
           <g id="mapRoadPlannerLayer" class="map-road-planner-layer" style="display:none">
             <path id="mapRoadPlannerPath" class="map-road-planner-path" d=""></path>
             <circle id="mapRoadPlannerStartPoint" class="map-road-planner-point start" r="6"></circle>
@@ -754,7 +779,7 @@
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v0.98</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v0.99</strong></div>
           <button id="updateAppBtn" class="btn update-app-btn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>

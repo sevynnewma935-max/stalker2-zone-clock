@@ -108,6 +108,7 @@
     mapRoadPlannerEndPoint: $('mapRoadPlannerEndPoint'),
     mapRoadPlannerStartLabel: $('mapRoadPlannerStartLabel'),
     mapRoadPlannerEndLabel: $('mapRoadPlannerEndLabel'),
+    mapKnownLocationsLayer: $('mapKnownLocationsLayer'),
     mapZoneTime: $('mapZoneTime'),
     mapJourneyHud: $('mapJourneyHud'),
     mapJourneyHudDistance: $('mapJourneyHudDistance'),
@@ -1231,57 +1232,144 @@ mapMeasureHint: $('mapMeasureHint'),
     'stalker2-zone-clock-map-view-v1';
 
   const MAP_KNOWN_LOCATIONS = {
-    svalka: {
-      label: 'СВАЛКА',
-      x: 869.4,
-      y: 1195.9
+    pripyat: {
+      label: 'ПРИПЯТЬ',
+      x: 517.0,
+      y: 547.7
     },
-    cement: {
-      label: 'ЦЕМЕНТНЫЙ ЗАВОД',
-      x: 1253.4,
-      y: 953.9
-    },
-    cooling: {
-      label: 'ГРАДИРНИ',
-      x: 1263.1,
-      y: 879.8
-    },
-    rostok: {
-      label: 'РОСТОК',
-      x: 779.2,
-      y: 1036.7
-    },
-    red_forest: {
-      label: 'РЫЖИЙ ЛЕС',
-      x: 552.1,
-      y: 867.6
-    },
-    yaniv: {
-      label: 'ЯНОВ',
-      x: 438.1,
-      y: 733.0
+    generators: {
+      label: 'ГЕНЕРАТОРЫ',
+      x: 930.0,
+      y: 610.0
     },
     jupiter: {
       label: 'ЮПИТЕР',
       x: 628.4,
       y: 791.0
     },
+    yaniv: {
+      label: 'ЯНОВ',
+      x: 447.8,
+      y: 751.5
+    },
+    red_forest: {
+      label: 'РЫЖИЙ ЛЕС',
+      x: 552.1,
+      y: 867.6
+    },
+    yantar: {
+      label: 'ЯНТАРЬ',
+      x: 315.0,
+      y: 1000.0
+    },
+    rostok: {
+      label: 'РОСТОК',
+      x: 717.4,
+      y: 1018.7
+    },
+    svalka: {
+      label: 'СВАЛКА',
+      x: 985.3,
+      y: 1032.8
+    },
+    cooling: {
+      label: 'ГРАДИРНИ',
+      x: 1204.0,
+      y: 987.3
+    },
+    cement: {
+      label: 'ЦЕМЕНТНЫЙ ЗАВОД',
+      x: 1253.4,
+      y: 953.9
+    },
+    sircaa: {
+      label: 'НИИЧАЗ',
+      x: 1630.0,
+      y: 1040.0
+    },
+    malachite: {
+      label: 'МАЛАХИТ',
+      x: 115.7,
+      y: 1092.0
+    },
+    duga: {
+      label: 'ДУГА',
+      x: 230.0,
+      y: 1495.0
+    },
     chemical: {
       label: 'ХИМЗАВОД',
-      x: 656.1,
-      y: 1157.3
+      x: 651.4,
+      y: 1212.2
+    },
+    lesser_zone: {
+      label: 'МАЛАЯ ЗОНА',
+      x: 911.9,
+      y: 1272.0
+    },
+    cordon: {
+      label: 'КОРДОН',
+      x: 1017.5,
+      y: 1469.5
+    },
+    wild_island: {
+      label: 'ДИКИЙ ОСТРОВ',
+      x: 1160.0,
+      y: 1269.7
+    },
+    zaton: {
+      label: 'ЗАТОН',
+      x: 1525.0,
+      y: 1450.0
+    },
+    swamps: {
+      label: 'БОЛОТА',
+      x: 1768.0,
+      y: 1818.0
+    },
+    burnt_forest: {
+      label: 'ГОРЕЛЫЙ ЛЕС',
+      x: 505.7,
+      y: 1325.6
     },
     cement_bridge: {
       label: 'МОСТ У ЦЕМЕНТНОГО ЗАВОДА',
       x: 1262.0,
-      y: 934.5
+      y: 934.5,
+      visible: false
     },
     swyd_east: {
-      label: 'SWYD-EAST CHECKPOINT',
+      label: 'КПП SWYD-EAST',
       x: 785.0,
-      y: 948.5
+      y: 948.5,
+      visible: false
     }
   };
+
+  const MAP_ROUTE_LOCATION_ORDER = [
+    'pripyat',
+    'generators',
+    'jupiter',
+    'yaniv',
+    'red_forest',
+    'yantar',
+    'rostok',
+    'svalka',
+    'cooling',
+    'cement',
+    'sircaa',
+    'malachite',
+    'duga',
+    'chemical',
+    'lesser_zone',
+    'cordon',
+    'wild_island',
+    'zaton',
+    'swamps',
+    'burnt_forest',
+    'cement_bridge',
+    'swyd_east'
+  ];
 
   // Контрольные отрезки для замера скорости перемещения.
   // Координаты находятся в логической системе карты Zone Clock 2048 × 2048.
@@ -1582,6 +1670,12 @@ mapMeasureHint: $('mapMeasureHint'),
       } else if (mapMeasurePoints.length >= 2) {
         els.mapMeasureHint.textContent =
           `Маршрут: ${formatMapDistance(mapRouteMeters())}.`;
+      } else if (
+        els.mapRoadPlanner &&
+        els.mapRoadPlanner.open
+      ) {
+        els.mapMeasureHint.textContent =
+          'На карте показаны точки баз. Выберите А и Б кнопками, из списка или нажатием на точку.';
       } else {
         els.mapMeasureHint.textContent =
           'Увеличение: два пальца, кнопки +/− или колёсико. Новый раздел «ПОСТРОИТЬ МАРШРУТ» строит путь по дорогам.';
@@ -1590,11 +1684,154 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
 
+
   function routePointToScreen(point) {
     return {
       x: mapPanX + point.x * mapZoom,
       y: mapPanY + point.y * mapZoom
     };
+  }
+
+  function visibleRoadPlannerLocations() {
+    return MAP_ROUTE_LOCATION_ORDER.filter(
+      key =>
+        MAP_KNOWN_LOCATIONS[key] &&
+        MAP_KNOWN_LOCATIONS[key].visible !== false
+    );
+  }
+
+  function roadPlannerIsEngaged() {
+    return Boolean(
+      els.mapRoadPlanner &&
+      els.mapRoadPlanner.open &&
+      (
+        mapRoadPlannerSelectMode ||
+        mapRoadPlannerPointA ||
+        mapRoadPlannerPointB ||
+        mapRoadPlannerRoutePoints.length
+      )
+    );
+  }
+
+  function ensureRoadPlannerLandscapeView() {
+    if (mapViewMode === 'landscape') {
+      return;
+    }
+
+    mapViewMode = 'landscape';
+
+    try {
+      localStorage.setItem(
+        MAP_VIEW_STORAGE_KEY,
+        mapViewMode
+      );
+    } catch (_) {}
+
+    updateMapViewUI();
+  }
+
+  function renderKnownLocationsLayer() {
+    if (!els.mapKnownLocationsLayer) {
+      return;
+    }
+
+    const shouldShow = Boolean(
+      els.mapRoadPlanner &&
+      els.mapRoadPlanner.open
+    );
+
+    els.mapKnownLocationsLayer.style.display =
+      shouldShow ? '' : 'none';
+
+    if (!shouldShow) {
+      els.mapKnownLocationsLayer.textContent = '';
+      return;
+    }
+
+    els.mapKnownLocationsLayer.textContent = '';
+
+    visibleRoadPlannerLocations().forEach(key => {
+      const place = MAP_KNOWN_LOCATIONS[key];
+      const screen = routePointToScreen(place);
+      const group = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'g'
+      );
+      group.setAttribute('class', 'map-known-location');
+      group.setAttribute('data-place-key', key);
+      group.setAttribute('tabindex', '0');
+      group.setAttribute('role', 'button');
+      group.setAttribute('aria-label', place.label);
+      group.setAttribute('transform', `translate(${screen.x}, ${screen.y})`);
+
+      if (key === mapRoadPlannerPlaceAKey) {
+        group.classList.add('is-point-a');
+      }
+
+      if (key === mapRoadPlannerPlaceBKey) {
+        group.classList.add('is-point-b');
+      }
+
+      const outer = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'circle'
+      );
+      outer.setAttribute('class', 'map-known-location-pin');
+      outer.setAttribute('r', '7.5');
+      outer.setAttribute('cx', '0');
+      outer.setAttribute('cy', '0');
+
+      const inner = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'circle'
+      );
+      inner.setAttribute('class', 'map-known-location-core');
+      inner.setAttribute('r', '3.2');
+      inner.setAttribute('cx', '0');
+      inner.setAttribute('cy', '0');
+
+      const label = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'text'
+      );
+      label.setAttribute('class', 'map-known-location-label');
+      label.setAttribute('x', '11');
+      label.setAttribute('y', '-10');
+      label.textContent = place.label;
+
+      group.appendChild(outer);
+      group.appendChild(inner);
+      group.appendChild(label);
+      els.mapKnownLocationsLayer.appendChild(group);
+    });
+  }
+
+  function pickRoadPlannerLocation(placeKey) {
+    if (!MAP_KNOWN_LOCATIONS[placeKey]) {
+      return;
+    }
+
+    const targetPoint =
+      mapRoadPlannerSelectMode ||
+      (!mapRoadPlannerPointA
+        ? 'a'
+        : !mapRoadPlannerPointB
+          ? 'b'
+          : 'b');
+
+    setRoadPlannerKnownLocation(
+      targetPoint,
+      placeKey
+    );
+
+    if (
+      targetPoint === 'a' &&
+      !mapRoadPlannerPointB &&
+      els.mapPlannerMessage
+    ) {
+      els.mapPlannerMessage.textContent =
+        `${MAP_KNOWN_LOCATIONS[placeKey].label}: точка А выбрана. Теперь выберите точку Б.`;
+    }
   }
 
   function updateMapViewUI() {
@@ -2595,10 +2832,13 @@ mapMeasureHint: $('mapMeasureHint'),
           : '—';
     }
 
+    updatePresetRouteScreenGeometry();
     updateRoadPlannerScreenGeometry();
   }
 
   function updateRoadPlannerScreenGeometry() {
+    renderKnownLocationsLayer();
+
     if (
       !els.mapRoadPlannerLayer ||
       !els.mapRoadPlannerPath
@@ -2726,6 +2966,8 @@ mapMeasureHint: $('mapMeasureHint'),
     clientX,
     clientY
   ) {
+    ensureRoadPlannerLandscapeView();
+
     const logical =
       mapClientToLogical(
         clientX,
@@ -2764,6 +3006,8 @@ mapMeasureHint: $('mapMeasureHint'),
     which,
     placeKey
   ) {
+    ensureRoadPlannerLandscapeView();
+
     const place =
       MAP_KNOWN_LOCATIONS[placeKey];
 
@@ -2815,6 +3059,8 @@ mapMeasureHint: $('mapMeasureHint'),
     ) {
       return;
     }
+
+    ensureRoadPlannerLandscapeView();
 
     mapRoadPlannerBusy = true;
 
@@ -4524,7 +4770,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
     if (els.mapPresetRouteLabel) {
       els.mapPresetRouteLabel.hidden =
-        !mapPresetRouteVisible;
+        !mapPresetRouteVisible || roadPlannerIsEngaged();
 
       if (isRostokRoute) {
         els.mapPresetRouteLabel.textContent =
@@ -4550,10 +4796,15 @@ mapMeasureHint: $('mapMeasureHint'),
 
     const activeRoute = getPresetRoute();
     const isRoadRoute = Boolean(activeRoute.roadPath);
+    const hidePresetForPlanner =
+      roadPlannerIsEngaged();
 
     if (els.mapPresetRouteLayer) {
       els.mapPresetRouteLayer.style.display =
-        mapPresetRouteVisible ? '' : 'none';
+        mapPresetRouteVisible &&
+        !hidePresetForPlanner
+          ? ''
+          : 'none';
     }
 
     if (els.mapRoadRoutePath) {
@@ -4562,13 +4813,24 @@ mapMeasureHint: $('mapMeasureHint'),
     }
 
     els.mapPresetRoadPath.style.display =
-      mapPresetRouteVisible && isRoadRoute ? '' : 'none';
+      mapPresetRouteVisible &&
+      isRoadRoute &&
+      !hidePresetForPlanner
+        ? ''
+        : 'none';
     els.mapPresetRoadPath.setAttribute(
       'd',
-      mapPresetRouteVisible && isRoadRoute ? buildScreenRoadPath(activeRoute) : ''
+      mapPresetRouteVisible &&
+      isRoadRoute &&
+      !hidePresetForPlanner
+        ? buildScreenRoadPath(activeRoute)
+        : ''
     );
 
-    if (!mapPresetRouteVisible) return;
+    if (
+      !mapPresetRouteVisible ||
+      hidePresetForPlanner
+    ) return;
 
     if (isRoadRoute) {
       els.mapPresetRouteMain.setAttribute('points', '');
@@ -5011,6 +5273,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
     updatePresetRouteScreenGeometry();
     updateMovementTestScreenGeometry();
+    updatePresetRouteScreenGeometry();
     updateRoadPlannerScreenGeometry();
   }
 
@@ -5696,6 +5959,7 @@ mapMeasureHint: $('mapMeasureHint'),
     els.mapPlannerStartBtn.addEventListener(
       'click',
       () => {
+        ensureRoadPlannerLandscapeView();
         mapMeasureMode = false;
 
         mapRoadPlannerSelectMode =
@@ -5724,6 +5988,7 @@ mapMeasureHint: $('mapMeasureHint'),
     els.mapPlannerEndBtn.addEventListener(
       'click',
       () => {
+        ensureRoadPlannerLandscapeView();
         mapMeasureMode = false;
 
         mapRoadPlannerSelectMode =
@@ -5759,6 +6024,42 @@ mapMeasureHint: $('mapMeasureHint'),
     els.mapPlannerClearBtn.addEventListener(
       'click',
       clearRoadPlanner
+    );
+  }
+
+  if (els.mapKnownLocationsLayer) {
+    const handleKnownLocationActivation = event => {
+      const group = event.target.closest(
+        '[data-place-key]'
+      );
+
+      if (!group) {
+        return;
+      }
+
+      event.preventDefault();
+      pickRoadPlannerLocation(
+        group.dataset.placeKey
+      );
+    };
+
+    els.mapKnownLocationsLayer.addEventListener(
+      'click',
+      handleKnownLocationActivation
+    );
+
+    els.mapKnownLocationsLayer.addEventListener(
+      'keydown',
+      event => {
+        if (
+          event.key !== 'Enter' &&
+          event.key !== ' '
+        ) {
+          return;
+        }
+
+        handleKnownLocationActivation(event);
+      }
     );
   }
 
@@ -7593,19 +7894,19 @@ mapMeasureHint: $('mapMeasureHint'),
 
     els.updateAppBtn.disabled = true;
     setUpdateAppStatus(
-      'Проверяю сервер и готовлю полное обновление…'
+      'Проверяю сервер и подготавливаю полное обновление…'
     );
 
     try {
-      const probeUrl =
-        new URL(
-          './service-worker.js',
-          window.location.href
-        );
+      const stamp = String(Date.now());
+      const probeUrl = new URL(
+        './service-worker.js',
+        window.location.href
+      );
 
       probeUrl.searchParams.set(
         'zc_check',
-        String(Date.now())
+        stamp
       );
 
       const probe = await fetch(
@@ -7621,10 +7922,6 @@ mapMeasureHint: $('mapMeasureHint'),
         );
       }
 
-      setUpdateAppStatus(
-        'Свежая версия доступна. Очищаю старые файлы…'
-      );
-
       if (
         typeof closeSettings ===
         'function'
@@ -7632,9 +7929,33 @@ mapMeasureHint: $('mapMeasureHint'),
         closeSettings();
       }
 
+      setUpdateAppStatus(
+        'Отключаю старый кэш и загружаю свежие файлы…'
+      );
+
+      if ('serviceWorker' in navigator) {
+        const registrations =
+          await navigator.serviceWorker
+            .getRegistrations();
+
+        await Promise.all(
+          registrations.map(async registration => {
+            try {
+              if (registration.waiting) {
+                registration.waiting.postMessage({
+                  type: 'SKIP_WAITING'
+                });
+              }
+
+              await registration.update();
+              await registration.unregister();
+            } catch (_) {}
+          })
+        );
+      }
+
       if ('caches' in window) {
-        const keys =
-          await caches.keys();
+        const keys = await caches.keys();
 
         await Promise.all(
           keys
@@ -7649,27 +7970,59 @@ mapMeasureHint: $('mapMeasureHint'),
         );
       }
 
-      if ('serviceWorker' in navigator) {
-        const registrations =
-          await navigator.serviceWorker
-            .getRegistrations();
+      const warmupPaths = [
+        './',
+        './index.html',
+        './style.css',
+        './app.js',
+        './manifest.webmanifest',
+        './service-worker.js'
+      ];
 
-        await Promise.all(
-          registrations.map(
-            registration =>
-              registration.unregister()
-          )
-        );
-      }
+      await Promise.all(
+        warmupPaths.map(async path => {
+          const url = new URL(
+            path,
+            window.location.href
+          );
 
-      const reloadUrl =
-        new URL(
-          window.location.href
-        );
+          url.searchParams.set(
+            'zc_update',
+            stamp
+          );
+
+          const response = await fetch(
+            url.toString(),
+            {
+              cache: 'reload'
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(
+              `HTTP ${response.status} for ${path}`
+            );
+          }
+        })
+      );
+
+      sessionStorage.setItem(
+        'zone-clock-force-update',
+        stamp
+      );
+
+      setUpdateAppStatus(
+        'Свежая версия получена. Перезапускаю Zone Clock…'
+      );
+
+      const reloadUrl = new URL(
+        './',
+        window.location.href
+      );
 
       reloadUrl.searchParams.set(
         'zc_update',
-        String(Date.now())
+        stamp
       );
 
       window.location.replace(
@@ -7682,7 +8035,7 @@ mapMeasureHint: $('mapMeasureHint'),
       );
 
       setUpdateAppStatus(
-        'Обновление не загружено. Проверьте интернет и повторите.'
+        'Обновление не загрузилось. Проверьте интернет и повторите.'
       );
 
       els.updateAppBtn.disabled = false;
