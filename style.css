@@ -4078,3 +4078,63 @@ button.zone-button-press:not(:disabled) {
     grid-template-columns: 1fr;
   }
 }
+
+/* PWA v101 — единая шапка и настройки на всех экранах */
+.clock-brand-block {
+  min-width: 0;
+}
+
+.clock-brand-block .map-brand-kicker {
+  font-size: .62rem;
+  letter-spacing: .22em;
+}
+
+.clock-brand-block .clock-brand-title {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: clamp(1.35rem, 6vw, 1.85rem);
+  line-height: 1;
+  letter-spacing: .14em;
+  font-weight: 800;
+}
+
+.dialog-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.screen-settings-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.map-header-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Специальные режимы теперь выбираются через общий селектор маршрута */
+.map-road-planner[hidden],
+.map-route-toggle[hidden],
+.map-journey-btn[hidden],
+.map-artifact-visit-hint[hidden],
+.map-route-select-wrap[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 520px) {
+  .clock-brand-block .clock-brand-title {
+    font-size: 1.22rem;
+  }
+
+  .clock-brand-block .map-brand-kicker {
+    font-size: .55rem;
+  }
+
+  .dialog-header-actions {
+    gap: 6px;
+  }
+}

@@ -28,9 +28,9 @@
 
   <main class="shell">
     <header class="topbar">
-      <div class="brand">
-        <div class="eyebrow" class="brand-kicker-wide">S.T.A.L.K.E.R. 2</div>
-        <h1>ZONE CLOCK</h1>
+      <div class="brand map-brand-block clock-brand-block">
+        <div class="map-brand-kicker">S.T.A.L.K.E.R. 2</div>
+        <h1 class="map-brand-title clock-brand-title">ZONE CLOCK</h1>
       </div>
 
       <div class="top-actions">
@@ -180,6 +180,11 @@
               <path d="M12 2.75a9.25 9.25 0 1 0 0 18.5 9.25 9.25 0 0 0 0-18.5Zm0 2a7.25 7.25 0 1 1 0 14.5 7.25 7.25 0 0 1 0-14.5Zm-1 2.5h2v4.15l3.25 1.88-1 1.73L11 12.55v-5.3Z"/>
             </svg>
           </button>
+          <button class="icon-btn small screen-settings-btn" type="button" data-open-settings aria-label="Открыть настройки" title="Настройки">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-.03-.43-2.15-.78a7.64 7.64 0 0 0-.67-1.61l.98-2.07-.29-.32-1.63-1.63-.32-.29-2.07.98a7.64 7.64 0 0 0-1.61-.67L12.43 3h-.86l-.78 2.17a7.64 7.64 0 0 0-1.61.67l-2.07-.98-.32.29-1.63 1.63-.29.32.98 2.07a7.64 7.64 0 0 0-.67 1.61L3 11.57v.86l2.17.78c.16.56.38 1.1.67 1.61l-.98 2.07.29.32 1.63 1.63.32.29 2.07-.98c.51.29 1.05.51 1.61.67l.78 2.17h.86l.78-2.17c.56-.16 1.1-.38 1.61-.67l2.07.98.32-.29 1.63-1.63.29-.32-.98-2.07c.29-.51.51-1.05.67-1.61l2.17-.78L21 12Z"/>
+            </svg>
+          </button>
           <button id="mapViewModeBtn" class="map-view-mode-btn" type="button" aria-label="Переключить вид карты" title="Вид карты">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="m12 3 9 4.5-9 4.5-9-4.5L12 3Zm-6.7 8.1L12 14.45l6.7-3.35L21 12.25l-9 4.5-9-4.5 2.3-1.15Zm0 4.75L12 19.2l6.7-3.35L21 17l-9 4.5L3 17l2.3-1.15Z"/>
@@ -210,10 +215,12 @@
           <select id="mapRouteSelect" class="map-route-select">
             <option value="garbage_cement_cooling">СВАЛКА → ЦЕМЕНТНЫЙ ЗАВОД → ГРАДИРНИ</option>
             <option value="rostok_redforest_yanov_jupiter_chemical">РОСТОК → РЫЖИЙ ЛЕС → ЯНОВ → ЮПИТЕР → ХИМЗАВОД</option>
+            <option value="road_planner">ПО МЕСТОПОЛОЖЕНИЯМ</option>
+            <option value="movement_test">ТЕСТОВЫЙ МАРШРУТ</option>
           </select>
         </label>
         <label id="mapRouteStartWrap" class="map-route-select-wrap" for="mapRouteStartSelect">
-          <span>НАЧАЛО МАРШРУТА</span>
+          <span id="mapRouteStartLabel">НАЧАЛО МАРШРУТА</span>
           <select id="mapRouteStartSelect" class="map-route-select">
             <option value="svalka">СВАЛКА</option>
             <option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>
@@ -242,7 +249,7 @@
         Артефакты: нажмите точку после сбора. До 2 суток — СОБРАН, 2–3 суток — ВОЗМОЖНО ПОЯВИЛСЯ, после 3 суток — ПОРА ПРОВЕРИТЬ.
       </div>
 
-      <details id="mapRoadPlanner" class="map-road-planner" open>
+      <details id="mapRoadPlanner" class="map-road-planner">
         <summary>
           <span>ПОСТРОИТЬ МАРШРУТ ПО ДОРОГАМ</span>
           <span aria-hidden="true">⌄</span>
@@ -425,11 +432,14 @@
           <div class="eyebrow">ZONE CLOCK / МАРШРУТ</div>
           <h2 id="mapJourneyDialogTitle">ПЕРЕД ВЫХОДОМ</h2>
         </div>
-        <button id="closeJourneyBtn" class="icon-btn small" type="button" aria-label="Закрыть" title="Закрыть">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/>
-          </svg>
-        </button>
+        <div class="dialog-header-actions">
+          <button class="icon-btn small screen-settings-btn" type="button" data-open-settings aria-label="Открыть настройки" title="Настройки">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-.03-.43-2.15-.78a7.64 7.64 0 0 0-.67-1.61l.98-2.07-.29-.32-1.63-1.63-.32-.29-2.07.98a7.64 7.64 0 0 0-1.61-.67L12.43 3h-.86l-.78 2.17a7.64 7.64 0 0 0-1.61.67l-2.07-.98-.32.29-1.63 1.63-.29.32.98 2.07a7.64 7.64 0 0 0-.67 1.61L3 11.57v.86l2.17.78c.16.56.38 1.1.67 1.61l-.98 2.07.29.32 1.63 1.63.32.29 2.07-.98c.51.29 1.05.51 1.61.67l.78 2.17h.86l.78-2.17c.56-.16 1.1-.38 1.61-.67l2.07.98.32-.29 1.63-1.63.29-.32-.98-2.07c.29-.51.51-1.05.67-1.61l2.17-.78L21 12Z"/></svg>
+          </button>
+          <button id="closeJourneyBtn" class="icon-btn small" type="button" aria-label="Закрыть" title="Закрыть">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/></svg>
+          </button>
+        </div>
       </div>
       <div class="journey-content">
         <div id="mapJourneyWish" class="journey-wish"></div>
@@ -469,11 +479,14 @@
             Полевые наблюдения за изменением скорости времени в течение суток.
           </div>
         </div>
-        <button id="closeChronometryBtn" class="icon-btn small" type="button" aria-label="Закрыть" title="Закрыть">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/>
-          </svg>
-        </button>
+        <div class="dialog-header-actions">
+          <button class="icon-btn small screen-settings-btn" type="button" data-open-settings aria-label="Открыть настройки" title="Настройки">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-.03-.43-2.15-.78a7.64 7.64 0 0 0-.67-1.61l.98-2.07-.29-.32-1.63-1.63-.32-.29-2.07.98a7.64 7.64 0 0 0-1.61-.67L12.43 3h-.86l-.78 2.17a7.64 7.64 0 0 0-1.61.67l-2.07-.98-.32.29-1.63 1.63-.29.32.98 2.07a7.64 7.64 0 0 0-.67 1.61L3 11.57v.86l2.17.78c.16.56.38 1.1.67 1.61l-.98 2.07.29.32 1.63 1.63.32.29 2.07-.98c.51.29 1.05.51 1.61.67l.78 2.17h.86l.78-2.17c.56-.16 1.1-.38 1.61-.67l2.07.98.32-.29 1.63-1.63.29-.32-.98-2.07c.29-.51.51-1.05.67-1.61l2.17-.78L21 12Z"/></svg>
+          </button>
+          <button id="closeChronometryBtn" class="icon-btn small" type="button" aria-label="Закрыть" title="Закрыть">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/></svg>
+          </button>
+        </div>
       </div>
 
       <div class="chronometry-content">
@@ -552,11 +565,14 @@
             <div class="test-current-time">Время <strong id="testCurrentTime">--:--</strong></div>
           </div>
         </div>
-        <button id="closeTestBtn" class="icon-btn small" type="button" aria-label="Закрыть тест" title="Закрыть">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/>
-          </svg>
-        </button>
+        <div class="dialog-header-actions">
+          <button class="icon-btn small screen-settings-btn" type="button" data-open-settings aria-label="Открыть настройки" title="Настройки">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm9 3.5-.03-.43-2.15-.78a7.64 7.64 0 0 0-.67-1.61l.98-2.07-.29-.32-1.63-1.63-.32-.29-2.07.98a7.64 7.64 0 0 0-1.61-.67L12.43 3h-.86l-.78 2.17a7.64 7.64 0 0 0-1.61.67l-2.07-.98-.32.29-1.63 1.63-.29.32.98 2.07a7.64 7.64 0 0 0-.67 1.61L3 11.57v.86l2.17.78c.16.56.38 1.1.67 1.61l-.98 2.07.29.32 1.63 1.63.32.29 2.07-.98c.51.29 1.05.51 1.61.67l.78 2.17h.86l.78-2.17c.56-.16 1.1-.38 1.61-.67l2.07.98.32-.29 1.63-1.63.29-.32-.98-2.07c.29-.51.51-1.05.67-1.61l2.17-.78L21 12Z"/></svg>
+          </button>
+          <button id="closeTestBtn" class="icon-btn small" type="button" aria-label="Закрыть тест" title="Закрыть">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/></svg>
+          </button>
+        </div>
       </div>
 
       <div class="test-content">
@@ -779,7 +795,7 @@
 
         <div class="settings-group version-group">
           <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v1.00</strong></div>
+          <div class="app-version" aria-label="Версия приложения">ZONE CLOCK <strong>v1.01</strong></div>
           <button id="updateAppBtn" class="btn update-app-btn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>

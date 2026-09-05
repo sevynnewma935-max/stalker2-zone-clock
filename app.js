@@ -78,6 +78,7 @@
     mapRouteSelect: $('mapRouteSelect'),
     mapJourneyBtn: $('mapJourneyBtn'),
     mapRouteStartWrap: $('mapRouteStartWrap'),
+    mapRouteStartLabel: $('mapRouteStartLabel'),
     mapRouteStartSelect: $('mapRouteStartSelect'),
     mapRouteSelectValue: $('mapRouteSelectValue'),
     mapRouteStartValue: $('mapRouteStartValue'),
@@ -714,6 +715,10 @@ mapMeasureHint: $('mapMeasureHint'),
 
   els.settingsBtn?.addEventListener('click', openSettings);
   els.closeSettingsBtn?.addEventListener('click', closeSettings);
+
+  document.querySelectorAll('[data-open-settings]').forEach(button => {
+    button.addEventListener('click', openSettings);
+  });
 
   els.settingsDialog?.addEventListener('click', (event) => {
     if (event.target === els.settingsDialog) closeSettings();
@@ -1433,6 +1438,14 @@ mapMeasureHint: $('mapMeasureHint'),
   const MAP_PRESET_ROUTE_SELECTED_KEY =
     'stalker2-zone-clock-preset-route-selected-v2';
 
+  const MAP_ROUTE_MODE_ROAD_PLANNER = 'road_planner';
+  const MAP_ROUTE_MODE_MOVEMENT_TEST = 'movement_test';
+
+  function isSpecialMapRouteMode(routeKey = mapSelectedRouteKey) {
+    return routeKey === MAP_ROUTE_MODE_ROAD_PLANNER ||
+      routeKey === MAP_ROUTE_MODE_MOVEMENT_TEST;
+  }
+
   const MAP_PRESET_ROUTES = {
     garbage_cement_cooling: {
       key: 'garbage_cement_cooling',
@@ -1560,6 +1573,10 @@ mapMeasureHint: $('mapMeasureHint'),
     localStorage.getItem(MAP_PRESET_ROUTE_STORAGE_KEY) !== '0';
   let mapSelectedRouteKey =
     localStorage.getItem(MAP_PRESET_ROUTE_SELECTED_KEY) || 'garbage_cement_cooling';
+
+  if (!MAP_PRESET_ROUTES[mapSelectedRouteKey] && !isSpecialMapRouteMode(mapSelectedRouteKey)) {
+    mapSelectedRouteKey = 'garbage_cement_cooling';
+  }
   const MAP_PRESET_ROUTE_START_KEY =
     'stalker2-zone-clock-preset-route-start-v1';
   const MAP_ROSTOK_ROUTE_START_KEY =
@@ -1883,11 +1900,11 @@ mapMeasureHint: $('mapMeasureHint'),
         mapRoadPlannerSequence.length - 1
       ].placeKey || '';
     mapRoadPlannerRoutePoints = [];
-    mapRoadPlannerSequence = [];
     mapRoadPlannerMeters = 0;
 
     saveRoadPlannerState();
     updateRoadPlannerUI();
+    updatePresetRouteUI();
     updateMapInfo();
   }
 
@@ -3393,6 +3410,7 @@ mapMeasureHint: $('mapMeasureHint'),
     mapRoadPlannerPlaceAKey = '';
     mapRoadPlannerPlaceBKey = '';
     mapRoadPlannerRoutePoints = [];
+    mapRoadPlannerSequence = [];
     mapRoadPlannerMeters = 0;
 
     try {
@@ -4943,75 +4961,74 @@ mapMeasureHint: $('mapMeasureHint'),
 
 
   function updatePresetRouteUI() {
+    const isRoadPlannerMode = mapSelectedRouteKey === MAP_ROUTE_MODE_ROAD_PLANNER;
+    const isMovementTestMode = mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST;
+    const isSpecialMode = isRoadPlannerMode || isMovementTestMode;
     const activeRoute = getPresetRoute();
+    const isGarbageRoute = !isSpecialMode && activeRoute.key === 'garbage_cement_cooling';
+    const isRostokRoute = !isSpecialMode && activeRoute.key === 'rostok_redforest_yanov_jupiter_chemical';
 
-    const isGarbageRoute =
-      activeRoute.key ===
-      'garbage_cement_cooling';
-
-    const isRostokRoute =
-      activeRoute.key ===
-      'rostok_redforest_yanov_jupiter_chemical';
-
-    const showRouteStart =
-      isGarbageRoute || isRostokRoute;
+    if (els.mapRouteSelect) els.mapRouteSelect.value = mapSelectedRouteKey;
 
     if (els.mapPresetRouteBtn) {
-      els.mapPresetRouteBtn.textContent =
-        mapPresetRouteVisible
-          ? 'МАРШРУТ: ВКЛ'
-          : 'МАРШРУТ: ВЫКЛ';
-
-      els.mapPresetRouteBtn.classList.toggle(
-        'active',
-        mapPresetRouteVisible
-      );
+      els.mapPresetRouteBtn.hidden = isSpecialMode;
+      els.mapPresetRouteBtn.textContent = mapPresetRouteVisible ? 'МАРШРУТ: ВКЛ' : 'МАРШРУТ: ВЫКЛ';
+      els.mapPresetRouteBtn.classList.toggle('active', mapPresetRouteVisible);
     }
 
-    if (els.mapRouteSelect) {
-      els.mapRouteSelect.value =
-        activeRoute.key;
+    if (els.mapJourneyBtn) els.mapJourneyBtn.hidden = isSpecialMode;
+    if (els.mapArtifactVisitHint) els.mapArtifactVisitHint.hidden = isSpecialMode;
+
+    if (els.mapRoadPlanner) {
+      els.mapRoadPlanner.hidden = !isRoadPlannerMode;
+      els.mapRoadPlanner.open = isRoadPlannerMode && !mapFullscreenMode;
     }
+
+    mapMovementTestVisible = isMovementTestMode;
 
     if (els.mapRouteStartWrap) {
-      els.mapRouteStartWrap.hidden =
-        !showRouteStart;
+      els.mapRouteStartWrap.hidden = !(isGarbageRoute || isRostokRoute || isMovementTestMode);
+    }
+
+    if (els.mapRouteStartLabel) {
+      els.mapRouteStartLabel.textContent = isMovementTestMode ? 'ТЕСТОВЫЙ МАРШРУТ' : 'НАЧАЛО МАРШРУТА';
     }
 
     if (els.mapRouteStartSelect) {
       if (isGarbageRoute) {
-        els.mapRouteStartSelect.innerHTML =
-          '<option value="svalka">СВАЛКА</option>' +
-          '<option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>';
-
-        els.mapRouteStartSelect.value =
-          mapPresetRouteStart;
+        els.mapRouteStartSelect.innerHTML = '<option value="svalka">СВАЛКА</option><option value="cement">ЦЕМЕНТНЫЙ ЗАВОД</option>';
+        els.mapRouteStartSelect.value = mapPresetRouteStart;
       } else if (isRostokRoute) {
-        els.mapRouteStartSelect.innerHTML =
-          '<option value="west">РОСТОК — ИДЁМ НА ЗАПАД</option>' +
-          '<option value="east">РОСТОК — ИДЁМ НА ВОСТОК</option>';
-
-        els.mapRouteStartSelect.value =
-          mapRostokRouteStart;
+        els.mapRouteStartSelect.innerHTML = '<option value="west">РОСТОК — ИДЁМ НА ЗАПАД</option><option value="east">РОСТОК — ИДЁМ НА ВОСТОК</option>';
+        els.mapRouteStartSelect.value = mapRostokRouteStart;
+      } else if (isMovementTestMode) {
+        els.mapRouteStartSelect.innerHTML = Object.values(MOVEMENT_TEST_ROUTES)
+          .map(route => `<option value="${route.key}">${route.shortLabel}</option>`)
+          .join('');
+        els.mapRouteStartSelect.value = movementTestRouteKey;
       }
     }
 
     if (els.mapPresetRouteLabel) {
-      els.mapPresetRouteLabel.hidden =
-        !mapPresetRouteVisible || roadPlannerIsEngaged();
-
-      if (isRostokRoute) {
-        els.mapPresetRouteLabel.textContent =
-          `${activeRoute.label} · ${
-            mapRostokRouteStart === 'east'
-              ? 'СТАРТ: РОСТОК → ВОСТОК'
-              : 'СТАРТ: РОСТОК → ЗАПАД'
-          }`;
+      if (isRoadPlannerMode) {
+        els.mapPresetRouteLabel.hidden = false;
+        els.mapPresetRouteLabel.textContent = mapRoadPlannerSequence.length
+          ? `ПО МЕСТОПОЛОЖЕНИЯМ · ${mapRoadPlannerSequence.length} ТОЧЕК`
+          : 'ПО МЕСТОПОЛОЖЕНИЯМ · ВЫБЕРИТЕ ТОЧКИ';
+      } else if (isMovementTestMode) {
+        const testRoute = getMovementTestRoute();
+        els.mapPresetRouteLabel.hidden = false;
+        els.mapPresetRouteLabel.textContent = `ТЕСТОВЫЙ МАРШРУТ · ${testRoute.shortLabel}`;
       } else {
-        els.mapPresetRouteLabel.textContent =
-          activeRoute.label;
+        els.mapPresetRouteLabel.hidden = !mapPresetRouteVisible;
+        els.mapPresetRouteLabel.textContent = isRostokRoute
+          ? `${activeRoute.label} · ${mapRostokRouteStart === 'east' ? 'СТАРТ: РОСТОК → ВОСТОК' : 'СТАРТ: РОСТОК → ЗАПАД'}`
+          : activeRoute.label;
       }
     }
+
+    updateMovementTestScreenGeometry();
+    updateRoadPlannerScreenGeometry();
   }
 
   function updatePresetRouteScreenGeometry() {
@@ -5025,8 +5042,8 @@ mapMeasureHint: $('mapMeasureHint'),
     const activeRoute = getPresetRoute();
     const isRoadRoute = Boolean(activeRoute.roadPath);
     const hidePresetForPlanner = Boolean(
-      els.mapRoadPlanner &&
-      els.mapRoadPlanner.open
+      isSpecialMapRouteMode() ||
+      (els.mapRoadPlanner && els.mapRoadPlanner.open)
     );
 
     if (els.mapPresetRouteLayer) {
@@ -5455,20 +5472,32 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function changePresetRoute(routeKey) {
-    if (!MAP_PRESET_ROUTES[routeKey]) return;
+    const isPreset = Boolean(MAP_PRESET_ROUTES[routeKey]);
+    const isSpecial = routeKey === MAP_ROUTE_MODE_ROAD_PLANNER || routeKey === MAP_ROUTE_MODE_MOVEMENT_TEST;
+    if (!isPreset && !isSpecial) return;
 
     mapSelectedRouteKey = routeKey;
     mapJourneyActive = false;
     mapJourneyPlan = null;
     mapJourneySequence = [];
+    localStorage.setItem(MAP_PRESET_ROUTE_SELECTED_KEY, mapSelectedRouteKey);
 
-    localStorage.setItem(
-      MAP_PRESET_ROUTE_SELECTED_KEY,
-      mapSelectedRouteKey
-    );
+    if (routeKey === MAP_ROUTE_MODE_ROAD_PLANNER) {
+      mapMovementTestVisible = false;
+      ensureRoadPlannerLandscapeView();
+    } else if (routeKey === MAP_ROUTE_MODE_MOVEMENT_TEST) {
+      mapMovementTestVisible = true;
+    } else {
+      mapMovementTestVisible = false;
+      renderPresetRoute();
+    }
 
-    renderPresetRoute();
+    updatePresetRouteUI();
+    updatePresetRouteScreenGeometry();
+    updateMovementTestScreenGeometry();
+    updateRoadPlannerScreenGeometry();
     updateJourneyHud();
+    updateMapInfo();
   }
 
   function updateMapMeasurementScreenGeometry() {
@@ -5918,9 +5947,15 @@ mapMeasureHint: $('mapMeasureHint'),
         updateMapFullscreenUI();
         updateMapViewUI();
 
-        if (els.mapRoadPlanner && !mapFullscreenMode) {
-          els.mapRoadPlanner.open = true;
+        updatePresetRouteUI();
+
+        if (els.mapRoadPlanner) {
+          const roadMode = mapSelectedRouteKey === MAP_ROUTE_MODE_ROAD_PLANNER;
+          els.mapRoadPlanner.hidden = !roadMode;
+          els.mapRoadPlanner.open = roadMode && !mapFullscreenMode;
         }
+
+        mapMovementTestVisible = mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST;
 
         if (
           typeof els.mapDialog.showModal ===
@@ -6097,54 +6132,40 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   if (els.mapRouteStartSelect) {
-    els.mapRouteStartSelect.addEventListener(
-      'change',
-      event => {
-        const value = event.target.value;
-        const activeRoute = getPresetRoute();
+    els.mapRouteStartSelect.addEventListener('change', event => {
+      const value = event.target.value;
 
-        if (
-          activeRoute.key ===
-          'garbage_cement_cooling'
-        ) {
-          if (!['svalka', 'cement'].includes(value)) {
-            return;
-          }
-
-          mapPresetRouteStart = value;
-
-          localStorage.setItem(
-            MAP_PRESET_ROUTE_START_KEY,
-            mapPresetRouteStart
-          );
-        } else if (
-          activeRoute.key ===
-          'rostok_redforest_yanov_jupiter_chemical'
-        ) {
-          if (!['west', 'east'].includes(value)) {
-            return;
-          }
-
-          mapRostokRouteStart = value;
-
-          localStorage.setItem(
-            MAP_ROSTOK_ROUTE_START_KEY,
-            mapRostokRouteStart
-          );
-        } else {
-          return;
-        }
-
-        mapJourneyActive = false;
-        mapJourneyPlan = null;
-        mapJourneySequence = [];
-
-        clearRouteStartArtifactState(activeRoute);
-
-        renderPresetRoute();
-        updateJourneyHud();
+      if (mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST) {
+        if (!MOVEMENT_TEST_ROUTES[value]) return;
+        movementTestRouteKey = value;
+        mapMovementTestVisible = true;
+        localStorage.setItem(MOVEMENT_TEST_ROUTE_KEY, movementTestRouteKey);
+        updatePresetRouteUI();
+        updateMovementTestScreenGeometry();
+        updateMapInfo();
+        return;
       }
-    );
+
+      const activeRoute = getPresetRoute();
+      if (activeRoute.key === 'garbage_cement_cooling') {
+        if (!['svalka', 'cement'].includes(value)) return;
+        mapPresetRouteStart = value;
+        localStorage.setItem(MAP_PRESET_ROUTE_START_KEY, mapPresetRouteStart);
+      } else if (activeRoute.key === 'rostok_redforest_yanov_jupiter_chemical') {
+        if (!['west', 'east'].includes(value)) return;
+        mapRostokRouteStart = value;
+        localStorage.setItem(MAP_ROSTOK_ROUTE_START_KEY, mapRostokRouteStart);
+      } else {
+        return;
+      }
+
+      mapJourneyActive = false;
+      mapJourneyPlan = null;
+      mapJourneySequence = [];
+      clearRouteStartArtifactState(activeRoute);
+      renderPresetRoute();
+      updateJourneyHud();
+    });
   }
 
   if (els.mapPlannerStartLocationSelect) {
@@ -7623,7 +7644,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v98.csv';
+    link.download = 'zone-clock-test-v101.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
