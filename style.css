@@ -4419,3 +4419,24 @@ button.zone-button-press:not(:disabled) {
   height: 23px !important;
   fill: currentColor !important;
 }
+
+
+/* PWA v109 — «В путь» для маршрута по местоположениям */
+.map-location-journey-btn {
+  color: #eef5ec !important;
+}
+
+.map-location-journey-btn:not([hidden]) {
+  display: grid !important;
+  border-color: rgba(198, 210, 91, .78) !important;
+  color: #eef5a0 !important;
+  -webkit-text-fill-color: #eef5a0 !important;
+  box-shadow: 0 0 0 1px rgba(198, 210, 91, .08), 0 0 16px rgba(198, 210, 91, .12);
+}
+
+.map-location-journey-btn:disabled {
+  display: none !important;
+}
+.map-location-journey-btn[hidden] {
+  display: none !important;
+}

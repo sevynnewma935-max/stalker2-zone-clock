@@ -75,6 +75,7 @@
     mapFullscreenZoomInBtn: $('mapFullscreenZoomInBtn'),
     mapFullscreenZoomOutBtn: $('mapFullscreenZoomOutBtn'),
     mapFullscreenResetPointsBtn: $('mapFullscreenResetPointsBtn'),
+    mapLocationJourneyBtn: $('mapLocationJourneyBtn'),
     mapPresetRouteBtn: $('mapPresetRouteBtn'),
     mapRouteSelect: $('mapRouteSelect'),
     mapJourneyBtn: $('mapJourneyBtn'),
@@ -2893,6 +2894,21 @@ mapMeasureHint: $('mapMeasureHint'),
       els.mapFullscreenResetPointsBtn.disabled =
         !(mapRoadPlannerSequence.length || mapMeasurePoints.length);
     }
+
+    if (els.mapLocationJourneyBtn) {
+      const canStartLocationJourney =
+        mapSelectedRouteKey ===
+          MAP_ROUTE_MODE_ROAD_PLANNER &&
+        mapRoadPlannerSequence.length >= 2 &&
+        mapRoadPlannerRoutePoints.length >= 2 &&
+        mapRoadPlannerMeters > 0 &&
+        !mapRoadPlannerBusy;
+
+      els.mapLocationJourneyBtn.hidden =
+        !canStartLocationJourney;
+      els.mapLocationJourneyBtn.disabled =
+        !canStartLocationJourney;
+    }
   }
 
   function updateRoadPlannerScreenGeometry() {
@@ -3441,6 +3457,56 @@ mapMeasureHint: $('mapMeasureHint'),
     return totalGame;
   }
 
+  function getRoadPlannerJourneyLabel() {
+    if (!mapRoadPlannerSequence.length) {
+      return 'Маршрут по местоположениям';
+    }
+
+    return mapRoadPlannerSequence
+      .map(item => item.label)
+      .join(' → ');
+  }
+
+  function getRoadPlannerJourneyPlan() {
+    const distanceMeters = Math.max(
+      0,
+      mapRoadPlannerMeters
+    );
+    const distanceKm =
+      distanceMeters / 1000;
+    const realSeconds = Math.max(
+      60,
+      distanceKm /
+        ROUTE_TRAVEL_SPEED_KMH *
+        3600
+    );
+
+    return {
+      routeKey: MAP_ROUTE_MODE_ROAD_PLANNER,
+      routeLabel: getRoadPlannerJourneyLabel(),
+      distanceMeters,
+      realSeconds,
+      zoneAdvanceSeconds:
+        projectZoneAdvanceForRealSeconds(
+          realSeconds,
+          gameSeconds
+        )
+    };
+  }
+
+  function getRoadPlannerJourneySequence() {
+    return mapRoadPlannerSequence.map(
+      (item, index) => ({
+        x: Number(item.x),
+        y: Number(item.y),
+        label: item.label,
+        markerIndex: null,
+        routeKey: MAP_ROUTE_MODE_ROAD_PLANNER,
+        distancePx: index
+      })
+    );
+  }
+
   function getJourneyPlan(route = getPresetRoute()) {
     const distancePx = getJourneyDistancePx(route);
     const distanceMeters = distancePx * mapMetersPerPixel;
@@ -3609,10 +3675,47 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function openJourneyPreview() {
-    const route = getPresetRoute();
-    if (!route || !els.mapJourneyDialog) return;
+    if (!els.mapJourneyDialog) return;
 
-    const plan = getJourneyPlan(route);
+    const isRoadPlannerMode =
+      mapSelectedRouteKey ===
+      MAP_ROUTE_MODE_ROAD_PLANNER;
+
+    let route = null;
+    let plan = null;
+    let routeName = '';
+
+    if (isRoadPlannerMode) {
+      if (
+        mapRoadPlannerSequence.length < 2 ||
+        mapRoadPlannerRoutePoints.length < 2 ||
+        !(mapRoadPlannerMeters > 0)
+      ) {
+        if (els.mapPlannerMessage) {
+          els.mapPlannerMessage.textContent =
+            'Сначала выберите минимум две точки местоположения и дождитесь построения маршрута.';
+        }
+        return;
+      }
+
+      plan = getRoadPlannerJourneyPlan();
+      routeName = plan.routeLabel;
+    } else {
+      route = getPresetRoute();
+      if (!route) return;
+
+      plan = getJourneyPlan(route);
+      routeName =
+        route.key ===
+          'rostok_redforest_yanov_jupiter_chemical'
+          ? `${route.label} · ${
+              mapRostokRouteStart === 'east'
+                ? 'Росток → восток'
+                : 'Росток → запад'
+            }`
+          : route.label;
+    }
+
     mapJourneyPlan = plan;
 
     if (els.mapJourneyWish) {
@@ -3622,14 +3725,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
     if (els.mapJourneyRouteName) {
       els.mapJourneyRouteName.textContent =
-        route.key ===
-          'rostok_redforest_yanov_jupiter_chemical'
-          ? `${route.label} · ${
-              mapRostokRouteStart === 'east'
-                ? 'Росток → восток'
-                : 'Росток → запад'
-            }`
-          : route.label;
+        routeName;
     }
 
     if (els.mapJourneyDistance) {
@@ -3650,7 +3746,8 @@ mapMeasureHint: $('mapMeasureHint'),
     }
 
     const routeEndAbsolute =
-      absoluteGameSeconds + plan.zoneAdvanceSeconds;
+      absoluteGameSeconds +
+      plan.zoneAdvanceSeconds;
 
     const touchesNight = routeTouchesNight(
       absoluteGameSeconds,
@@ -3658,10 +3755,12 @@ mapMeasureHint: $('mapMeasureHint'),
     );
 
     if (els.mapJourneyNight) {
-      els.mapJourneyNight.hidden = !touchesNight;
-      els.mapJourneyNight.textContent = touchesNight
-        ? 'НОЧЬ: расчётный маршрут задевает ночной период 21:30–05:30. Видимость хуже, а знакомая тропа ночью выглядит совсем иначе.'
-        : '';
+      els.mapJourneyNight.hidden =
+        !touchesNight;
+      els.mapJourneyNight.textContent =
+        touchesNight
+          ? 'НОЧЬ: расчётный маршрут задевает ночной период 21:30–05:30. Видимость хуже, а знакомая дорога ночью выглядит совсем иначе.'
+          : '';
     }
 
     if (
@@ -3870,6 +3969,47 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function startJourney() {
+    const isRoadPlannerMode =
+      mapSelectedRouteKey ===
+      MAP_ROUTE_MODE_ROAD_PLANNER;
+
+    if (isRoadPlannerMode) {
+      if (
+        mapRoadPlannerSequence.length < 2 ||
+        mapRoadPlannerRoutePoints.length < 2 ||
+        !(mapRoadPlannerMeters > 0)
+      ) {
+        closeJourneyPreview();
+        return;
+      }
+
+      mapJourneyPlan =
+        mapJourneyPlan &&
+        mapJourneyPlan.routeKey ===
+          MAP_ROUTE_MODE_ROAD_PLANNER
+          ? mapJourneyPlan
+          : getRoadPlannerJourneyPlan();
+
+      mapJourneyActive = true;
+      mapJourneySequence =
+        getRoadPlannerJourneySequence();
+
+      closeJourneyPreview();
+
+      if (!mapFullscreenMode) {
+        mapFullscreenMode = true;
+        updateMapFullscreenUI();
+      }
+
+      updateJourneyHud();
+
+      window.setTimeout(() => {
+        focusJourneyStep(0, 1050);
+      }, 180);
+
+      return;
+    }
+
     const route = getPresetRoute();
 
     mapJourneyPlan =
@@ -5247,6 +5387,21 @@ mapMeasureHint: $('mapMeasureHint'),
           : 'Сбросить выбранные точки';
     }
 
+    if (els.mapLocationJourneyBtn) {
+      const canStartLocationJourney =
+        mapSelectedRouteKey ===
+          MAP_ROUTE_MODE_ROAD_PLANNER &&
+        mapRoadPlannerSequence.length >= 2 &&
+        mapRoadPlannerRoutePoints.length >= 2 &&
+        mapRoadPlannerMeters > 0 &&
+        !mapRoadPlannerBusy;
+
+      els.mapLocationJourneyBtn.hidden =
+        !canStartLocationJourney;
+      els.mapLocationJourneyBtn.disabled =
+        !canStartLocationJourney;
+    }
+
     updateJourneyHud();
   }
 
@@ -5711,6 +5866,13 @@ mapMeasureHint: $('mapMeasureHint'),
 
   if (els.mapPresetRouteBtn) {
     els.mapPresetRouteBtn.addEventListener('click', togglePresetRoute);
+  }
+
+  if (els.mapLocationJourneyBtn) {
+    els.mapLocationJourneyBtn.addEventListener(
+      'click',
+      openJourneyPreview
+    );
   }
 
   if (els.mapJourneyBtn) {
@@ -7186,7 +7348,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v108.csv';
+    link.download = 'zone-clock-test-v109.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
