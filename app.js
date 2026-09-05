@@ -1584,6 +1584,7 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapJourneyPlan = null;
   let mapJourneySequence = [];
   let mapJourneyAnimationFrame = 0;
+  let mapRoadPlannerJourneyVisited = new Set();
   const ROUTE_TRAVEL_SPEED_KMH = 8;
   let mapPresetRouteVisible =
     localStorage.getItem(MAP_PRESET_ROUTE_STORAGE_KEY) !== '0';
@@ -1784,13 +1785,48 @@ mapMeasureHint: $('mapMeasureHint'),
       const selectedIndex = mapRoadPlannerSequence.findIndex(
         item => item.placeKey === key
       );
+      const isRoadJourney = Boolean(
+        mapJourneyActive &&
+        mapJourneyPlan &&
+        mapJourneyPlan.routeKey === MAP_ROUTE_MODE_ROAD_PLANNER
+      );
+      const isVisited = Boolean(
+        isRoadJourney &&
+        selectedIndex >= 0 &&
+        mapRoadPlannerJourneyVisited.has(selectedIndex)
+      );
+      const currentJourneyIndex = isRoadJourney
+        ? firstUnvisitedRoadPlannerJourneyIndex()
+        : -1;
+      const isCurrent = Boolean(
+        isRoadJourney &&
+        selectedIndex >= 0 &&
+        selectedIndex === currentJourneyIndex &&
+        !isVisited
+      );
+
+      const classes = ['map-known-location'];
+      if (selectedIndex >= 0) classes.push('is-selected');
+      if (isVisited) classes.push('is-journey-visited');
+      if (isCurrent) classes.push('is-journey-current');
 
       const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      group.setAttribute('class', selectedIndex >= 0 ? 'map-known-location is-selected' : 'map-known-location');
+      group.setAttribute('class', classes.join(' '));
       group.setAttribute('data-place-key', key);
       group.setAttribute('tabindex', '0');
       group.setAttribute('role', 'button');
-      group.setAttribute('aria-label', selectedIndex >= 0 ? `${place.label}, точка маршрута ${selectedIndex + 1}` : `Добавить ${place.label} в маршрут`);
+      group.setAttribute(
+        'aria-label',
+        selectedIndex >= 0
+          ? isRoadJourney
+            ? isVisited
+              ? `${place.label}, точка ${selectedIndex + 1}, посещена`
+              : `${place.label}, точка ${selectedIndex + 1}. Нажмите, чтобы отметить посещение.`
+            : `${place.label}, точка маршрута ${selectedIndex + 1}`
+          : isRoadJourney
+            ? `${place.label}, не входит в текущий маршрут`
+            : `Добавить ${place.label} в маршрут`
+      );
       group.setAttribute('transform', `translate(${screen.x}, ${screen.y})`);
 
       const outer = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -1810,7 +1846,11 @@ mapMeasureHint: $('mapMeasureHint'),
       number.setAttribute('x', '0');
       number.setAttribute('y', '3.3');
       number.setAttribute('text-anchor', 'middle');
-      number.textContent = selectedIndex >= 0 ? String(selectedIndex + 1) : '';
+      number.textContent = selectedIndex >= 0
+        ? isVisited
+          ? '✓'
+          : String(selectedIndex + 1)
+        : '';
 
       const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       label.setAttribute('class', 'map-known-location-label');
@@ -1911,6 +1951,24 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function pickRoadPlannerLocation(placeKey) {
+    const isRoadJourney = Boolean(
+      mapJourneyActive &&
+      mapJourneyPlan &&
+      mapJourneyPlan.routeKey === MAP_ROUTE_MODE_ROAD_PLANNER
+    );
+
+    if (isRoadJourney) {
+      const selectedIndex = mapRoadPlannerSequence.findIndex(
+        item => item.placeKey === placeKey
+      );
+
+      if (selectedIndex >= 0) {
+        markRoadPlannerJourneyVisit(selectedIndex);
+      }
+
+      return;
+    }
+
     addRoadPlannerSequenceStop(placeKey);
   }
 
@@ -3015,6 +3073,7 @@ mapMeasureHint: $('mapMeasureHint'),
     mapRoadPlannerPlaceBKey = '';
     mapRoadPlannerRoutePoints = [];
     mapRoadPlannerSequence = [];
+    mapRoadPlannerJourneyVisited = new Set();
     mapRoadPlannerMeters = 0;
     mapRoadPlannerNeedsRebuild = false;
 
@@ -3494,6 +3553,99 @@ mapMeasureHint: $('mapMeasureHint'),
     };
   }
 
+  function firstUnvisitedRoadPlannerJourneyIndex() {
+    if (!mapJourneySequence.length) return 0;
+
+    for (let index = 0; index < mapJourneySequence.length; index++) {
+      if (!mapRoadPlannerJourneyVisited.has(index)) {
+        return index;
+      }
+    }
+
+    return Math.max(0, mapJourneySequence.length - 1);
+  }
+
+  function focusRoadPlannerJourneyLeg(
+    fromIndex,
+    duration = 850
+  ) {
+    if (!mapJourneySequence.length) return;
+
+    const safeIndex = Math.min(
+      mapJourneySequence.length - 1,
+      Math.max(0, fromIndex)
+    );
+    const nextIndex = Math.min(
+      mapJourneySequence.length - 1,
+      safeIndex + 1
+    );
+    const current = mapJourneySequence[safeIndex];
+    const next = mapJourneySequence[nextIndex];
+
+    focusJourneyPoints(
+      current === next ? [current] : [current, next],
+      duration,
+      true
+    );
+  }
+
+  function markRoadPlannerJourneyVisit(sequenceIndex) {
+    if (
+      !mapJourneyActive ||
+      !mapJourneyPlan ||
+      mapJourneyPlan.routeKey !== MAP_ROUTE_MODE_ROAD_PLANNER ||
+      !Number.isInteger(sequenceIndex) ||
+      sequenceIndex < 0 ||
+      sequenceIndex >= mapJourneySequence.length
+    ) {
+      return;
+    }
+
+    const expectedIndex = firstUnvisitedRoadPlannerJourneyIndex();
+
+    if (mapRoadPlannerJourneyVisited.has(sequenceIndex)) {
+      focusRoadPlannerJourneyLeg(sequenceIndex, 650);
+      return;
+    }
+
+    if (sequenceIndex !== expectedIndex) {
+      const expected = mapJourneySequence[expectedIndex];
+      if (els.mapPlannerMessage && expected) {
+        els.mapPlannerMessage.textContent =
+          `Следующая точка маршрута: ${expected.label}.`;
+      }
+      return;
+    }
+
+    mapRoadPlannerJourneyVisited.add(sequenceIndex);
+    renderKnownLocationsLayer();
+
+    const hasNext = sequenceIndex < mapJourneySequence.length - 1;
+
+    if (els.mapPlannerMessage) {
+      els.mapPlannerMessage.textContent = hasNext
+        ? `${mapJourneySequence[sequenceIndex].label} отмечена посещённой. Следующая: ${mapJourneySequence[sequenceIndex + 1].label}.`
+        : `${mapJourneySequence[sequenceIndex].label} отмечена посещённой. Маршрут завершён.`;
+    }
+
+    window.setTimeout(() => {
+      if (hasNext) {
+        /*
+         * После посещения показываем на весь полезный экран именно
+         * пройденную точку и следующую — так следующий отрезок сразу
+         * становится главным на карте.
+         */
+        focusRoadPlannerJourneyLeg(sequenceIndex, 850);
+      } else {
+        focusJourneyPoints(
+          [mapJourneySequence[sequenceIndex]],
+          700,
+          true
+        );
+      }
+    }, 120);
+  }
+
   function getRoadPlannerJourneySequence() {
     return mapRoadPlannerSequence.map(
       (item, index) => ({
@@ -3850,7 +4002,8 @@ mapMeasureHint: $('mapMeasureHint'),
 
   function focusJourneyPoints(
     points,
-    duration = 850
+    duration = 850,
+    tightFullscreen = false
   ) {
     if (!els.mapViewport || !points.length) return;
 
@@ -3868,16 +4021,27 @@ mapMeasureHint: $('mapMeasureHint'),
     const maxY = Math.max(...ys);
     const dx = Math.max(24, maxX - minX);
     const dy = Math.max(24, maxY - minY);
-    const padding = Math.min(
-      90,
-      Math.max(
-        48,
-        Math.min(
-          rect.width,
-          rect.height
-        ) * 0.16
-      )
-    );
+    const padding = tightFullscreen
+      ? Math.min(
+          48,
+          Math.max(
+            22,
+            Math.min(
+              rect.width,
+              rect.height
+            ) * 0.075
+          )
+        )
+      : Math.min(
+          90,
+          Math.max(
+            48,
+            Math.min(
+              rect.width,
+              rect.height
+            ) * 0.16
+          )
+        );
 
     let targetZoom = Math.min(
       (rect.width - 2 * padding) / dx,
@@ -3993,6 +4157,7 @@ mapMeasureHint: $('mapMeasureHint'),
       mapJourneyActive = true;
       mapJourneySequence =
         getRoadPlannerJourneySequence();
+      mapRoadPlannerJourneyVisited = new Set();
 
       closeJourneyPreview();
 
@@ -4004,7 +4169,8 @@ mapMeasureHint: $('mapMeasureHint'),
       updateJourneyHud();
 
       window.setTimeout(() => {
-        focusJourneyStep(0, 1050);
+        /* Старт пути: начальная и следующая точки занимают весь полезный экран. */
+        focusRoadPlannerJourneyLeg(0, 1050);
       }, 180);
 
       return;
@@ -7348,7 +7514,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v109.csv';
+    link.download = 'zone-clock-test-v110.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();

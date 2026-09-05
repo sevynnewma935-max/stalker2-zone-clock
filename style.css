@@ -4440,3 +4440,33 @@ button.zone-button-press:not(:disabled) {
 .map-location-journey-btn[hidden] {
   display: none !important;
 }
+
+/* PWA v110 — навигация по точкам маршрута местоположений */
+.map-known-location.is-journey-visited .map-known-location-pin {
+  fill: rgba(128, 137, 111, .72) !important;
+  stroke: rgba(218, 225, 203, .72) !important;
+  opacity: .68;
+}
+
+.map-known-location.is-journey-visited .map-known-location-label {
+  opacity: .62 !important;
+}
+
+.map-known-location.is-journey-visited .map-known-location-sequence-number {
+  fill: #e8eee2 !important;
+  font-size: 11px;
+}
+
+.map-known-location.is-journey-current .map-known-location-pin {
+  fill: rgba(205, 220, 70, .98) !important;
+  stroke: #ffffff !important;
+  stroke-width: 3px !important;
+  filter:
+    drop-shadow(0 0 2px rgba(0, 0, 0, .95))
+    drop-shadow(0 0 8px rgba(221, 235, 94, .9)) !important;
+}
+
+.map-known-location.is-journey-current .map-known-location-label {
+  opacity: 1 !important;
+  font-weight: 950;
+}
