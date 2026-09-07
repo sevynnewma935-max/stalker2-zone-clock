@@ -145,7 +145,7 @@
 <div class="map-brand-kicker">S.T.A.L.K.E.R. 2</div>
 <h2 class="map-brand-title" id="mapDialogTitle">ZONE CLOCK</h2>
 <div class="map-zone-time-line">
-            ИГРОВОЕ ВРЕМЯ <strong id="mapZoneTime">--:--</strong>
+            ИГРОВОЕ ВРЕМЯ <strong id="mapZoneTime">--:--</strong> <span class="map-live-status" id="mapLiveStatus" hidden>LIVE</span>
 </div>
 <div class="map-route-header-summary" id="mapRouteHeaderSummary">
 <span>МАРШРУТ</span>
@@ -284,6 +284,11 @@
 <g class="map-custom-artifact-layer" id="mapCustomArtifactLayer" style="display:none">
 <path class="map-custom-artifact-path" d="" id="mapCustomArtifactPath"></path>
 <g id="mapCustomArtifactPoints"></g>
+</g>
+<g class="map-live-player-layer" id="mapLivePlayerLayer" style="display:none">
+<circle class="map-live-player-ring" cx="0" cy="0" r="13"></circle>
+<path class="map-live-player-arrow" d="M0,-13 L8,9 L0,5 L-8,9 Z"></path>
+<circle class="map-live-player-core" cx="0" cy="0" r="2.8"></circle>
 </g>
 <g class="map-known-locations-layer" id="mapKnownLocationsLayer" style="display:none"></g>
 <g class="map-road-planner-layer" id="mapRoadPlannerLayer" style="display:none">
@@ -662,6 +667,24 @@
           </div>
 </div>
 </div>
+
+<div class="settings-group settings-live-position">
+<div class="settings-heading">ПОЗИЦИЯ ИГРОКА · LIVE BETA</div>
+<div class="live-position-settings">
+<p>Получает координаты игрока из мода ZoneClock Live. Для первого теста используется код подключения ниже.</p>
+<label>
+<span>Код подключения</span>
+<input id="liveThingInput" autocomplete="off" spellcheck="false" type="text" value="zc-6f37d4c9d21e"/>
+</label>
+<div class="live-position-actions">
+<button class="btn outline-accent" id="liveTrackingBtn" type="button">ВКЛЮЧИТЬ LIVE</button>
+<button class="btn" id="liveCopyCodeBtn" type="button">КОПИРОВАТЬ КОД</button>
+</div>
+<div class="live-position-status" id="liveTrackingStatus">Ожидание подключения мода</div>
+<div class="live-position-coords" id="liveTrackingCoords">X — · Y — · Z —</div>
+<div class="settings-subnote">Тестовый мод должен отправлять координаты с тем же кодом. Данные пересылаются через dweet.cc; код должен быть непредсказуемым.</div>
+</div>
+</div>
 <div class="settings-group">
 <div class="settings-heading">ТЕСТ И КАЛИБРОВКА</div>
 <button class="btn settings-test-btn" id="settingsTestBtn" type="button">
@@ -682,7 +705,7 @@
 </div>
 <div class="settings-group version-group">
 <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.14</strong></div>
+<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.15</strong></div>
 <button class="btn update-app-btn" id="updateAppBtn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>
