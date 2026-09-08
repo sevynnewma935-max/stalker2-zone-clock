@@ -8562,7 +8562,6 @@ mapMeasureHint: $('mapMeasureHint'),
     if (!inRouteEditor) return;
 
     renderSavedRouteMapOptions();
-    if (typeof updateRouteRecordUi === 'function') updateRouteRecordUi();
 
     if (els.mapRouteStartWrap) els.mapRouteStartWrap.hidden = false;
     if (els.mapRouteStartLabel) els.mapRouteStartLabel.textContent = 'СОХРАНЁННЫЙ МАРШРУТ';
@@ -8604,6 +8603,7 @@ mapMeasureHint: $('mapMeasureHint'),
         els.mapSavedRouteMessage.textContent = 'Маршрут готов к сохранению.';
       }
     }
+    if (typeof updateRouteRecordUi === 'function') updateRouteRecordUi();
   }
 
   function saveCurrentNamedRoute() {
@@ -8965,13 +8965,18 @@ mapMeasureHint: $('mapMeasureHint'),
     }
 
     const locked = Boolean(active);
-    if (els.mapSavedRouteName) els.mapSavedRouteName.disabled = locked;
-    if (els.mapSavedRouteNewBtn) els.mapSavedRouteNewBtn.disabled = locked;
-    if (els.mapSavedRouteSaveBtn) els.mapSavedRouteSaveBtn.disabled = locked || els.mapSavedRouteSaveBtn.disabled;
-    if (els.mapSavedRouteDeleteBtn) els.mapSavedRouteDeleteBtn.disabled = locked || !selected;
-    if (els.mapRouteStartSelect) els.mapRouteStartSelect.disabled = locked;
-    if (els.mapUndoBtn && mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST) els.mapUndoBtn.disabled = locked;
-    if (els.mapClearBtn && mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST) els.mapClearBtn.disabled = locked;
+    const editorMode = mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST;
+    const editorNameReady = Boolean(normalizeSavedRouteName(movementTestEditorName));
+    const editorPointsReady = movementTestCustomPoints.length >= 2;
+    if (els.mapSavedRouteName) els.mapSavedRouteName.disabled = editorMode && locked;
+    if (els.mapSavedRouteNewBtn) els.mapSavedRouteNewBtn.disabled = editorMode && locked;
+    if (els.mapSavedRouteSaveBtn) {
+      els.mapSavedRouteSaveBtn.disabled = editorMode && (locked || !editorNameReady || !editorPointsReady);
+    }
+    if (els.mapSavedRouteDeleteBtn) els.mapSavedRouteDeleteBtn.disabled = editorMode && (locked || !selected);
+    if (els.mapRouteStartSelect && editorMode) els.mapRouteStartSelect.disabled = locked;
+    if (els.mapUndoBtn && editorMode) els.mapUndoBtn.disabled = locked;
+    if (els.mapClearBtn && editorMode) els.mapClearBtn.disabled = locked;
 
     renderRouteRecordHistory();
   }
@@ -9407,17 +9412,15 @@ mapMeasureHint: $('mapMeasureHint'),
       rows.push([label, data[label] || '']);
     }
 
-    const movementTests = loadMovementTests();
+    const routeRecords = loadRouteRecords();
 
     rows.push([]);
-    rows.push(['ТЕСТ СКОРОСТИ ПЕРЕДВИЖЕНИЯ']);
+    rows.push(['ЗАПИСАННЫЕ МАРШРУТЫ']);
     rows.push([
       'Маршрут',
-      'Темп',
       'Расстояние, м',
       'Реальное время, сек',
       'Время Зоны, сек',
-      'Скорость, км/ч',
       'Старт: день',
       'Старт: время',
       'Финиш: день',
@@ -9425,46 +9428,18 @@ mapMeasureHint: $('mapMeasureHint'),
       'Дата записи'
     ]);
 
-    Object.entries(movementTests).forEach(([routeKey, routeData]) => {
-      if (!routeData || typeof routeData !== 'object' || Array.isArray(routeData)) return;
-
-      ['slow', 'fast', 'run'].forEach(mode => {
-        const runs = Array.isArray(routeData[mode]) ? routeData[mode] : [];
-        runs.forEach(run => {
-          rows.push([
-            run.routeLabel || 'Свой тестовый маршрут',
-            MOVEMENT_TEST_MODES[mode],
-            run.distanceMeters || '',
-            run.realSeconds || '',
-            run.zoneSeconds || '',
-            run.speedKmh || '',
-            run.startDay || '',
-            run.startTime || '',
-            run.endDay || '',
-            run.endTime || '',
-            run.capturedAt || ''
-          ]);
-        });
-      });
-    });
-
-    ['slow', 'fast', 'run'].forEach(mode => {
-      const runs = Array.isArray(movementTests[mode]) ? movementTests[mode] : [];
-      runs.forEach(run => {
-        rows.push([
-          run.routeLabel || 'Старый контрольный маршрут',
-          MOVEMENT_TEST_MODES[mode],
-          run.distanceMeters || '',
-          run.realSeconds || '',
-          run.zoneSeconds || '',
-          run.speedKmh || '',
-          run.startDay || '',
-          run.startTime || '',
-          run.endDay || '',
-          run.endTime || '',
-          run.capturedAt || ''
-        ]);
-      });
+    routeRecords.forEach(record => {
+      rows.push([
+        record.routeName || 'Маршрут',
+        record.distanceMeters || '',
+        record.realSeconds || '',
+        record.zoneSeconds || '',
+        record.startDay || '',
+        record.startTime || '',
+        record.endDay || '',
+        record.endTime || '',
+        record.capturedAt || ''
+      ]);
     });
 
     const daylightMarks = loadDaylightMarks();
@@ -9490,7 +9465,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v116.csv';
+    link.download = 'zone-clock-test-v118.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -9518,7 +9493,7 @@ mapMeasureHint: $('mapMeasureHint'),
     renderDaylightMarks();
     updateMovementTestUi();
     updateMovementLiveTimers();
-    if (els.testMessage) els.testMessage.textContent = 'Тесты времени, движения и отметки освещения очищены.';
+    if (els.testMessage) els.testMessage.textContent = 'Тест времени и отметки освещения очищены. История маршрутов сохранена.';
   }
 
   if (els.liveThingInput) {
