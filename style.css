@@ -4744,3 +4744,35 @@ button.zone-button-press:not(:disabled) {
 .live-position-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .live-position-status { color: var(--accent-2); font-size: .78rem; font-weight: 700; }
 .live-position-coords { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .72rem; color: var(--muted); }
+
+
+/* PWA v116 — пользовательский тестовый маршрут по точкам */
+.map-dialog.movement-test-editing #mapRouteStartWrap {
+  display: none !important;
+}
+
+.map-screen-overlay .map-movement-test-point.waypoint {
+  fill: #d9ffd9;
+  stroke: #25df4c;
+  stroke-width: 2px;
+}
+
+.map-screen-overlay .map-movement-test-waypoint {
+  pointer-events: none;
+}
+
+.movement-test-distance-row {
+  align-items: center;
+}
+
+.movement-test-distance-row > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.movement-test-distance-row strong {
+  color: var(--accent-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 900;
+}

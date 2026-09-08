@@ -181,6 +181,7 @@
 <button class="btn primary" id="mapMeasureBtn" type="button">ИЗМЕРИТЬ</button>
 <button class="btn" id="mapUndoBtn" type="button">− ТОЧКА</button>
 <button class="btn" id="mapClearBtn" type="button">СБРОС</button>
+<button class="btn primary" hidden id="mapMovementTestDoneBtn" type="button">В ТЕСТ</button>
 <button aria-label="Уменьшить карту" class="btn map-zoom-btn" id="mapZoomOutBtn" type="button">−</button>
 <button class="btn" id="mapFitBtn" type="button">ВСЯ КАРТА</button>
 <button aria-label="Увеличить карту" class="btn map-zoom-btn" id="mapZoomInBtn" type="button">+</button>
@@ -192,7 +193,7 @@
 <option value="rostok_redforest_yanov_jupiter_chemical">Росток → Рыжий лес → Янов → Юпитер → Химзавод</option>
 <option value="custom_artifacts">Свой маршрут по артефактам</option>
 <option value="road_planner">По местоположениям</option>
-<option value="movement_test">Тестовый маршрут</option>
+<option value="movement_test">Тестовый маршрут по точкам</option>
 </select>
 </label>
 <label class="map-route-select-wrap" for="mapRouteStartSelect" id="mapRouteStartWrap">
@@ -270,8 +271,8 @@
 <polyline class="map-movement-test-line" fill="none" id="mapMovementTestLine" points=""></polyline>
 <circle class="map-movement-test-point start" id="mapMovementTestStart" r="6"></circle>
 <circle class="map-movement-test-point end" id="mapMovementTestEnd" r="6"></circle>
-<text class="map-movement-test-label" id="mapMovementTestStartLabel">МОСТ</text>
-<text class="map-movement-test-label" id="mapMovementTestEndLabel">SWYD-EAST</text>
+<text class="map-movement-test-label" id="mapMovementTestStartLabel">СТАРТ</text>
+<text class="map-movement-test-label" id="mapMovementTestEndLabel">ФИНИШ</text>
 <text class="map-movement-test-distance-label" id="mapMovementTestDistanceLabel"></text>
 </g>
 <g class="map-preset-route-layer" id="mapPresetRouteLayer">
@@ -478,28 +479,17 @@
 <div class="movement-test-head">
 <div>
 <div class="daylight-test-title">ТЕСТ СКОРОСТИ ПЕРЕДВИЖЕНИЯ</div>
-<label class="movement-test-route-select-wrap" for="movementTestRouteSelect">
-<span>Тестовый маршрут</span>
-<select class="movement-test-route-select" id="movementTestRouteSelect">
-<option value="cement_swyd">Мост у Цементного завода → SWYD-East Checkpoint</option>
-<option value="cooling_diagonal">Градирни · контрольный отрезок 2</option>
-</select>
-</label>
-<div class="movement-test-route" id="movementTestRouteName">
-                МОСТ У ЦЕМЕНТНОГО ЗАВОДА → SWYD-EAST CHECKPOINT, ЖЕЛЕЗНЫЙ ЛЕС
-              </div>
+<div class="movement-test-route" id="movementTestRouteName">СВОЙ ТЕСТОВЫЙ МАРШРУТ</div>
 </div>
-<button class="btn movement-map-btn" id="showMovementTestRouteBtn" type="button">
-              ПОКАЗАТЬ НА КАРТЕ
-            </button>
+<button class="btn movement-map-btn" id="editMovementTestRouteBtn" type="button">СОЗДАТЬ ПО ТОЧКАМ</button>
 </div>
 <div class="movement-test-distance-row">
-<span>КОНТРОЛЬНОЕ РАССТОЯНИЕ</span>
-<strong id="movementTestDistance">—</strong>
+<span>ТОЧЕК <strong id="movementTestPointCount">0</strong></span>
+<span>РАССТОЯНИЕ <strong id="movementTestDistance">—</strong></span>
 </div>
 <div class="movement-test-help" id="movementTestHelp">
-            Встаньте у контрольной точки на мосту, выберите темп и нажмите «СТАРТ». Переключитесь в игру и двигайтесь до SWYD-East Checkpoint без остановок. На финише вернитесь в Zone Clock и нажмите «ФИНИШ».
-          </div>
+Нажмите «СОЗДАТЬ ПО ТОЧКАМ» и поставьте на общей карте минимум две точки маршрута. Можно добавить промежуточные точки.
+</div>
 <div class="movement-test-modes">
 <div class="movement-test-card" data-movement-mode="slow">
 <div class="movement-test-mode-title">МЕДЛЕННЫЙ ШАГ</div>
@@ -520,9 +510,7 @@
 <button class="btn primary movement-test-action" data-movement-action="run" type="button">СТАРТ</button>
 </div>
 </div>
-<div class="movement-test-status" id="movementTestStatus">
-            Выберите темп и начните замер у моста.
-          </div>
+<div class="movement-test-status" id="movementTestStatus">Сначала создайте тестовый маршрут минимум из двух точек.</div>
 </section>
 <div class="test-toolbar">
 <div class="daylight-test-block">
@@ -705,7 +693,7 @@
 </div>
 <div class="settings-group version-group">
 <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.15</strong></div>
+<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.16</strong></div>
 <button class="btn update-app-btn" id="updateAppBtn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>
