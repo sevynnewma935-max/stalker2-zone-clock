@@ -193,7 +193,7 @@
 <option value="rostok_redforest_yanov_jupiter_chemical">Росток → Рыжий лес → Янов → Юпитер → Химзавод</option>
 <option value="custom_artifacts">Свой маршрут по артефактам</option>
 <option value="road_planner">По местоположениям</option>
-<option value="movement_test">Тестовый маршрут по точкам</option>
+<option value="movement_test">Свои маршруты по точкам</option>
 </select>
 </label>
 <label class="map-route-select-wrap" for="mapRouteStartSelect" id="mapRouteStartWrap">
@@ -203,6 +203,18 @@
 <option value="cement">Цементный завод</option>
 </select>
 </label>
+<div class="map-saved-route-editor" hidden id="mapSavedRouteEditor">
+<label class="map-saved-route-name-field">
+<span>ИМЯ МАРШРУТА</span>
+<input autocomplete="off" id="mapSavedRouteName" maxlength="60" placeholder="Например: До Янова или Тестовый 1" type="text"/>
+</label>
+<div class="map-saved-route-actions">
+<button class="btn" id="mapSavedRouteNewBtn" type="button">НОВЫЙ</button>
+<button class="btn primary" id="mapSavedRouteSaveBtn" type="button">СОХРАНИТЬ</button>
+<button class="btn" id="mapSavedRouteDeleteBtn" type="button">УДАЛИТЬ</button>
+</div>
+<div class="map-saved-route-message" id="mapSavedRouteMessage">Поставьте минимум две точки. Имя, начинающееся с «Тест…», добавит маршрут в раздел тестов скорости.</div>
+</div>
 <button class="btn primary map-journey-btn" id="mapJourneyBtn" type="button">
           В ПУТЬ
         </button>
@@ -483,6 +495,12 @@
 </div>
 <button class="btn movement-map-btn" id="editMovementTestRouteBtn" type="button">СОЗДАТЬ ПО ТОЧКАМ</button>
 </div>
+<label class="movement-test-route-picker">
+<span>ТЕСТОВЫЕ МАРШРУТЫ</span>
+<select id="movementTestSavedRouteSelect">
+<option value="">Нет сохранённых тестовых маршрутов</option>
+</select>
+</label>
 <div class="movement-test-distance-row">
 <span>ТОЧЕК <strong id="movementTestPointCount">0</strong></span>
 <span>РАССТОЯНИЕ <strong id="movementTestDistance">—</strong></span>
@@ -693,7 +711,7 @@
 </div>
 <div class="settings-group version-group">
 <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.16</strong></div>
+<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.17</strong></div>
 <button class="btn update-app-btn" id="updateAppBtn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>
