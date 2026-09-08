@@ -4844,3 +4844,59 @@ button.zone-button-press:not(:disabled) {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* PWA v118 — запись обычных маршрутов */
+.map-route-record-panel {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(171, 194, 109, .24);
+}
+.map-route-record-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.map-route-record-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid rgba(171, 194, 109, .20);
+  background: rgba(0, 0, 0, .16);
+}
+.map-route-record-stats span {
+  font-size: 10px;
+  letter-spacing: .08em;
+  opacity: .68;
+}
+.map-route-record-stats strong {
+  font-size: 18px;
+}
+.map-route-record-status {
+  margin-top: 7px;
+  font-size: 12px;
+  line-height: 1.35;
+  opacity: .82;
+}
+.map-route-record-history {
+  display: grid;
+  gap: 6px;
+  margin-top: 9px;
+  max-height: 160px;
+  overflow: auto;
+}
+.map-route-record-history-row {
+  display: grid;
+  gap: 2px;
+  padding: 7px 8px;
+  border-left: 2px solid rgba(171, 194, 109, .45);
+  background: rgba(0, 0, 0, .13);
+}
+.map-route-record-history-row strong { font-size: 12px; }
+.map-route-record-history-row span,
+.map-route-record-history-empty {
+  font-size: 11px;
+  opacity: .72;
+}

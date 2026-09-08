@@ -24,7 +24,7 @@
     9.758742, 10.368664, 11.059908, 12.761432, 20.737327, 20.737327, 20.371936, 23.041724,
     21.560471, 21.560471, 21.560471, 21.560471, 21.560471, 21.560471, 21.560471, 21.560471,
   ];
-  const SLEEP_GAME_SECONDS = 8 * 3600;
+  const SLEEP_GAME_SECONDS = 7 * 3600;
   const STORAGE_KEY = 'stalker2-zone-clock-v1';
   const THEME_KEY = 'stalker2-zone-clock-theme';
   const TEST_STORAGE_KEY = 'stalker2-zone-clock-test-v1';
@@ -37,6 +37,8 @@
   const SAVED_ROUTE_MAP_SELECTED_KEY = 'stalker2-zone-clock-saved-route-selected-v1';
   const MOVEMENT_TEST_SAVED_ROUTE_KEY = 'stalker2-zone-clock-movement-test-saved-route-v1';
   const SAVED_ROUTE_MIGRATION_KEY = 'stalker2-zone-clock-saved-route-migration-v117';
+  const ROUTE_RECORD_STORAGE_KEY = 'stalker2-zone-clock-route-records-v1';
+  const ROUTE_RECORD_ACTIVE_KEY = 'stalker2-zone-clock-route-record-active-v1';
   const MAP_SCALE_STORAGE_KEY = 'stalker2-zone-clock-map-scale-v1';
   const NOTIFICATION_KEY = 'stalker2-zone-clock-notifications-v1';
   const NOTIFICATION_NEXT_KEY = 'stalker2-zone-clock-next-message-v1';
@@ -102,6 +104,12 @@
     mapSavedRouteSaveBtn: $('mapSavedRouteSaveBtn'),
     mapSavedRouteDeleteBtn: $('mapSavedRouteDeleteBtn'),
     mapSavedRouteMessage: $('mapSavedRouteMessage'),
+    mapRouteRecordPanel: $('mapRouteRecordPanel'),
+    mapRouteRecordTime: $('mapRouteRecordTime'),
+    mapRouteRecordDistance: $('mapRouteRecordDistance'),
+    mapRouteRecordBtn: $('mapRouteRecordBtn'),
+    mapRouteRecordStatus: $('mapRouteRecordStatus'),
+    mapRouteRecordHistory: $('mapRouteRecordHistory'),
     mapRouteSelectValue: $('mapRouteSelectValue'),
     mapRouteStartValue: $('mapRouteStartValue'),
     mapRoadRoutePath: $('mapRoadRoutePath'),
@@ -6596,6 +6604,7 @@ mapMeasureHint: $('mapMeasureHint'),
       'click',
       () => {
         if (mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST && movementTestCustomPoints.length) {
+          if (loadActiveRouteRecord()) return;
           clearMovementTestRoute();
         } else if (mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT && mapCustomArtifactSequence.length) {
           clearCustomArtifactRoute();
@@ -6629,6 +6638,7 @@ mapMeasureHint: $('mapMeasureHint'),
   if (els.mapUndoBtn) {
     els.mapUndoBtn.addEventListener('click', () => {
       if (mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST) {
+        if (loadActiveRouteRecord()) return;
         undoMovementTestPoint();
       } else {
         mapMeasurePoints.pop();
@@ -6640,6 +6650,7 @@ mapMeasureHint: $('mapMeasureHint'),
   if (els.mapClearBtn) {
     els.mapClearBtn.addEventListener('click', () => {
       if (mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST) {
+        if (loadActiveRouteRecord()) return;
         clearMovementTestRoute();
       } else if (mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT) {
         clearCustomArtifactRoute();
@@ -6858,6 +6869,7 @@ mapMeasureHint: $('mapMeasureHint'),
     }, { passive: false });
 
     els.mapViewport.addEventListener('pointerdown', event => {
+      if (event.target.closest && event.target.closest('button, select, input, label, .map-fullscreen-zoom-controls')) return;
       if (event.pointerType === 'mouse' && event.button !== 0) return;
 
       beginMapInteraction();
@@ -6921,6 +6933,12 @@ mapMeasureHint: $('mapMeasureHint'),
     });
 
     els.mapViewport.addEventListener('pointerup', event => {
+      if (event.target.closest && event.target.closest('button, select, input, label, .map-fullscreen-zoom-controls')) {
+        mapActivePointers.delete(event.pointerId);
+        mapPointerState = null;
+        mapPinchState = null;
+        return;
+      }
       endMapInteraction();
 
       const currentPointer = mapPointerState &&
@@ -6960,7 +6978,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
         if (mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST) {
           mapLastTapAt = 0;
-          if (!loadActiveMovementTest()) {
+          if (!loadActiveMovementTest() && !loadActiveRouteRecord()) {
             addMovementTestPoint(event.clientX, event.clientY);
           }
           return;
@@ -8381,7 +8399,7 @@ mapMeasureHint: $('mapMeasureHint'),
           return {
             id: String(item.id).slice(0, 80),
             name,
-            kind: isTestSavedRouteName(name) ? 'test' : 'route',
+            kind: 'route',
             points,
             createdAt: Number(item.createdAt) || Date.now(),
             updatedAt: Number(item.updatedAt) || Date.now()
@@ -8504,8 +8522,7 @@ mapMeasureHint: $('mapMeasureHint'),
       select.appendChild(group);
     };
 
-    addGroup('СОХРАНЁННЫЕ', savedUserRoutes.filter(route => route.kind !== 'test'));
-    addGroup('ТЕСТОВЫЕ', savedUserRoutes.filter(route => route.kind === 'test'));
+    addGroup('СОХРАНЁННЫЕ', savedUserRoutes);
     select.value = savedRouteById(selectedSavedRouteId) ? selectedSavedRouteId : '';
   }
 
@@ -8545,6 +8562,7 @@ mapMeasureHint: $('mapMeasureHint'),
     if (!inRouteEditor) return;
 
     renderSavedRouteMapOptions();
+    if (typeof updateRouteRecordUi === 'function') updateRouteRecordUi();
 
     if (els.mapRouteStartWrap) els.mapRouteStartWrap.hidden = false;
     if (els.mapRouteStartLabel) els.mapRouteStartLabel.textContent = 'СОХРАНЁННЫЙ МАРШРУТ';
@@ -8574,16 +8592,14 @@ mapMeasureHint: $('mapMeasureHint'),
         els.mapSavedRouteMessage.textContent = message;
       } else if (!pointsReady) {
         els.mapSavedRouteMessage.textContent =
-          'Поставьте минимум две точки. Имя, начинающееся с «Тест…», добавит маршрут в раздел тестов скорости.';
+          'Поставьте минимум две точки, задайте имя и сохраните маршрут.';
       } else if (!name) {
         els.mapSavedRouteMessage.textContent = 'Введите имя маршрута и нажмите «СОХРАНИТЬ».';
       } else if (hasSaved && !editorMatchesSavedRoute()) {
         els.mapSavedRouteMessage.textContent = 'Маршрут изменён. Нажмите «СОХРАНИТЬ ИЗМЕНЕНИЯ».';
       } else if (hasSaved) {
         els.mapSavedRouteMessage.textContent =
-          savedRouteById(selectedSavedRouteId)?.kind === 'test'
-            ? 'Сохранён как тестовый маршрут и доступен в разделе тестов скорости.'
-            : 'Маршрут сохранён.';
+          'Маршрут сохранён.';
       } else {
         els.mapSavedRouteMessage.textContent = 'Маршрут готов к сохранению.';
       }
@@ -8610,7 +8626,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const route = {
       id,
       name,
-      kind: isTestSavedRouteName(name) ? 'test' : 'route',
+      kind: 'route',
       points,
       createdAt: existing?.createdAt || now,
       updatedAt: now
@@ -8639,9 +8655,7 @@ mapMeasureHint: $('mapMeasureHint'),
     renderMovementTestSavedRouteOptions();
     updateMovementTestUi();
     refreshSavedRouteEditorUi(
-      route.kind === 'test'
-        ? `«${name}» сохранён и добавлен в ТЕСТОВЫЕ МАРШРУТЫ.`
-        : `«${name}» сохранён.`
+      `«${name}» сохранён.`
     );
   }
 
@@ -8670,7 +8684,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const route = {
       id: makeSavedRouteId(),
       name: 'Тестовый',
-      kind: 'test',
+      kind: 'route',
       points: cleanSavedRoutePoints(movementTestCustomPoints),
       createdAt: now,
       updatedAt: now
@@ -8835,6 +8849,218 @@ mapMeasureHint: $('mapMeasureHint'),
       updateMovementTestScreenGeometry();
     });
   }
+
+
+  // PWA v118 — запись обычных маршрутов.
+  function loadRouteRecords() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(ROUTE_RECORD_STORAGE_KEY) || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveRouteRecords(records) {
+    localStorage.setItem(ROUTE_RECORD_STORAGE_KEY, JSON.stringify(records.slice(-200)));
+  }
+
+  function loadActiveRouteRecord() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(ROUTE_RECORD_ACTIVE_KEY) || 'null');
+      if (!parsed || !parsed.routeId || !(Number(parsed.startedAtMs) > 0)) return null;
+      return parsed;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function saveActiveRouteRecord(record) {
+    if (!record) {
+      localStorage.removeItem(ROUTE_RECORD_ACTIVE_KEY);
+      return;
+    }
+    localStorage.setItem(ROUTE_RECORD_ACTIVE_KEY, JSON.stringify(record));
+  }
+
+  function routeRecordDistanceMeters(route) {
+    const points = cleanSavedRoutePoints(route?.points);
+    return points.length >= 2 ? plannerPathMeters(points) : 0;
+  }
+
+  function routeRecordElapsedSeconds(active) {
+    return active ? Math.max(0, (Date.now() - Number(active.startedAtMs)) / 1000) : 0;
+  }
+
+  function routeRecordHistoryText(record) {
+    const duration = formatMovementElapsed(Number(record.realSeconds) || 0);
+    const distance = formatMapDistance(Number(record.distanceMeters) || 0);
+    return `День ${record.startDay} · ${record.startTime} → ${record.endTime} · ${duration} · ${distance}`;
+  }
+
+  function renderRouteRecordHistory() {
+    if (!els.mapRouteRecordHistory) return;
+    const route = savedRouteById(selectedSavedRouteId);
+    const records = loadRouteRecords()
+      .filter(record => !route || record.routeId === route.id)
+      .slice(-8)
+      .reverse();
+
+    els.mapRouteRecordHistory.innerHTML = '';
+    if (!records.length) {
+      const empty = document.createElement('div');
+      empty.className = 'map-route-record-history-empty';
+      empty.textContent = route ? 'Записей по этому маршруту пока нет.' : 'История маршрутов пока пуста.';
+      els.mapRouteRecordHistory.appendChild(empty);
+      return;
+    }
+
+    records.forEach(record => {
+      const row = document.createElement('div');
+      row.className = 'map-route-record-history-row';
+      const name = document.createElement('strong');
+      name.textContent = record.routeName || 'Маршрут';
+      const info = document.createElement('span');
+      info.textContent = routeRecordHistoryText(record);
+      row.append(name, info);
+      els.mapRouteRecordHistory.appendChild(row);
+    });
+  }
+
+  function updateRouteRecordUi() {
+    if (!els.mapRouteRecordPanel) return;
+    const active = loadActiveRouteRecord();
+    const selected = savedRouteById(selectedSavedRouteId);
+    const activeSelected = active ? savedRouteById(active.routeId) : null;
+    const route = active ? (activeSelected || active) : selected;
+    const distanceMeters = active
+      ? Number(active.distanceMeters) || 0
+      : routeRecordDistanceMeters(route);
+
+    if (els.mapRouteRecordTime) {
+      els.mapRouteRecordTime.textContent = active
+        ? formatMovementElapsed(routeRecordElapsedSeconds(active))
+        : '00:00';
+    }
+    if (els.mapRouteRecordDistance) {
+      els.mapRouteRecordDistance.textContent = distanceMeters > 0
+        ? formatMapDistance(distanceMeters)
+        : '—';
+    }
+    if (els.mapRouteRecordBtn) {
+      els.mapRouteRecordBtn.textContent = active ? 'ЗАВЕРШИТЬ МАРШРУТ' : 'НАЧАТЬ МАРШРУТ';
+      els.mapRouteRecordBtn.classList.toggle('danger', Boolean(active));
+      els.mapRouteRecordBtn.disabled = !active && !selected;
+    }
+    if (els.mapRouteRecordStatus) {
+      if (active) {
+        els.mapRouteRecordStatus.textContent =
+          `Идёт маршрут «${active.routeName}». Время и расстояние записываются.`;
+      } else if (selected) {
+        els.mapRouteRecordStatus.textContent =
+          `Готов к старту: «${selected.name}» · ${formatMapDistance(distanceMeters)}.`;
+      } else {
+        els.mapRouteRecordStatus.textContent = 'Сначала создайте и сохраните маршрут.';
+      }
+    }
+
+    const locked = Boolean(active);
+    if (els.mapSavedRouteName) els.mapSavedRouteName.disabled = locked;
+    if (els.mapSavedRouteNewBtn) els.mapSavedRouteNewBtn.disabled = locked;
+    if (els.mapSavedRouteSaveBtn) els.mapSavedRouteSaveBtn.disabled = locked || els.mapSavedRouteSaveBtn.disabled;
+    if (els.mapSavedRouteDeleteBtn) els.mapSavedRouteDeleteBtn.disabled = locked || !selected;
+    if (els.mapRouteStartSelect) els.mapRouteStartSelect.disabled = locked;
+    if (els.mapUndoBtn && mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST) els.mapUndoBtn.disabled = locked;
+    if (els.mapClearBtn && mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST) els.mapClearBtn.disabled = locked;
+
+    renderRouteRecordHistory();
+  }
+
+  function startRouteRecord() {
+    const route = savedRouteById(selectedSavedRouteId);
+    if (!route || route.points.length < 2) {
+      if (els.mapRouteRecordStatus) els.mapRouteRecordStatus.textContent =
+        'Сначала сохраните маршрут минимум из двух точек.';
+      return;
+    }
+
+    updateNow();
+    const distanceMeters = routeRecordDistanceMeters(route);
+    saveActiveRouteRecord({
+      routeId: route.id,
+      routeName: route.name,
+      points: cleanSavedRoutePoints(route.points),
+      distanceMeters,
+      startedAtMs: Date.now(),
+      startAbsoluteGameSeconds: Math.round(absoluteGameSeconds),
+      startDay: gameDay,
+      startTime: formatClock(gameSeconds)
+    });
+    updateRouteRecordUi();
+  }
+
+  function finishRouteRecord() {
+    const active = loadActiveRouteRecord();
+    if (!active) return;
+
+    updateNow();
+    const finishedAtMs = Date.now();
+    const realSeconds = Math.max(0.1, (finishedAtMs - Number(active.startedAtMs)) / 1000);
+    const endAbsoluteGameSeconds = Math.round(absoluteGameSeconds);
+    const zoneSeconds = Math.max(0, endAbsoluteGameSeconds - Number(active.startAbsoluteGameSeconds));
+
+    const records = loadRouteRecords();
+    records.push({
+      routeId: active.routeId,
+      routeName: active.routeName,
+      distanceMeters: Math.round(Number(active.distanceMeters) || 0),
+      realSeconds: Math.round(realSeconds * 10) / 10,
+      zoneSeconds,
+      startedAtMs: Number(active.startedAtMs),
+      finishedAtMs,
+      startDay: active.startDay,
+      startTime: active.startTime,
+      endDay: gameDay,
+      endTime: formatClock(gameSeconds),
+      capturedAt: new Date().toISOString()
+    });
+    saveRouteRecords(records);
+    saveActiveRouteRecord(null);
+    updateRouteRecordUi();
+
+    if (els.mapRouteRecordStatus) {
+      els.mapRouteRecordStatus.textContent =
+        `Маршрут «${active.routeName}» записан: ${formatMovementElapsed(realSeconds)} · ${formatMapDistance(Number(active.distanceMeters) || 0)}.`;
+    }
+  }
+
+  function toggleRouteRecord() {
+    if (loadActiveRouteRecord()) finishRouteRecord();
+    else startRouteRecord();
+  }
+
+  if (els.mapRouteRecordBtn) {
+    els.mapRouteRecordBtn.addEventListener('click', toggleRouteRecord);
+  }
+
+  // Refresh route recorder whenever the ordinary route editor changes.
+  if (els.mapSavedRouteName) {
+    els.mapSavedRouteName.addEventListener('input', () => window.setTimeout(updateRouteRecordUi, 0));
+  }
+  if (els.mapRouteStartSelect) {
+    els.mapRouteStartSelect.addEventListener('change', () => window.setTimeout(updateRouteRecordUi, 0));
+  }
+  if (els.mapSavedRouteSaveBtn) {
+    els.mapSavedRouteSaveBtn.addEventListener('click', () => window.setTimeout(updateRouteRecordUi, 0));
+  }
+  if (els.mapSavedRouteNewBtn) {
+    els.mapSavedRouteNewBtn.addEventListener('click', () => window.setTimeout(updateRouteRecordUi, 0));
+  }
+  if (els.mapSavedRouteDeleteBtn) {
+    els.mapSavedRouteDeleteBtn.addEventListener('click', () => window.setTimeout(updateRouteRecordUi, 0));
+  }
+
+  window.setInterval(updateRouteRecordUi, 500);
 
   migrateV116TestRoute();
 

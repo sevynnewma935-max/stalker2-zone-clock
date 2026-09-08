@@ -104,7 +104,7 @@
 <button aria-live="polite" class="btn sleep-btn" id="sleepBtn" type="button">
 <span aria-hidden="true" class="sleep-icon">☾</span>
 <span class="sleep-label">СОН</span>
-<span class="sleep-hours">+8 Ч</span>
+<span class="sleep-hours">+7 Ч</span>
 </button>
 </section>
 <section class="utility-panel">
@@ -193,7 +193,7 @@
 <option value="rostok_redforest_yanov_jupiter_chemical">Росток → Рыжий лес → Янов → Юпитер → Химзавод</option>
 <option value="custom_artifacts">Свой маршрут по артефактам</option>
 <option value="road_planner">По местоположениям</option>
-<option value="movement_test">Свои маршруты по точкам</option>
+<option value="movement_test">Свои маршруты</option>
 </select>
 </label>
 <label class="map-route-select-wrap" for="mapRouteStartSelect" id="mapRouteStartWrap">
@@ -213,7 +213,16 @@
 <button class="btn primary" id="mapSavedRouteSaveBtn" type="button">СОХРАНИТЬ</button>
 <button class="btn" id="mapSavedRouteDeleteBtn" type="button">УДАЛИТЬ</button>
 </div>
-<div class="map-saved-route-message" id="mapSavedRouteMessage">Поставьте минимум две точки. Имя, начинающееся с «Тест…», добавит маршрут в раздел тестов скорости.</div>
+<div class="map-saved-route-message" id="mapSavedRouteMessage">Поставьте минимум две точки, задайте имя и сохраните маршрут.</div>
+<div class="map-route-record-panel" id="mapRouteRecordPanel">
+<div class="map-route-record-stats">
+<div><span>ВРЕМЯ</span><strong id="mapRouteRecordTime">00:00</strong></div>
+<div><span>РАССТОЯНИЕ</span><strong id="mapRouteRecordDistance">—</strong></div>
+</div>
+<button class="btn primary wide map-route-record-btn" id="mapRouteRecordBtn" type="button">НАЧАТЬ МАРШРУТ</button>
+<div class="map-route-record-status" id="mapRouteRecordStatus">Сначала сохраните маршрут.</div>
+<div class="map-route-record-history" id="mapRouteRecordHistory"></div>
+</div>
 </div>
 <button class="btn primary map-journey-btn" id="mapJourneyBtn" type="button">
           В ПУТЬ
@@ -487,49 +496,6 @@
 </div>
 </div>
 <div class="test-content">
-<section class="movement-test-block">
-<div class="movement-test-head">
-<div>
-<div class="daylight-test-title">ТЕСТ СКОРОСТИ ПЕРЕДВИЖЕНИЯ</div>
-<div class="movement-test-route" id="movementTestRouteName">СВОЙ ТЕСТОВЫЙ МАРШРУТ</div>
-</div>
-<button class="btn movement-map-btn" id="editMovementTestRouteBtn" type="button">СОЗДАТЬ ПО ТОЧКАМ</button>
-</div>
-<label class="movement-test-route-picker">
-<span>ТЕСТОВЫЕ МАРШРУТЫ</span>
-<select id="movementTestSavedRouteSelect">
-<option value="">Нет сохранённых тестовых маршрутов</option>
-</select>
-</label>
-<div class="movement-test-distance-row">
-<span>ТОЧЕК <strong id="movementTestPointCount">0</strong></span>
-<span>РАССТОЯНИЕ <strong id="movementTestDistance">—</strong></span>
-</div>
-<div class="movement-test-help" id="movementTestHelp">
-Нажмите «СОЗДАТЬ ПО ТОЧКАМ» и поставьте на общей карте минимум две точки маршрута. Можно добавить промежуточные точки.
-</div>
-<div class="movement-test-modes">
-<div class="movement-test-card" data-movement-mode="slow">
-<div class="movement-test-mode-title">МЕДЛЕННЫЙ ШАГ</div>
-<div class="movement-live-time" data-movement-live="slow">00:00</div>
-<div class="movement-test-result" data-movement-result="slow">Нет замеров</div>
-<button class="btn primary movement-test-action" data-movement-action="slow" type="button">СТАРТ</button>
-</div>
-<div class="movement-test-card" data-movement-mode="fast">
-<div class="movement-test-mode-title">БЫСТРЫЙ ШАГ</div>
-<div class="movement-live-time" data-movement-live="fast">00:00</div>
-<div class="movement-test-result" data-movement-result="fast">Нет замеров</div>
-<button class="btn primary movement-test-action" data-movement-action="fast" type="button">СТАРТ</button>
-</div>
-<div class="movement-test-card" data-movement-mode="run">
-<div class="movement-test-mode-title">БЕГ</div>
-<div class="movement-live-time" data-movement-live="run">00:00</div>
-<div class="movement-test-result" data-movement-result="run">Нет замеров</div>
-<button class="btn primary movement-test-action" data-movement-action="run" type="button">СТАРТ</button>
-</div>
-</div>
-<div class="movement-test-status" id="movementTestStatus">Сначала создайте тестовый маршрут минимум из двух точек.</div>
-</section>
 <div class="test-toolbar">
 <div class="daylight-test-block">
 <div class="daylight-test-title">ОСВЕЩЕНИЕ</div>
@@ -711,7 +677,7 @@
 </div>
 <div class="settings-group version-group">
 <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.17</strong></div>
+<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.18</strong></div>
 <button class="btn update-app-btn" id="updateAppBtn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>
