@@ -1,0 +1,41 @@
+name: Build PWA v117 archive
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-pwa-v117-archive.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify v117
+        run: |
+          grep -q 'ZONE CLOCK <strong>v1.17</strong>' index.html
+          grep -q 'mapSavedRouteEditor' index.html
+          grep -q 'movementTestSavedRouteSelect' index.html
+          grep -q 'SAVED_ROUTE_STORAGE_KEY' app.js
+          grep -q 'stalker2-zone-clock-app-v117' service-worker.js
+          node --check app.js
+          node --check service-worker.js
+      - name: Upload deployable PWA
+        uses: actions/upload-artifact@v4
+        with:
+          name: PWA-v117
+          path: |
+            index.html
+            app.js
+            style.css
+            service-worker.js
+            manifest.webmanifest
+            README.txt
+            api/
+            vercel.json
+            icons/
+            assets/
+          if-no-files-found: error
+          compression-level: 6
