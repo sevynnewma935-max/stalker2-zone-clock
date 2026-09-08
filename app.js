@@ -6122,12 +6122,21 @@ mapMeasureHint: $('mapMeasureHint'),
         mapCustomArtifactSequence.length > 0;
       const hasMeasuredPoints =
         mapMeasurePoints.length > 0;
+      const hasMovementTestPoints = (() => {
+        if (mapSelectedRouteKey !== MAP_ROUTE_MODE_MOVEMENT_TEST) return false;
+        try {
+          const points = JSON.parse(localStorage.getItem(MOVEMENT_TEST_CUSTOM_ROUTE_KEY) || '[]');
+          return Array.isArray(points) && points.length > 0;
+        } catch (_) {
+          return false;
+        }
+      })();
 
       els.mapFullscreenResetPointsBtn.disabled =
-        !(hasSelectedLocationPoints || hasSelectedArtifactPoints || hasMeasuredPoints);
+        !(hasSelectedLocationPoints || hasSelectedArtifactPoints || hasMeasuredPoints || hasMovementTestPoints);
 
       els.mapFullscreenResetPointsBtn.title =
-        hasSelectedLocationPoints || hasSelectedArtifactPoints
+        hasSelectedLocationPoints || hasSelectedArtifactPoints || hasMovementTestPoints
           ? 'Сбросить выбранные точки маршрута'
           : 'Сбросить выбранные точки';
     }
@@ -8145,6 +8154,7 @@ mapMeasureHint: $('mapMeasureHint'),
   function syncMovementTestMapChrome() {
     const active = mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST;
     if (els.mapDialog) els.mapDialog.classList.toggle('movement-test-editing', active);
+    if (els.mapRouteSelect) els.mapRouteSelect.disabled = active;
     if (els.mapRouteStartWrap && active) els.mapRouteStartWrap.hidden = true;
     if (els.mapMovementTestDoneBtn) {
       els.mapMovementTestDoneBtn.hidden = !active;
@@ -8304,6 +8314,8 @@ mapMeasureHint: $('mapMeasureHint'),
 
   function returnToMovementTest() {
     if (els.mapDialog) els.mapDialog.classList.remove('movement-test-editing');
+    if (els.mapRouteSelect) els.mapRouteSelect.disabled = false;
+    if (els.mapMovementTestDoneBtn) els.mapMovementTestDoneBtn.hidden = true;
     if (els.mapDialog?.open) {
       if (typeof els.mapDialog.close === 'function') els.mapDialog.close();
       else els.mapDialog.removeAttribute('open');
