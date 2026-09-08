@@ -1,0 +1,35 @@
+name: Build PWA v116 archive
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-pwa-v116-archive.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify v116
+        run: |
+          grep -q 'ZONE CLOCK <strong>v1.16</strong>' index.html
+          grep -q "stalker2-zone-clock-app-v116" service-worker.js
+          node --check app.js
+      - name: Upload deployable PWA
+        uses: actions/upload-artifact@v4
+        with:
+          name: PWA-v116
+          path: |
+            index.html
+            app.js
+            style.css
+            service-worker.js
+            manifest.webmanifest
+            README.txt
+            icons/
+            assets/
+          if-no-files-found: error
+          compression-level: 6
