@@ -17,8 +17,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply v116 patch
-        run: python .github/scripts/zoneclock_v116_patch.py
+      - name: Apply v116 final UI fixes
+        run: python .github/scripts/zoneclock_v116_finish.py
 
       - name: Validate JavaScript
         run: |
@@ -27,15 +27,15 @@ jobs:
 
       - name: Validate v116 markers
         run: |
+          grep -q 'movement-test-editing' app.js
+          grep -q 'hasMovementTestPoints' app.js
           grep -q 'ZONE CLOCK <strong>v1.16</strong>' index.html
-          grep -q 'movementTestPointCount' index.html
-          grep -q 'MOVEMENT_TEST_CUSTOM_ROUTE_KEY' app.js
           grep -q 'stalker2-zone-clock-app-v116' service-worker.js
 
-      - name: Commit v116
+      - name: Commit fixes
         run: |
           git config user.name 'Zone Clock Builder'
           git config user.email 'actions@users.noreply.github.com'
-          git add app.js index.html style.css service-worker.js README.txt
-          git commit -m 'PWA v116: custom movement test route points'
+          git add app.js
+          git commit -m 'PWA v116: finish movement route editor UI'
           git push
