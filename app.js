@@ -9589,6 +9589,57 @@ mapMeasureHint: $('mapMeasureHint'),
   if (els.exportTestBtn) els.exportTestBtn.addEventListener('click', exportTestCsv);
   if (els.clearTestBtn) els.clearTestBtn.addEventListener('click', clearTestTable);
 
+
+
+  // PWA v119 — не давать экрану выключаться, пока Zone Clock открыт.
+  let zoneClockWakeLock = null;
+  let zoneClockWakeLockRequestPending = false;
+
+  async function requestZoneClockWakeLock() {
+    if (document.visibilityState !== 'visible') return;
+    if (!('wakeLock' in navigator)) return;
+    if (zoneClockWakeLock || zoneClockWakeLockRequestPending) return;
+
+    zoneClockWakeLockRequestPending = true;
+    try {
+      const sentinel = await navigator.wakeLock.request('screen');
+      zoneClockWakeLock = sentinel;
+      sentinel.addEventListener('release', () => {
+        if (zoneClockWakeLock === sentinel) zoneClockWakeLock = null;
+      }, { once: true });
+    } catch (error) {
+      // Браузер или энергосбережение могут временно отклонить запрос.
+      console.info('Zone Clock: screen wake lock unavailable', error?.name || error);
+    } finally {
+      zoneClockWakeLockRequestPending = false;
+    }
+  }
+
+  async function releaseZoneClockWakeLock() {
+    const sentinel = zoneClockWakeLock;
+    zoneClockWakeLock = null;
+    if (!sentinel || sentinel.released) return;
+    try {
+      await sentinel.release();
+    } catch (_) {}
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      requestZoneClockWakeLock();
+    } else {
+      releaseZoneClockWakeLock();
+    }
+  });
+
+  // Первый запрос при запуске и повторная попытка после любого касания/клика,
+  // если конкретный браузер требует пользовательское действие.
+  requestZoneClockWakeLock();
+  document.addEventListener('pointerdown', requestZoneClockWakeLock, {
+    passive: true
+  });
+
+
   restoreNotificationSchedule();
   updateNotificationSettingsUi();
 
