@@ -1,5 +1,5 @@
-const APP_CACHE = 'stalker2-zone-clock-app-v120';
-const MAP_CACHE = 'stalker2-zone-clock-map-v120';
+const APP_CACHE = 'stalker2-zone-clock-app-v121';
+const MAP_CACHE = 'stalker2-zone-clock-map-v121';
 
 const APP_ASSETS = [
   './', './index.html', './style.css', './app.js', './manifest.webmanifest',

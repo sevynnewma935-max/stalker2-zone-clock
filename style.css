@@ -4914,3 +4914,17 @@ button.zone-button-press:not(:disabled) {
   font-size: 11px;
   opacity: .72;
 }
+
+
+/* PWA v121 — при открытии окна сначала карта, затем остальные блоки. */
+.map-dialog:not(.map-fullscreen) .map-modal > * {
+  order: 2;
+}
+
+.map-dialog:not(.map-fullscreen) .map-modal-header {
+  order: 0;
+}
+
+.map-dialog:not(.map-fullscreen) .map-viewport {
+  order: 1;
+}
