@@ -3819,6 +3819,20 @@ button.zone-button-press:not(:disabled) {
   cursor: pointer;
 }
 
+/* PWA v120 — location names belong to the map itself and stay on every map. */
+.map-known-location.is-passive {
+  cursor: default;
+  pointer-events: none;
+}
+
+.map-known-location.is-passive .map-known-location-pin {
+  opacity: .94;
+}
+
+.map-known-location.is-passive .map-known-location-label {
+  opacity: 1 !important;
+}
+
 .map-known-location-pin {
   fill: rgba(31, 77, 57, .96);
   stroke: rgba(240, 248, 240, .96);

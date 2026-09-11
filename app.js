@@ -1931,24 +1931,25 @@ mapMeasureHint: $('mapMeasureHint'),
      * Поэтому в полноэкранной карте и после выбора первой точки
      * остальные точки продолжают оставаться видимыми.
      */
-    const shouldShow =
+    // PWA v120: locations are a permanent overlay of the Zone map, not a
+    // feature of one route mode. Every current and future map background uses
+    // the same map coordinate system, so this layer stays visible regardless
+    // of the selected map/view/route mode.
+    const plannerActive =
       mapSelectedRouteKey ===
       MAP_ROUTE_MODE_ROAD_PLANNER;
 
-    els.mapKnownLocationsLayer.style.display = shouldShow ? '' : 'none';
-    if (!shouldShow) {
-      els.mapKnownLocationsLayer.textContent = '';
-      return;
-    }
-
+    els.mapKnownLocationsLayer.style.display = '';
     els.mapKnownLocationsLayer.textContent = '';
 
     visibleRoadPlannerLocations().forEach(key => {
       const place = MAP_KNOWN_LOCATIONS[key];
       const screen = routePointToScreen(place);
-      const selectedIndex = mapRoadPlannerSequence.findIndex(
-        item => item.placeKey === key
-      );
+      const selectedIndex = plannerActive
+        ? mapRoadPlannerSequence.findIndex(
+            item => item.placeKey === key
+          )
+        : -1;
       const isRoadJourney = Boolean(
         mapJourneyActive &&
         mapJourneyPlan &&
@@ -1970,6 +1971,7 @@ mapMeasureHint: $('mapMeasureHint'),
       );
 
       const classes = ['map-known-location'];
+      if (!plannerActive) classes.push('is-passive');
       if (selectedIndex >= 0) classes.push('is-selected');
       if (isVisited) classes.push('is-journey-visited');
       if (isCurrent) classes.push('is-journey-current');
@@ -1977,8 +1979,12 @@ mapMeasureHint: $('mapMeasureHint'),
       const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       group.setAttribute('class', classes.join(' '));
       group.setAttribute('data-place-key', key);
-      group.setAttribute('tabindex', '0');
-      group.setAttribute('role', 'button');
+      if (plannerActive) {
+        group.setAttribute('tabindex', '0');
+        group.setAttribute('role', 'button');
+      } else {
+        group.setAttribute('aria-label', `Местоположение: ${place.label}`);
+      }
       group.setAttribute(
         'aria-label',
         selectedIndex >= 0
@@ -6776,6 +6782,8 @@ mapMeasureHint: $('mapMeasureHint'),
 
   if (els.mapKnownLocationsLayer) {
     const handleKnownLocationActivation = event => {
+      if (mapSelectedRouteKey !== MAP_ROUTE_MODE_ROAD_PLANNER) return;
+
       const group = event.target.closest(
         '[data-place-key]'
       );
