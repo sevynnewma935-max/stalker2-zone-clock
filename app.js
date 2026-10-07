@@ -98,6 +98,8 @@
     mapRouteStartWrap: $('mapRouteStartWrap'),
     mapRouteStartLabel: $('mapRouteStartLabel'),
     mapRouteStartSelect: $('mapRouteStartSelect'),
+    mapArtifactBaseWrap: $('mapArtifactBaseWrap'),
+    mapArtifactBaseSelect: $('mapArtifactBaseSelect'),
     mapSavedRouteEditor: $('mapSavedRouteEditor'),
     mapSavedRouteName: $('mapSavedRouteName'),
     mapSavedRouteNewBtn: $('mapSavedRouteNewBtn'),
@@ -1636,6 +1638,29 @@ mapMeasureHint: $('mapMeasureHint'),
     'swyd_east'
   ];
 
+  // PWA v127 — базы, которые можно включать в маршрут по артефактам.
+  // Используются те же координаты общего слоя местоположений.
+  const MAP_ARTIFACT_BASE_KEYS = [
+    'yaniv',
+    'rostok',
+    'svalka',
+    'yantar',
+    'malachite',
+    'sircaa',
+    'wild_island',
+    'chemical',
+    'lesser_zone',
+    'cement',
+    'jupiter',
+    'zaton_varta',
+    'zaton_sultan'
+  ];
+
+  function isCustomArtifactBaseKey(placeKey) {
+    return MAP_ARTIFACT_BASE_KEYS.includes(placeKey);
+  }
+
+
   // Контрольные отрезки для замера скорости перемещения.
   // Координаты находятся в логической системе карты Zone Clock 2048 × 2048.
   const MOVEMENT_TEST_ROUTES = {
@@ -2030,6 +2055,9 @@ mapMeasureHint: $('mapMeasureHint'),
     const plannerActive =
       mapSelectedRouteKey ===
       MAP_ROUTE_MODE_ROAD_PLANNER;
+    const customArtifactActive =
+      mapSelectedRouteKey ===
+      MAP_ROUTE_MODE_CUSTOM_ARTIFACT;
 
     els.mapKnownLocationsLayer.style.display = '';
     els.mapKnownLocationsLayer.textContent = '';
@@ -2037,11 +2065,18 @@ mapMeasureHint: $('mapMeasureHint'),
     visibleRoadPlannerLocations().forEach(key => {
       const place = MAP_KNOWN_LOCATIONS[key];
       const screen = routePointToScreen(place);
+      const baseSelectable =
+        customArtifactActive &&
+        isCustomArtifactBaseKey(key);
       const selectedIndex = plannerActive
         ? mapRoadPlannerSequence.findIndex(
             item => item.placeKey === key
           )
-        : -1;
+        : baseSelectable
+          ? mapCustomArtifactSequence.findIndex(
+              item => item.id === `base:${key}`
+            )
+          : -1;
       const isRoadJourney = Boolean(
         mapJourneyActive &&
         mapJourneyPlan &&
@@ -2063,7 +2098,9 @@ mapMeasureHint: $('mapMeasureHint'),
       );
 
       const classes = ['map-known-location'];
-      if (!plannerActive) classes.push('is-passive');
+      const locationInteractive = plannerActive || baseSelectable;
+      if (!locationInteractive) classes.push('is-passive');
+      if (baseSelectable) classes.push('is-artifact-base');
       if (selectedIndex >= 0) classes.push('is-selected');
       if (isVisited) classes.push('is-journey-visited');
       if (isCurrent) classes.push('is-journey-current');
@@ -2071,7 +2108,7 @@ mapMeasureHint: $('mapMeasureHint'),
       const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       group.setAttribute('class', classes.join(' '));
       group.setAttribute('data-place-key', key);
-      if (plannerActive) {
+      if (locationInteractive) {
         group.setAttribute('tabindex', '0');
         group.setAttribute('role', 'button');
       } else {
@@ -2087,7 +2124,9 @@ mapMeasureHint: $('mapMeasureHint'),
             : `${place.label}, точка маршрута ${selectedIndex + 1}`
           : isRoadJourney
             ? `${place.label}, не входит в текущий маршрут`
-            : `Добавить ${place.label} в маршрут`
+            : baseSelectable
+              ? `Добавить базу ${place.label} в маршрут по артефактам`
+              : `Местоположение: ${place.label}`
       );
       group.setAttribute('transform', `translate(${screen.x}, ${screen.y})`);
 
@@ -3811,6 +3850,22 @@ mapMeasureHint: $('mapMeasureHint'),
       });
     });
 
+    MAP_ARTIFACT_BASE_KEYS.forEach(placeKey => {
+      const place = MAP_KNOWN_LOCATIONS[placeKey];
+      if (!place || place.visible === false) return;
+
+      result.push({
+        id: `base:${placeKey}`,
+        kind: 'base',
+        placeKey,
+        routeKey: '',
+        markerIndex: null,
+        x: Number(place.x),
+        y: Number(place.y),
+        label: place.label
+      });
+    });
+
     return result;
   }
 
@@ -3930,6 +3985,20 @@ mapMeasureHint: $('mapMeasureHint'),
     updateMapFullscreenUI();
   }
 
+  function addCustomArtifactBase(placeKey) {
+    if (!isCustomArtifactBaseKey(placeKey)) return;
+    const candidate = getCustomArtifactCandidates().find(
+      item => item.id === `base:${placeKey}`
+    );
+    if (!candidate) return;
+
+    if (mapCustomArtifactSequence.some(item => item.id === candidate.id)) {
+      return;
+    }
+
+    toggleCustomArtifactSelection(candidate);
+  }
+
   function toggleCustomArtifactSelection(candidate) {
     if (!candidate) return;
     const existingIndex = mapCustomArtifactSequence.findIndex(
@@ -3946,6 +4015,7 @@ mapMeasureHint: $('mapMeasureHint'),
     mapCustomArtifactMeters = 0;
     saveCustomArtifactRoute();
     renderCustomArtifactRoute();
+    renderKnownLocationsLayer();
     updateCustomArtifactRouteGeometry();
     requestCustomArtifactBuild();
     updateMapRouteHeaderSummary();
@@ -3962,12 +4032,23 @@ mapMeasureHint: $('mapMeasureHint'),
       const selectedIndex = mapCustomArtifactSequence.findIndex(
         item => item.id === candidate.id
       );
-      const elapsed = artifactElapsedSeconds(
-        candidate.routeKey,
-        candidate.markerIndex
-      );
-      const isVisited = elapsed !== null;
-      const respawnState = artifactRespawnState(elapsed);
+      const isBase = candidate.kind === 'base';
+
+      // Базы уже подписаны постоянным слоем местоположений.
+      // В этом слое рисуем базу только если она включена в маршрут,
+      // чтобы показать номер в последовательности.
+      if (isBase && selectedIndex < 0) return;
+
+      const elapsed = isBase
+        ? null
+        : artifactElapsedSeconds(
+            candidate.routeKey,
+            candidate.markerIndex
+          );
+      const isVisited = !isBase && elapsed !== null;
+      const respawnState = isBase
+        ? { key: 'base' }
+        : artifactRespawnState(elapsed);
 
       const circle = document.createElementNS(
         'http://www.w3.org/2000/svg',
@@ -3977,6 +4058,8 @@ mapMeasureHint: $('mapMeasureHint'),
       circle.setAttribute(
         'class',
         `map-custom-artifact-point map-artifact-visit-point${
+          isBase ? ' map-custom-base-point' : ''
+        }${
           isVisited ? ` visited artifact-${respawnState.key}` : ''
         }${selectedIndex >= 0 ? ' is-custom-selected' : ''}`
       );
@@ -3987,7 +4070,9 @@ mapMeasureHint: $('mapMeasureHint'),
         'aria-label',
         selectedIndex >= 0
           ? `${candidate.label}, точка маршрута ${selectedIndex + 1}`
-          : `${candidate.label}, добавить в свой маршрут`
+          : isBase
+            ? `${candidate.label}, добавить базу в маршрут`
+            : `${candidate.label}, добавить в свой маршрут`
       );
       circle.addEventListener('pointerdown', event => event.stopPropagation());
       circle.addEventListener('click', event => {
@@ -4002,7 +4087,7 @@ mapMeasureHint: $('mapMeasureHint'),
         }
       });
 
-      if (!isVisited && selectedIndex < 0) {
+      if (!isBase && !isVisited && selectedIndex < 0) {
         const pulseRing = document.createElementNS(
           'http://www.w3.org/2000/svg',
           'circle'
@@ -4127,6 +4212,7 @@ mapMeasureHint: $('mapMeasureHint'),
         ? formatJourneyZoneTime(metrics.zoneSeconds)
         : '—';
     }
+    updateJourneyActionUi();
   }
 
   function getRoadPlannerJourneyLabel() {
@@ -4137,6 +4223,101 @@ mapMeasureHint: $('mapMeasureHint'),
     return mapRoadPlannerSequence
       .map(item => item.label)
       .join(' → ');
+  }
+
+  function getCustomArtifactJourneyLabel() {
+    if (!mapCustomArtifactSequence.length) {
+      return 'Маршрут по артефактам';
+    }
+    return mapCustomArtifactSequence
+      .map(item => item.label)
+      .join(' → ');
+  }
+
+  function getCustomArtifactJourneyPlan() {
+    const distanceMeters = Math.max(0, mapCustomArtifactMeters);
+    const realSeconds = Math.max(
+      60,
+      (distanceMeters / 1000) / ROUTE_TRAVEL_SPEED_KMH * 3600
+    );
+    return {
+      routeKey: MAP_ROUTE_MODE_CUSTOM_ARTIFACT,
+      routeLabel: getCustomArtifactJourneyLabel(),
+      distanceMeters,
+      realSeconds,
+      zoneAdvanceSeconds: projectZoneAdvanceForRealSeconds(
+        realSeconds,
+        gameSeconds
+      )
+    };
+  }
+
+  function getMovementJourneyPlan() {
+    const route = getMovementTestRoute();
+    const distanceMeters = Math.max(0, movementTestDistanceMeters());
+    const realSeconds = Math.max(
+      60,
+      (distanceMeters / 1000) / ROUTE_TRAVEL_SPEED_KMH * 3600
+    );
+    return {
+      routeKey: MAP_ROUTE_MODE_MOVEMENT_TEST,
+      routeLabel: route.label || 'Свой маршрут',
+      distanceMeters,
+      realSeconds,
+      zoneAdvanceSeconds: projectZoneAdvanceForRealSeconds(
+        realSeconds,
+        gameSeconds
+      )
+    };
+  }
+
+  function canStartSelectedJourney() {
+    if (mapSelectedRouteKey === MAP_ROUTE_MODE_ROAD_PLANNER) {
+      return Boolean(
+        mapRoadPlannerSequence.length >= 2 &&
+        mapRoadPlannerRoutePoints.length >= 2 &&
+        mapRoadPlannerMeters > 0 &&
+        !mapRoadPlannerBusy
+      );
+    }
+
+    if (mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT) {
+      return Boolean(
+        mapCustomArtifactSequence.length >= 2 &&
+        mapCustomArtifactRoutePoints.length >= 2 &&
+        mapCustomArtifactMeters > 0 &&
+        !mapCustomArtifactBusy
+      );
+    }
+
+    if (mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST) {
+      return Boolean(
+        movementTestCustomPoints.length >= 2 &&
+        movementTestDistanceMeters() > 0
+      );
+    }
+
+    return Boolean(getPresetRoute());
+  }
+
+  function updateJourneyActionUi() {
+    const ready = canStartSelectedJourney();
+
+    if (els.mapJourneyBtn) {
+      els.mapJourneyBtn.hidden = false;
+      els.mapJourneyBtn.disabled = !ready;
+      els.mapJourneyBtn.textContent = ready ? 'В ПУТЬ' : 'В ПУТЬ · СНАЧАЛА ПОСТРОЙТЕ МАРШРУТ';
+    }
+
+    if (els.mapLocationJourneyBtn) {
+      els.mapLocationJourneyBtn.hidden = !ready;
+      els.mapLocationJourneyBtn.disabled = !ready;
+      els.mapLocationJourneyBtn.setAttribute(
+        'aria-label',
+        'В путь по текущему маршруту'
+      );
+      els.mapLocationJourneyBtn.title = 'В путь';
+    }
   }
 
   function getRoadPlannerJourneyPlan() {
@@ -4445,12 +4626,26 @@ mapMeasureHint: $('mapMeasureHint'),
     const isRoadPlannerMode =
       mapSelectedRouteKey ===
       MAP_ROUTE_MODE_ROAD_PLANNER;
+    const isCustomArtifactMode =
+      mapSelectedRouteKey ===
+      MAP_ROUTE_MODE_CUSTOM_ARTIFACT;
+    const isMovementRouteMode =
+      mapSelectedRouteKey ===
+      MAP_ROUTE_MODE_MOVEMENT_TEST;
 
     let route = null;
     let plan = null;
     let routeName = '';
 
-    if (isRoadPlannerMode) {
+    if (isCustomArtifactMode) {
+      if (!canStartSelectedJourney()) return;
+      plan = getCustomArtifactJourneyPlan();
+      routeName = plan.routeLabel;
+    } else if (isMovementRouteMode) {
+      if (!canStartSelectedJourney()) return;
+      plan = getMovementJourneyPlan();
+      routeName = plan.routeLabel;
+    } else if (isRoadPlannerMode) {
       if (
         mapRoadPlannerSequence.length < 2 ||
         mapRoadPlannerRoutePoints.length < 2 ||
@@ -4749,6 +4944,58 @@ mapMeasureHint: $('mapMeasureHint'),
     const isRoadPlannerMode =
       mapSelectedRouteKey ===
       MAP_ROUTE_MODE_ROAD_PLANNER;
+    const isCustomArtifactMode =
+      mapSelectedRouteKey ===
+      MAP_ROUTE_MODE_CUSTOM_ARTIFACT;
+    const isMovementRouteMode =
+      mapSelectedRouteKey ===
+      MAP_ROUTE_MODE_MOVEMENT_TEST;
+
+    if (isCustomArtifactMode || isMovementRouteMode) {
+      if (!canStartSelectedJourney()) {
+        closeJourneyPreview();
+        return;
+      }
+
+      mapJourneyPlan = isCustomArtifactMode
+        ? getCustomArtifactJourneyPlan()
+        : getMovementJourneyPlan();
+
+      mapJourneyActive = true;
+      mapJourneySequence = isCustomArtifactMode
+        ? mapCustomArtifactSequence.map((item, index) => ({
+            x: Number(item.x),
+            y: Number(item.y),
+            label: item.label,
+            markerIndex: item.kind === 'base' ? null : item.markerIndex,
+            sourceRouteKey: item.routeKey || '',
+            routeKey: MAP_ROUTE_MODE_CUSTOM_ARTIFACT,
+            distancePx: index
+          }))
+        : getMovementTestRoute().points.map((item, index) => ({
+            x: Number(item.x),
+            y: Number(item.y),
+            label: item.label || `Точка ${index + 1}`,
+            markerIndex: null,
+            routeKey: MAP_ROUTE_MODE_MOVEMENT_TEST,
+            distancePx: index
+          }));
+
+      closeJourneyPreview();
+
+      if (!mapFullscreenMode) {
+        mapFullscreenMode = true;
+        updateMapFullscreenUI();
+      }
+
+      updateJourneyHud();
+
+      window.setTimeout(() => {
+        focusJourneyStep(0, 1050);
+      }, 180);
+
+      return;
+    }
 
     if (isRoadPlannerMode) {
       if (
@@ -5481,12 +5728,14 @@ mapMeasureHint: $('mapMeasureHint'),
       els.mapPresetRouteBtn.classList.toggle('active', mapPresetRouteVisible);
     }
 
-    if (els.mapJourneyBtn) els.mapJourneyBtn.hidden = isSpecialMode;
+    if (els.mapJourneyBtn) {
+      els.mapJourneyBtn.hidden = false;
+    }
     if (els.mapArtifactVisitHint) {
       els.mapArtifactVisitHint.hidden = isRoadPlannerMode || isMovementTestMode;
       if (isCustomArtifactMode) {
         els.mapArtifactVisitHint.textContent =
-          'Свой маршрут: нажимайте артефакты в нужной последовательности. Повторное нажатие снимает точку с маршрута.';
+          'Свой маршрут: нажимайте артефакты и базы в нужной последовательности. Базу можно выбрать из списка или нажать её название на карте.';
       } else {
         els.mapArtifactVisitHint.textContent =
           'Артефакты: нажмите точку после сбора. До 2 суток — СОБРАН, 2–3 суток — ВОЗМОЖНО ПОЯВИЛСЯ, после 3 суток — ПОРА ПРОВЕРИТЬ.';
@@ -5496,6 +5745,21 @@ mapMeasureHint: $('mapMeasureHint'),
     if (els.mapRoadPlanner) {
       els.mapRoadPlanner.hidden = !isRoadPlannerMode;
       els.mapRoadPlanner.open = isRoadPlannerMode && !mapFullscreenMode;
+    }
+
+    if (els.mapArtifactBaseWrap) {
+      els.mapArtifactBaseWrap.hidden = !isCustomArtifactMode;
+    }
+    if (els.mapArtifactBaseSelect && isCustomArtifactMode) {
+      const current = els.mapArtifactBaseSelect.value;
+      els.mapArtifactBaseSelect.innerHTML =
+        '<option value="">Выберите базу…</option>' +
+        MAP_ARTIFACT_BASE_KEYS
+          .filter(key => MAP_KNOWN_LOCATIONS[key] && MAP_KNOWN_LOCATIONS[key].visible !== false)
+          .map(key => `<option value="${key}">${MAP_KNOWN_LOCATIONS[key].label}</option>`)
+          .join('');
+      els.mapArtifactBaseSelect.value =
+        MAP_ARTIFACT_BASE_KEYS.includes(current) ? current : '';
     }
 
     mapMovementTestVisible = isMovementTestMode;
@@ -5532,8 +5796,8 @@ mapMeasureHint: $('mapMeasureHint'),
       } else if (isCustomArtifactMode) {
         els.mapPresetRouteLabel.hidden = false;
         els.mapPresetRouteLabel.textContent = mapCustomArtifactSequence.length
-          ? `Свой маршрут по артефактам · ${mapCustomArtifactSequence.length} точек`
-          : 'Свой маршрут по артефактам · выберите артефакты';
+          ? `Свой маршрут по артефактам и базам · ${mapCustomArtifactSequence.length} точек`
+          : 'Свой маршрут по артефактам и базам · выберите точки';
       } else if (isMovementTestMode) {
         const testRoute = getMovementTestRoute();
         els.mapPresetRouteLabel.hidden = false;
@@ -6258,20 +6522,7 @@ mapMeasureHint: $('mapMeasureHint'),
           : 'Сбросить выбранные точки';
     }
 
-    if (els.mapLocationJourneyBtn) {
-      const canStartLocationJourney =
-        mapSelectedRouteKey ===
-          MAP_ROUTE_MODE_ROAD_PLANNER &&
-        mapRoadPlannerSequence.length >= 2 &&
-        mapRoadPlannerRoutePoints.length >= 2 &&
-        mapRoadPlannerMeters > 0 &&
-        !mapRoadPlannerBusy;
-
-      els.mapLocationJourneyBtn.hidden =
-        !canStartLocationJourney;
-      els.mapLocationJourneyBtn.disabled =
-        !canStartLocationJourney;
-    }
+    updateJourneyActionUi();
 
     updateJourneyHud();
   }
@@ -6852,6 +7103,14 @@ mapMeasureHint: $('mapMeasureHint'),
     });
   }
 
+  if (els.mapArtifactBaseSelect) {
+    els.mapArtifactBaseSelect.addEventListener('change', event => {
+      const key = event.target.value;
+      if (key) addCustomArtifactBase(key);
+      event.target.value = '';
+    });
+  }
+
   if (els.mapPlannerLocationSelect) {
     els.mapPlannerLocationSelect.addEventListener('change', event => {
       const key = event.target.value;
@@ -6874,8 +7133,6 @@ mapMeasureHint: $('mapMeasureHint'),
 
   if (els.mapKnownLocationsLayer) {
     const handleKnownLocationActivation = event => {
-      if (mapSelectedRouteKey !== MAP_ROUTE_MODE_ROAD_PLANNER) return;
-
       const group = event.target.closest(
         '[data-place-key]'
       );
@@ -6884,16 +7141,38 @@ mapMeasureHint: $('mapMeasureHint'),
         return;
       }
 
-      event.preventDefault();
-      pickRoadPlannerLocation(
-        group.dataset.placeKey
-      );
+      const placeKey = group.dataset.placeKey;
+
+      if (mapSelectedRouteKey === MAP_ROUTE_MODE_ROAD_PLANNER) {
+        event.preventDefault();
+        pickRoadPlannerLocation(placeKey);
+        return;
+      }
+
+      if (
+        mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT &&
+        isCustomArtifactBaseKey(placeKey)
+      ) {
+        event.preventDefault();
+        const candidate = getCustomArtifactCandidates().find(
+          item => item.id === `base:${placeKey}`
+        );
+        toggleCustomArtifactSelection(candidate);
+      }
     };
 
     els.mapKnownLocationsLayer.addEventListener(
       'pointerdown',
       event => {
-        if (event.target.closest('[data-place-key]')) {
+        const group = event.target.closest('[data-place-key]');
+        const key = group?.dataset?.placeKey || '';
+        const interactive =
+          mapSelectedRouteKey === MAP_ROUTE_MODE_ROAD_PLANNER ||
+          (
+            mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT &&
+            isCustomArtifactBaseKey(key)
+          );
+        if (group && interactive) {
           event.stopPropagation();
         }
       }
@@ -6902,6 +7181,15 @@ mapMeasureHint: $('mapMeasureHint'),
     els.mapKnownLocationsLayer.addEventListener(
       'click',
       event => {
+        const group = event.target.closest('[data-place-key]');
+        const key = group?.dataset?.placeKey || '';
+        const interactive =
+          mapSelectedRouteKey === MAP_ROUTE_MODE_ROAD_PLANNER ||
+          (
+            mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT &&
+            isCustomArtifactBaseKey(key)
+          );
+        if (!interactive) return;
         event.stopPropagation();
         handleKnownLocationActivation(event);
       }

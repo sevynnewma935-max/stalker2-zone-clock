@@ -5151,3 +5151,24 @@ button.zone-button-press:not(:disabled) {
     font-size: .63rem;
   }
 }
+
+
+/* PWA v127 — базы в маршруте по артефактам + единая кнопка «В ПУТЬ». */
+.map-custom-base-point {
+  fill: rgba(9, 18, 12, .98) !important;
+  stroke: var(--accent-2) !important;
+  stroke-width: 2.4px !important;
+}
+
+.map-known-location.is-artifact-base:not(.is-selected) .map-known-location-pin {
+  stroke-dasharray: 3 2;
+}
+
+.map-known-location.is-artifact-base {
+  cursor: pointer;
+}
+
+.map-journey-btn:disabled {
+  opacity: .42;
+  cursor: not-allowed;
+}
