@@ -1,0 +1,42 @@
+name: Zone Clock v124 remove run state
+
+on:
+  push:
+    paths:
+      - '.github/workflows/zoneclock-v124-remove-run-state.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply v124 patch
+        run: python .github/scripts/zoneclock_v124_remove_run_state.py
+
+      - name: Validate JavaScript
+        run: |
+          node --check app.js
+          node --check service-worker.js
+
+      - name: Validate v124 markers
+        run: |
+          ! grep -q 'id="runState"' index.html
+          grep -q 'if (els.runState) els.runState.textContent' app.js
+          grep -q 'ZONE CLOCK <strong>v1.24</strong>' index.html
+          grep -q 'stalker2-zone-clock-app-v124' service-worker.js
+          grep -q 'stalker2-zone-clock-map-v124' service-worker.js
+
+      - name: Commit v124
+        run: |
+          git config user.name 'Zone Clock Builder'
+          git config user.email 'actions@users.noreply.github.com'
+          git add app.js index.html service-worker.js README.txt
+          git commit -m 'PWA v124: remove clock run state line'
+          git push
