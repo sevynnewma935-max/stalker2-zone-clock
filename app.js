@@ -688,6 +688,91 @@ mapMeasureHint: $('mapMeasureHint'),
     saveState();
   }
 
+  // PWA v122 — изменение времени напрямую по нажатию на большие часы.
+  const clockEditDialog = $('clockEditDialog');
+  const clockEditForm = $('clockEditForm');
+  const clockEditInput = $('clockEditInput');
+  const clockEditCancelBtn = $('clockEditCancelBtn');
+  const clockEditMessage = $('clockEditMessage');
+
+  function openClockEditor() {
+    updateNow();
+    if (!clockEditDialog || !clockEditInput) return;
+
+    clockEditInput.value = formatClock(gameSeconds);
+    if (clockEditMessage) clockEditMessage.textContent = '';
+
+    if (typeof clockEditDialog.showModal === 'function') {
+      if (!clockEditDialog.open) clockEditDialog.showModal();
+    } else {
+      clockEditDialog.setAttribute('open', '');
+    }
+
+    window.requestAnimationFrame(() => {
+      clockEditInput.focus();
+      if (typeof clockEditInput.showPicker === 'function') {
+        try { clockEditInput.showPicker(); } catch (_) {}
+      }
+    });
+  }
+
+  function closeClockEditor() {
+    if (!clockEditDialog) return;
+    if (typeof clockEditDialog.close === 'function') {
+      clockEditDialog.close();
+    } else {
+      clockEditDialog.removeAttribute('open');
+    }
+  }
+
+  function applyClockEditor() {
+    if (!clockEditInput) return;
+
+    const raw = String(clockEditInput.value || '').trim();
+    const validFormat = /^([01]\d|2[0-3]):[0-5]\d$/.test(raw);
+    const parsedTime = validFormat ? parseTime(raw) : null;
+
+    if (parsedTime === null) {
+      if (clockEditMessage) clockEditMessage.textContent = 'Введите время в формате ЧЧ:ММ.';
+      clockEditInput.focus();
+      return;
+    }
+
+    gameSeconds = parsedTime;
+    absoluteGameSeconds = gameDay * DAY_SECONDS + gameSeconds;
+    lastRealMs = Date.now();
+
+    if (els.timeInput) els.timeInput.value = formatClock(gameSeconds);
+    if (els.dayInput) els.dayInput.value = String(gameDay);
+
+    els.message.textContent = `Время установлено: ${formatClock(gameSeconds)}.`;
+    syncNotificationSchedule();
+    saveState(true);
+    render();
+    closeClockEditor();
+  }
+
+  if (els.clock) {
+    els.clock.addEventListener('click', openClockEditor);
+  }
+
+  if (clockEditForm) {
+    clockEditForm.addEventListener('submit', event => {
+      event.preventDefault();
+      applyClockEditor();
+    });
+  }
+
+  if (clockEditCancelBtn) {
+    clockEditCancelBtn.addEventListener('click', closeClockEditor);
+  }
+
+  if (clockEditDialog) {
+    clockEditDialog.addEventListener('click', event => {
+      if (event.target === clockEditDialog) closeClockEditor();
+    });
+  }
+
   els.syncForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const parsedTime = parseTime(els.timeInput.value);

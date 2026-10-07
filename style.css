@@ -4928,3 +4928,87 @@ button.zone-button-press:not(:disabled) {
 .map-dialog:not(.map-fullscreen) .map-viewport {
   order: 1;
 }
+
+
+/* PWA v122 — редактирование времени по нажатию на часы. */
+.clock-edit-trigger {
+  display: block;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.clock-edit-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 7px;
+  border-radius: 6px;
+}
+.clock-edit-trigger:active {
+  transform: scale(.985);
+}
+
+.clock-edit-dialog {
+  width: min(92vw, 390px);
+  max-width: 390px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+}
+.clock-edit-dialog::backdrop {
+  background: rgba(0,0,0,.72);
+  backdrop-filter: blur(4px);
+}
+.clock-edit-modal {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: 0 24px 70px var(--shadow);
+}
+.clock-edit-title {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .82rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+  color: var(--accent-2);
+}
+.clock-edit-field {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+.clock-edit-field span {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+.clock-edit-field input {
+  width: 100%;
+  min-height: 58px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 8px 12px;
+  color: var(--text);
+  background: var(--input);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.65rem;
+  font-weight: 800;
+  text-align: center;
+}
+.clock-edit-message {
+  min-height: 1.2em;
+  margin-top: 8px;
+  color: var(--warning);
+  font-size: .76rem;
+}
+.clock-edit-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}

@@ -54,7 +54,7 @@
 <span class="section-label">ВРЕМЯ В ЗОНЕ</span>
 <span class="status-chip" id="daypart">ДЕНЬ</span>
 </div>
-<div aria-live="polite" class="clock" id="clock">18:47</div>
+<button aria-label="Изменить время Зоны" aria-live="polite" class="clock clock-edit-trigger" id="clock" title="Нажмите, чтобы изменить время" type="button">18:47</button>
 <div class="game-day-line">День <strong id="gameDay">1</strong></div>
 <div class="hero-stats hero-stats-single">
 <div class="align-right">
@@ -138,6 +138,20 @@
 <div aria-live="polite" class="message" id="message"></div>
 </section>
 </main>
+<dialog aria-labelledby="clockEditTitle" class="clock-edit-dialog" id="clockEditDialog">
+<form class="clock-edit-modal" id="clockEditForm">
+<div class="clock-edit-title" id="clockEditTitle">УСТАНОВИТЬ ВРЕМЯ</div>
+<label class="clock-edit-field" for="clockEditInput">
+<span>ВРЕМЯ ЗОНЫ</span>
+<input id="clockEditInput" required step="60" type="time"/>
+</label>
+<div aria-live="polite" class="clock-edit-message" id="clockEditMessage"></div>
+<div class="clock-edit-actions">
+<button class="btn" id="clockEditCancelBtn" type="button">ОТМЕНА</button>
+<button class="btn primary" type="submit">УСТАНОВИТЬ</button>
+</div>
+</form>
+</dialog>
 <dialog aria-labelledby="mapDialogTitle" class="map-dialog" id="mapDialog">
 <div class="map-modal">
 <div class="map-modal-header">
@@ -677,7 +691,7 @@
 </div>
 <div class="settings-group version-group">
 <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.21</strong></div>
+<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.22</strong></div>
 <button class="btn update-app-btn" id="updateAppBtn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>
