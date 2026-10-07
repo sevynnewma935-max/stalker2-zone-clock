@@ -5123,3 +5123,31 @@ button.zone-button-press:not(:disabled) {
     font-size: .68rem !important;
   }
 }
+
+
+/* PWA v126 — граница следующего периода под УТРО/ДЕНЬ справа. */
+.daypart-stack {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+}
+
+.daypart-boundary {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .68rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.daypart-boundary strong {
+  color: var(--text);
+  margin-left: 3px;
+  font-weight: 800;
+}
+
+@media (max-width: 420px) {
+  .daypart-boundary {
+    font-size: .63rem;
+  }
+}
