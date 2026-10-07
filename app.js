@@ -612,7 +612,7 @@ mapMeasureHint: $('mapMeasureHint'),
     els.daypart.textContent = part;
     els.boundaryLabel.textContent = nextPart.label;
     els.boundary.textContent = formatDuration(gameUntilBoundary());
-    els.runState.textContent = running ? 'Часы идут' : 'Часы на паузе';
+    if (els.runState) els.runState.textContent = running ? 'Часы идут' : 'Часы на паузе';
 
     els.pauseBtn.disabled = !running;
     els.resumeBtn.disabled = running;
