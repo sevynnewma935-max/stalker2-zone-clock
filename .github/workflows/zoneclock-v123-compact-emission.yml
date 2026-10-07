@@ -1,0 +1,46 @@
+name: Zone Clock v123 compact emission
+
+on:
+  push:
+    paths:
+      - '.github/workflows/zoneclock-v123-compact-emission.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply v123 patch
+        run: python .github/scripts/zoneclock_v123_compact_emission.py
+
+      - name: Validate JavaScript
+        run: |
+          node --check app.js
+          node --check service-worker.js
+
+      - name: Validate v123 markers
+        run: |
+          grep -q 'risk-emission-row' index.html
+          grep -q 'correction-row-four' index.html
+          grep -q 'PWA v123: risk block is always visible' app.js
+          grep -q 'ZONE CLOCK <strong>v1.23</strong>' index.html
+          grep -q 'stalker2-zone-clock-app-v123' service-worker.js
+          grep -q 'stalker2-zone-clock-map-v123' service-worker.js
+          test "$(grep -c 'id="markEmissionBtn"' index.html)" -eq 1
+          test "$(grep -c 'id="emissionTime"' index.html)" -eq 1
+          ! grep -q 'class="terminal-card emission"' index.html
+
+      - name: Commit v123
+        run: |
+          git config user.name 'Zone Clock Builder'
+          git config user.email 'actions@users.noreply.github.com'
+          git add app.js style.css index.html service-worker.js README.txt
+          git commit -m 'PWA v123: compact emission and quick correction'
+          git push
