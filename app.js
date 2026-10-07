@@ -566,20 +566,25 @@ mapMeasureHint: $('mapMeasureHint'),
     els.riskProgress.style.background = r.color;
     els.riskBadge.style.color = r.color;
     if (els.riskPercent) els.riskPercent.style.color = r.color;
-    els.riskDetail.textContent = r.detail;
-
-    if (r.nextAt !== null) {
-      els.riskNext.textContent = `${r.nextText}: ${formatDuration(Math.max(0, r.nextAt - gameElapsed))}`;
-    } else {
-      els.riskNext.textContent = 'Точного момента выброса заранее определить нельзя.';
-    }
   }
 
   function renderEmission() {
+    // PWA v123: risk block is always visible because it also contains
+    // the "mark emission" action. Before the first mark the risk is unknown.
+    els.riskWrap.classList.remove('hidden');
+
     if (!emission) {
-      els.emissionTime.textContent = 'Не отмечен';
-      els.emissionDay.textContent = '';
-      els.riskWrap.classList.add('hidden');
+      if (els.emissionTime) els.emissionTime.textContent = 'не отмечен';
+      if (els.emissionDay) els.emissionDay.textContent = '';
+      els.riskLabel.textContent = 'Нет данных о последнем выбросе';
+      els.riskBadge.textContent = '—';
+      if (els.riskPercent) {
+        els.riskPercent.textContent = '0%';
+        els.riskPercent.style.color = 'var(--muted)';
+      }
+      els.riskProgress.style.width = '0%';
+      els.riskProgress.style.background = 'var(--success)';
+      els.riskBadge.style.color = 'var(--muted)';
       document.documentElement.style.setProperty('--emission-danger-level', '0');
       document.documentElement.style.setProperty('--emission-danger-pulse', '0');
       document.body.classList.remove('emission-danger-active', 'emission-danger-high');
@@ -588,8 +593,10 @@ mapMeasureHint: $('mapMeasureHint'),
 
     const gameElapsed = Math.max(0, absoluteGameSeconds - emission.absoluteGameSeconds);
 
-    els.emissionTime.textContent = formatDaysHoursAgo(gameElapsed);
-    els.emissionDay.textContent = '';
+    if (els.emissionTime) {
+      els.emissionTime.textContent = formatDaysHoursAgo(gameElapsed);
+    }
+    if (els.emissionDay) els.emissionDay.textContent = '';
 
     renderRisk(gameElapsed);
   }
