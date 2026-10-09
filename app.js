@@ -9998,7 +9998,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const customItems = new Map();
 
     savedItems.forEach(item => {
-      const match = /^catalog_(\\d+)$/.exec(item.id);
+      const match = /^catalog_([0-9]+)$/.exec(item.id);
       const savedIndex = match ? Number(match[1]) : -1;
       const byStableId =
         savedIndex >= 0 && savedIndex < result.length
