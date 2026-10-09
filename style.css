@@ -5378,3 +5378,21 @@ button.zone-button-press:not(:disabled) {
   animation: zoneArtifactCorePulseV114 3.75s ease-in-out infinite !important;
   filter: drop-shadow(0 0 5px rgba(99, 255, 122, .82)) !important;
 }
+
+
+/* PWA v133 — блок «МОИ АРТЕФАКТЫ» прямо под кнопкой «В ПУТЬ». */
+.map-toolbar > .artifact-inventory {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  margin: 3px 0 0;
+}
+
+.map-dialog:not(.map-fullscreen) .map-toolbar > .artifact-inventory {
+  display: block;
+}
+
+/* В полноэкранном режиме сохраняем прежнее скрытие инвентаря. */
+.map-dialog.map-fullscreen .map-toolbar > .artifact-inventory {
+  display: none !important;
+}
