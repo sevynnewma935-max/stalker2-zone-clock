@@ -231,6 +231,15 @@
 <details class="artifact-inventory" id="artifactInventory">
 <summary><span>МОИ АРТЕФАКТЫ</span><strong id="artifactInventoryTotal">0 шт.</strong></summary>
 <div class="artifact-inventory-body">
+<div class="artifact-inventory-catalog-note">76 названий из справочника Game8 · <a href="https://game8.co/games/STALKER-2-Heart-of-Chornobyl/archives/484475" target="_blank" rel="noopener noreferrer">источник</a></div>
+<div class="artifact-inventory-filter-row">
+<input autocomplete="off" id="artifactInventorySearch" placeholder="Поиск по названию артефакта…" type="search" aria-label="Найти артефакт"/>
+<div class="artifact-inventory-tabs" role="group" aria-label="Фильтр артефактов">
+<button class="btn active" data-inventory-filter="all" type="button" aria-pressed="true">ВСЕ</button>
+<button class="btn" data-inventory-filter="owned" type="button" aria-pressed="false">ЕСТЬ</button>
+</div>
+</div>
+<div class="artifact-inventory-search-count" id="artifactInventorySearchCount">Показано 76 из 76</div>
 <form class="artifact-inventory-add" id="artifactInventoryForm">
 <input autocomplete="off" id="artifactInventoryName" maxlength="50" placeholder="Название артефакта" type="text"/>
 <button class="btn primary" type="submit">ДОБАВИТЬ</button>
@@ -689,7 +698,7 @@
 </div>
 <div class="settings-group version-group">
 <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.33</strong></div>
+<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.34</strong></div>
 <button class="btn update-app-btn" id="updateAppBtn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>
