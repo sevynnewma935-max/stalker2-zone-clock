@@ -3858,6 +3858,17 @@ mapMeasureHint: $('mapMeasureHint'),
       });
     });
 
+    // PWA v130 — точка артефакта в Железном лесу,
+    // привязанная по пользовательскому скриншоту.
+    result.push({
+      id: 'extra:iron_forest_20261009_1',
+      routeKey: 'extra_artifacts',
+      markerIndex: 0,
+      x: 1120.4,
+      y: 890.1,
+      label: 'Артефакт · Железный лес'
+    });
+
     MAP_ARTIFACT_BASE_KEYS.forEach(placeKey => {
       const place = MAP_KNOWN_LOCATIONS[placeKey];
       if (!place || place.visible === false) return;
