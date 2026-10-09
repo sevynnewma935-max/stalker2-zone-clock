@@ -1,14 +1,14 @@
-const APP_CACHE = 'stalker2-zone-clock-app-v135';
-const MAP_CACHE = 'stalker2-zone-clock-map-v135';
+const APP_CACHE = 'stalker2-zone-clock-app-v136';
+const MAP_CACHE = 'stalker2-zone-clock-map-v136';
 
 const APP_ASSETS = [
   './', './index.html', './style.css', './app.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png',
-  './assets/zone-map-4096.jpg', './assets/zone-map-schematic-4096.jpg', './assets/zone-road-cost-512.png'
+  './assets/zone-map-4096.jpg', './assets/zone-map-schematic-4096.jpg', './assets/zone-road-cost-red-v136.png'
 ];
 const MAP_ASSETS = [
   './assets/zone-map-4096.jpg', './assets/zone-map-8192.jpg',
-  './assets/zone-map-schematic-4096.jpg', './assets/zone-road-cost-512.png'
+  './assets/zone-map-schematic-4096.jpg', './assets/zone-road-cost-red-v136.png'
 ];
 
 function isAppShellRequest(url) {

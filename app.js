@@ -1483,7 +1483,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
   const MAP_ROAD_COST_GRID_SIZE = 512;
   const MAP_ROAD_COST_ASSET =
-    './assets/zone-road-cost-512.png';
+    './assets/zone-road-cost-red-v136.png';
 
   const MAP_VIEW_STORAGE_KEY =
     'stalker2-zone-clock-map-view-v1';
@@ -11437,6 +11437,12 @@ mapMeasureHint: $('mapMeasureHint'),
   const restored = loadState();
 
   loadRoadPlannerState();
+  // PWA v136: invalidate old geometry; preserve the user-selected stops.
+  if (mapRoadPlannerSequence.length >= 2) {
+    mapRoadPlannerRoutePoints = [];
+    mapRoadPlannerMeters = 0;
+    requestRoadPlannerAutoBuild();
+  }
   updateRoadPlannerUI();
 
   if (restored) els.message.textContent = 'Состояние восстановлено.';
