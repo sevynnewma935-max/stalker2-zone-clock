@@ -1,0 +1,46 @@
+name: Zone Clock v128 artifact journey progress
+
+on:
+  push:
+    paths:
+      - '.github/workflows/zoneclock-v128-artifact-progress.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply v128 patch
+        run: python .github/scripts/zoneclock_v128_artifact_progress.py
+
+      - name: Validate JavaScript
+        run: |
+          node --check app.js
+          node --check service-worker.js
+
+      - name: Validate v128 markers
+        run: |
+          grep -q 'id="artifactInventory"' index.html
+          grep -q 'ARTIFACT_INVENTORY_KEY' app.js
+          grep -q 'mapCustomArtifactRouteLegs' app.js
+          grep -q 'markCustomArtifactJourneyStop' app.js
+          grep -q 'zoneArtifactJourneyPulse' style.css
+          grep -q 'zone-clock-test-v128.csv' app.js
+          grep -q 'ZONE CLOCK <strong>v1.28</strong>' index.html
+          grep -q 'stalker2-zone-clock-app-v128' service-worker.js
+          grep -q 'stalker2-zone-clock-map-v128' service-worker.js
+
+      - name: Commit v128
+        run: |
+          git config user.name 'Zone Clock Builder'
+          git config user.email 'actions@users.noreply.github.com'
+          git add app.js style.css index.html service-worker.js README.txt
+          git commit -m 'PWA v128: artifact journey progress and inventory'
+          git push
