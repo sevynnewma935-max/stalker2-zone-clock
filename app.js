@@ -9865,6 +9865,87 @@ mapMeasureHint: $('mapMeasureHint'),
       "Wrenched"
   ];
 
+  // PWA v135 — русские названия артефактов; индекс соответствует
+  // английскому каталогу выше и остаётся постоянным для сохранений.
+  const ARTIFACT_CATALOG_RU_NAMES = [
+      "Батарейка",
+      "Битый камень",
+      "Пузырь",
+      "Полость",
+      "Шоколадка",
+      "Инфузория",
+      "Компас",
+      "Гребень",
+      "Корона",
+      "Скорлупа",
+      "Кристалл",
+      "Кристальная колючка",
+      "Мёртвая губка",
+      "Чёртов гриб",
+      "Капли",
+      "Глаз",
+      "Огненный шар",
+      "Вспышка",
+      "Брак",
+      "Бутон",
+      "Мухоловка",
+      "Блик",
+      "Золотая рыбка",
+      "Грави",
+      "Арфа",
+      "Сердце Чернобыля",
+      "Рог",
+      "Гиперкуб",
+      "Медуза",
+      "Колобок",
+      "Фонарь",
+      "Жидкий камень",
+      "Лира",
+      "Кубик-Рубик",
+      "Магма",
+      "Мамины бусы",
+      "Ломоть мяса",
+      "Мясная зажигалка",
+      "Слюда",
+      "Плесень",
+      "Лунный свет",
+      "Ночная звезда",
+      "Галька",
+      "Плёнка",
+      "Лепесток",
+      "Плазма",
+      "Крысиный король",
+      "Канифоль",
+      "Сапфир",
+      "Пустышка",
+      "Урок труда",
+      "Попрыгунчик",
+      "Слизь",
+      "Слизняк",
+      "Снежинка",
+      "Душа",
+      "Бенгальский огонь",
+      "Вертушка",
+      "Пружина",
+      "Морская звезда",
+      "Бифштекс",
+      "Кровь камня",
+      "Каменное сердце",
+      "Колючка",
+      "Грозовая ягода",
+      "Факел",
+      "Завтрак туриста",
+      "Морской ёж",
+      "Странный мяч",
+      "Странный болт",
+      "Странный цветок",
+      "Странная гайка",
+      "Странный котелок",
+      "Странная вода",
+      "Вихрь",
+      "Выверт"
+  ];
+
   // PWA v128 — учёт найденных и проданных артефактов.
   function normalizeArtifactInventoryName(value) {
     return String(value || '')
@@ -9874,7 +9955,8 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function loadArtifactInventory() {
-    // Каталог добавляется к прежним сохранённым позициям без потери количества.
+    // Миграция v134 → v135 без потери количества. Сопоставляем и по
+    // постоянному catalog_N, и по русскому/английскому названию.
     const savedItems = [];
     try {
       const parsed = JSON.parse(
@@ -9897,38 +9979,57 @@ mapMeasureHint: $('mapMeasureHint'),
       }
     } catch (_) {}
 
-    const merged = new Map();
+    const namesToIndex = new Map();
+    const registerAlias = (name, index) => {
+      namesToIndex.set(name.toLocaleLowerCase('ru-RU'), index);
+    };
+
+    ARTIFACT_CATALOG_NAMES.forEach((name, index) => {
+      registerAlias(name, index);
+      registerAlias(ARTIFACT_CATALOG_RU_NAMES[index], index);
+    });
+
+    const result = ARTIFACT_CATALOG_RU_NAMES.map((name, index) => ({
+      id: 'catalog_' + index,
+      name,
+      count: 0,
+      catalog: true
+    }));
+    const customItems = new Map();
+
     savedItems.forEach(item => {
+      const match = /^catalog_(\\d+)$/.exec(item.id);
+      const savedIndex = match ? Number(match[1]) : -1;
+      const byStableId =
+        savedIndex >= 0 && savedIndex < result.length
+          ? savedIndex
+          : null;
+      const byName = namesToIndex.get(
+        item.name.toLocaleLowerCase('ru-RU')
+      );
+      const index = byStableId !== null
+        ? byStableId
+        : byName;
+
+      if (index !== undefined && index !== null) {
+        result[index].count += item.count;
+        return;
+      }
+
       const key = item.name.toLocaleLowerCase('ru-RU');
-      if (!merged.has(key)) {
-        merged.set(key, { ...item });
+      if (customItems.has(key)) {
+        customItems.get(key).count += item.count;
       } else {
-        merged.get(key).count += item.count;
+        customItems.set(key, {
+          id: item.id || makeArtifactInventoryId(),
+          name: item.name,
+          count: item.count,
+          catalog: false
+        });
       }
     });
 
-    const result = ARTIFACT_CATALOG_NAMES.map((name, index) => {
-      const key = name.toLocaleLowerCase('ru-RU');
-      const stored = merged.get(key);
-      merged.delete(key);
-      return {
-        id: 'catalog_' + index,
-        name,
-        count: stored ? stored.count : 0,
-        catalog: true
-      };
-    });
-
-    merged.forEach(item => {
-      result.push({
-        id: item.id || makeArtifactInventoryId(),
-        name: item.name,
-        count: item.count,
-        catalog: false
-      });
-    });
-
-    return result.slice(0, 500);
+    return result.concat(Array.from(customItems.values())).slice(0, 500);
   }
 
   let artifactInventoryItems = loadArtifactInventory();
@@ -9956,7 +10057,15 @@ mapMeasureHint: $('mapMeasureHint'),
     const items = allItems
       .filter(item => (
         (artifactInventoryFilter !== 'owned' || item.count > 0) &&
-        (!query || item.name.toLocaleLowerCase('ru-RU').includes(query))
+        (!query ||
+          item.name.toLocaleLowerCase('ru-RU').includes(query) ||
+          (
+            item.catalog &&
+            ARTIFACT_CATALOG_NAMES[
+              Number(item.id.slice('catalog_'.length))
+            ]?.toLocaleLowerCase('ru-RU').includes(query)
+          )
+        )
       ))
       .sort((a, b) => {
         const stockDelta = Number(b.count > 0) - Number(a.count > 0);
@@ -10051,9 +10160,15 @@ mapMeasureHint: $('mapMeasureHint'),
     if (!name) return;
 
     const lower = name.toLocaleLowerCase('ru-RU');
-    const existing = artifactInventoryItems.find(
-      item => item.name.toLocaleLowerCase('ru-RU') === lower
-    );
+    const existing = artifactInventoryItems.find(item => {
+      if (item.name.toLocaleLowerCase('ru-RU') === lower) return true;
+      if (!item.catalog) return false;
+      const index = Number(item.id.slice('catalog_'.length));
+      const english = ARTIFACT_CATALOG_NAMES[index];
+      return Boolean(
+        english && english.toLocaleLowerCase('ru-RU') === lower
+      );
+    });
 
     if (existing) {
       existing.count += 1;
