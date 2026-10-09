@@ -3525,9 +3525,17 @@ mapMeasureHint: $('mapMeasureHint'),
 
   function toggleArtifactVisited(routeKey, index) {
     const key = artifactVisitKey(routeKey, index);
-    const wasVisited = key in mapArtifactVisits;
+    const elapsed = artifactElapsedSeconds(routeKey, index);
+    const respawnState = artifactRespawnState(elapsed);
+    const wasVisited =
+      key in mapArtifactVisits &&
+      respawnState.key !== 'ready';
 
-    if (wasVisited) {
+    // PWA v132: после 3 игровых дней точка снова доступна.
+    // Нажатие на неё означает новый сбор и запускает новый 3-дневный цикл.
+    if (respawnState.key === 'ready') {
+      mapArtifactVisits[key] = absoluteGameSeconds;
+    } else if (key in mapArtifactVisits) {
       delete mapArtifactVisits[key];
     } else {
       mapArtifactVisits[key] = absoluteGameSeconds;
@@ -3581,11 +3589,12 @@ mapMeasureHint: $('mapMeasureHint'),
           pointIndex
         );
 
-      const isVisited =
-        elapsed !== null;
-
       const state =
         artifactRespawnState(elapsed);
+
+      const isVisited =
+        elapsed !== null &&
+        state.key !== 'ready';
 
       circle.classList.toggle(
         'visited',
@@ -3652,6 +3661,53 @@ mapMeasureHint: $('mapMeasureHint'),
         }
       }
     });
+
+    // В пользовательском маршруте по артефактам тоже автоматически
+    // возвращаем зелёную пульсацию ровно после 3 игровых дней.
+    if (
+      mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT &&
+      els.mapCustomArtifactPoints
+    ) {
+      const candidates = new Map(
+        getCustomArtifactCandidates().map(item => [item.id, item])
+      );
+
+      els.mapCustomArtifactPoints
+        .querySelectorAll('.map-custom-artifact-point[data-custom-artifact-id]')
+        .forEach(circle => {
+          const candidate = candidates.get(
+            circle.getAttribute('data-custom-artifact-id')
+          );
+          if (!candidate || candidate.kind === 'base') return;
+
+          const elapsed = artifactElapsedSeconds(
+            candidate.routeKey,
+            candidate.markerIndex
+          );
+          const state = artifactRespawnState(elapsed);
+          const selectedIndex = mapCustomArtifactSequence.findIndex(
+            item => item.id === candidate.id
+          );
+          const customJourneyActive = Boolean(
+            mapJourneyActive &&
+            mapJourneyPlan &&
+            mapJourneyPlan.routeKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT
+          );
+          const takenThisJourney = Boolean(
+            customJourneyActive &&
+            selectedIndex >= 0 &&
+            mapCustomArtifactJourneyVisited.has(selectedIndex)
+          );
+          const isVisited = customJourneyActive && selectedIndex >= 0
+            ? takenThisJourney && state.key !== 'ready'
+            : elapsed !== null && state.key !== 'ready';
+
+          circle.classList.toggle('visited', isVisited);
+          circle.classList.toggle('artifact-collected', isVisited && state.key === 'collected');
+          circle.classList.toggle('artifact-possible', isVisited && state.key === 'possible');
+          circle.classList.toggle('artifact-ready', state.key === 'ready');
+        });
+    }
   }
 
 
@@ -4103,14 +4159,20 @@ mapMeasureHint: $('mapMeasureHint'),
             candidate.routeKey,
             candidate.markerIndex
           );
-      const isVisited = isBase
-        ? takenThisJourney
-        : customJourneyActive && selectedIndex >= 0
-          ? takenThisJourney
-          : elapsed !== null;
       const respawnState = isBase
         ? { key: 'base' }
         : artifactRespawnState(elapsed);
+      const isVisited = isBase
+        ? takenThisJourney
+        : customJourneyActive && selectedIndex >= 0
+          ? (
+              takenThisJourney &&
+              respawnState.key !== 'ready'
+            )
+          : (
+              elapsed !== null &&
+              respawnState.key !== 'ready'
+            );
 
       const circle = document.createElementNS(
         'http://www.w3.org/2000/svg',
@@ -6228,14 +6290,15 @@ mapMeasureHint: $('mapMeasureHint'),
                 index
               );
 
-        const isVisited =
-          !isStartPoint &&
-          elapsed !== null;
-
         const respawnState =
           artifactRespawnState(
             elapsed
           );
+
+        const isVisited =
+          !isStartPoint &&
+          elapsed !== null &&
+          respawnState.key !== 'ready';
 
         circle.setAttribute(
           'r',
