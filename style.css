@@ -5342,3 +5342,27 @@ button.zone-button-press:not(:disabled) {
     width: 100%;
   }
 }
+
+
+/* PWA v131 — все непройденные артефакты пульсируют в 3 раза медленнее. */
+#mapPresetRoutePoints .map-artifact-visit-point:not(.visited),
+#mapCustomArtifactPoints .map-artifact-visit-point:not(.visited):not(.map-custom-base-point),
+#mapCustomArtifactPoints .map-artifact-visit-point.is-custom-selected:not(.visited):not(.map-custom-base-point) {
+  fill: rgba(18, 150, 42, .98) !important;
+  stroke: #63ff7a !important;
+  stroke-width: 2.5px !important;
+  opacity: 1 !important;
+  animation: zoneArtifactCorePulseV114 3.75s ease-in-out infinite !important;
+  filter: drop-shadow(0 0 5px rgba(99, 255, 122, .82)) !important;
+}
+
+#mapPresetRoutePoints .map-artifact-pulse-ring,
+#mapCustomArtifactPoints .map-artifact-pulse-ring {
+  animation: zoneArtifactRingPulseV114 3.75s ease-out infinite !important;
+}
+
+/* Взятые/пройденные точки остаются бледными и не пульсируют. */
+#mapPresetRoutePoints .map-artifact-visit-point.visited,
+#mapCustomArtifactPoints .map-artifact-visit-point.visited {
+  animation: none !important;
+}
