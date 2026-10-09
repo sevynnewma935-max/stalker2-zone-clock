@@ -128,6 +128,8 @@
     artifactInventoryForm: $('artifactInventoryForm'),
     artifactInventoryName: $('artifactInventoryName'),
     artifactInventoryList: $('artifactInventoryList'),
+    artifactInventorySearch: $('artifactInventorySearch'),
+    artifactInventorySearchCount: $('artifactInventorySearchCount'),
     artifactInventoryTotal: $('artifactInventoryTotal'),
     mapRoadPlanner: $('mapRoadPlanner'),
     mapPlannerLocationSelect: $('mapPlannerLocationSelect'),
@@ -9782,6 +9784,87 @@ mapMeasureHint: $('mapMeasureHint'),
     updateMovementLiveTimers();
   }, 500);
 
+  // PWA v134 — справочник Game8 (76 названий, в оригинальном написании).
+  // https://game8.co/games/STALKER-2-Heart-of-Chornobyl/archives/484475
+  const ARTIFACT_CATALOG_NAMES =   [
+      "Battery",
+      "Broken Rock",
+      "Bubble",
+      "Cavity",
+      "Chocolate Bar",
+      "Ciliate",
+      "Compass",
+      "Crest",
+      "Crown",
+      "Crust",
+      "Crystal",
+      "Crystal Thorn",
+      "Dead Sponge",
+      "Devil's Mushroom",
+      "Droplets",
+      "Eye",
+      "Fireball",
+      "Flash",
+      "Flaw",
+      "Flower Bud",
+      "Flytrap",
+      "Glare",
+      "Goldfish",
+      "Gravi",
+      "Harp",
+      "Heart of Chornobyl",
+      "Horn",
+      "Hypercube",
+      "Jellyfish",
+      "Kolobok",
+      "Lantern",
+      "Liquid Rock",
+      "Lyre",
+      "Magic Cube",
+      "Magma",
+      "Mama's Beads",
+      "Meat Chunk",
+      "Meat Lighter",
+      "Mica",
+      "Mold",
+      "Moonlight",
+      "Night Star",
+      "Pebble",
+      "Pellicle",
+      "Petal",
+      "Plasma",
+      "Rat King",
+      "Rosin",
+      "Sapphire",
+      "Shell",
+      "Shop Class",
+      "Skipjack",
+      "Slime",
+      "Slug",
+      "Snowflake",
+      "Soul",
+      "Sparkler",
+      "Spinner",
+      "Spring",
+      "Starfish",
+      "Steak",
+      "Stone Blood",
+      "Stone Heart",
+      "Thorn",
+      "Thunderberry",
+      "Torch",
+      "Tourist's Breakfast",
+      "Urchin",
+      "Weird Ball",
+      "Weird Bolt",
+      "Weird Flower",
+      "Weird Nut",
+      "Weird Pot",
+      "Weird Water",
+      "Whirlwind",
+      "Wrenched"
+  ];
+
   // PWA v128 — учёт найденных и проданных артефактов.
   function normalizeArtifactInventoryName(value) {
     return String(value || '')
@@ -9791,28 +9874,70 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function loadArtifactInventory() {
+    // Каталог добавляется к прежним сохранённым позициям без потери количества.
+    const savedItems = [];
     try {
-      const parsed = JSON.parse(localStorage.getItem(ARTIFACT_INVENTORY_KEY) || '[]');
-      if (!Array.isArray(parsed)) return [];
-      return parsed
-        .map(item => ({
-          id: String(item && item.id || '').slice(0, 80),
-          name: normalizeArtifactInventoryName(item && item.name),
-          count: Math.max(0, Math.floor(Number(item && item.count) || 0))
-        }))
-        .filter(item => item.id && item.name)
-        .slice(0, 200);
-    } catch (_) {
-      return [];
-    }
+      const parsed = JSON.parse(
+        localStorage.getItem(ARTIFACT_INVENTORY_KEY) || '[]'
+      );
+      if (Array.isArray(parsed)) {
+        parsed.slice(0, 500).forEach(item => {
+          const name = normalizeArtifactInventoryName(item && item.name);
+          if (!name) return;
+          const count = Math.max(
+            0,
+            Math.min(99999, Math.floor(Number(item && item.count) || 0))
+          );
+          savedItems.push({
+            id: String(item && item.id || '').slice(0, 80),
+            name,
+            count
+          });
+        });
+      }
+    } catch (_) {}
+
+    const merged = new Map();
+    savedItems.forEach(item => {
+      const key = item.name.toLocaleLowerCase('ru-RU');
+      if (!merged.has(key)) {
+        merged.set(key, { ...item });
+      } else {
+        merged.get(key).count += item.count;
+      }
+    });
+
+    const result = ARTIFACT_CATALOG_NAMES.map((name, index) => {
+      const key = name.toLocaleLowerCase('ru-RU');
+      const stored = merged.get(key);
+      merged.delete(key);
+      return {
+        id: 'catalog_' + index,
+        name,
+        count: stored ? stored.count : 0,
+        catalog: true
+      };
+    });
+
+    merged.forEach(item => {
+      result.push({
+        id: item.id || makeArtifactInventoryId(),
+        name: item.name,
+        count: item.count,
+        catalog: false
+      });
+    });
+
+    return result.slice(0, 500);
   }
 
   let artifactInventoryItems = loadArtifactInventory();
+  let artifactInventoryFilter = 'all';
 
   function saveArtifactInventory() {
     localStorage.setItem(
       ARTIFACT_INVENTORY_KEY,
-      JSON.stringify(artifactInventoryItems.slice(0, 200))
+      JSON.stringify(artifactInventoryItems.slice(0, 500))
     );
   }
 
@@ -9824,8 +9949,15 @@ mapMeasureHint: $('mapMeasureHint'),
   function renderArtifactInventory() {
     if (!els.artifactInventoryList) return;
 
-    const items = artifactInventoryItems
-      .slice()
+    const allItems = artifactInventoryItems.slice();
+    const query = (els.artifactInventorySearch
+      ? els.artifactInventorySearch.value
+      : '').trim().toLocaleLowerCase('ru-RU');
+    const items = allItems
+      .filter(item => (
+        (artifactInventoryFilter !== 'owned' || item.count > 0) &&
+        (!query || item.name.toLocaleLowerCase('ru-RU').includes(query))
+      ))
       .sort((a, b) => {
         const stockDelta = Number(b.count > 0) - Number(a.count > 0);
         if (stockDelta) return stockDelta;
@@ -9834,15 +9966,33 @@ mapMeasureHint: $('mapMeasureHint'),
 
     els.artifactInventoryList.innerHTML = '';
 
+    const totalCount = allItems.reduce((sum, item) => sum + item.count, 0);
+    const ownedKinds = allItems.filter(item => item.count > 0).length;
     if (els.artifactInventoryTotal) {
-      const total = items.reduce((sum, item) => sum + item.count, 0);
-      els.artifactInventoryTotal.textContent = total + ' шт.';
+      els.artifactInventoryTotal.textContent =
+        totalCount + ' шт. · ' + ownedKinds + ' видов';
+    }
+    if (els.artifactInventorySearchCount) {
+      els.artifactInventorySearchCount.textContent =
+        'Показано ' + items.length + ' из ' + allItems.length;
+    }
+    if (els.artifactInventory) {
+      els.artifactInventory.querySelectorAll('[data-inventory-filter]')
+        .forEach(button => {
+          const active = button.dataset.inventoryFilter === artifactInventoryFilter;
+          button.setAttribute('aria-pressed', String(active));
+          button.classList.toggle('active', active);
+        });
     }
 
     if (!items.length) {
       const empty = document.createElement('div');
       empty.className = 'artifact-inventory-empty';
-      empty.textContent = 'Список пуст. Добавьте название первого артефакта.';
+      empty.textContent = query
+        ? 'Совпадений нет. Попробуйте другое название.'
+        : artifactInventoryFilter === 'owned'
+          ? 'Пока ничего нет. Переключитесь на «ВСЕ» и нажмите «НАШЁЛ +1».'
+          : 'Список пуст. Добавьте название первого артефакта.';
       els.artifactInventoryList.appendChild(empty);
       return;
     }
@@ -9879,14 +10029,18 @@ mapMeasureHint: $('mapMeasureHint'),
       sold.textContent = 'ПРОДАЛ −1';
       sold.disabled = item.count <= 0;
 
-      const remove = document.createElement('button');
-      remove.type = 'button';
-      remove.className = 'btn artifact-inventory-remove';
-      remove.dataset.inventoryAction = 'remove';
-      remove.textContent = '×';
-      remove.setAttribute('aria-label', 'Удалить ' + item.name + ' из списка');
+      actions.append(found, sold);
 
-      actions.append(found, sold, remove);
+      // Справочные позиции остаются в каталоге; удалять можно только свои.
+      if (!item.catalog) {
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'btn artifact-inventory-remove';
+        remove.dataset.inventoryAction = 'remove';
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', 'Удалить ' + item.name + ' из списка');
+        actions.appendChild(remove);
+      }
       row.append(info, actions);
       els.artifactInventoryList.appendChild(row);
     });
@@ -9929,6 +10083,24 @@ mapMeasureHint: $('mapMeasureHint'),
     renderArtifactInventory();
   }
 
+  if (els.artifactInventorySearch) {
+    els.artifactInventorySearch.addEventListener(
+      'input',
+      renderArtifactInventory
+    );
+  }
+
+  if (els.artifactInventory) {
+    els.artifactInventory.addEventListener('click', event => {
+      const button = event.target.closest('[data-inventory-filter]');
+      if (!button) return;
+      artifactInventoryFilter = button.dataset.inventoryFilter === 'owned'
+        ? 'owned'
+        : 'all';
+      renderArtifactInventory();
+    });
+  }
+
   if (els.artifactInventoryForm) {
     els.artifactInventoryForm.addEventListener('submit', event => {
       event.preventDefault();
@@ -9962,6 +10134,8 @@ mapMeasureHint: $('mapMeasureHint'),
     });
   }
 
+  // Сохраняем объединённый каталог, сохраняя существующие количества.
+  try { saveArtifactInventory(); } catch (_) {}
   renderArtifactInventory();
 
   const DAYLIGHT_EVENT_LABELS = {
