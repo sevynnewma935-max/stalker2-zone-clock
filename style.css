@@ -5172,3 +5172,173 @@ button.zone-button-press:not(:disabled) {
   opacity: .42;
   cursor: not-allowed;
 }
+
+
+/* PWA v128 — прогресс маршрута по артефактам и инвентарь. */
+@keyframes zoneArtifactJourneyPulse {
+  0%, 100% {
+    opacity: .38;
+    stroke-width: 2px;
+    filter: drop-shadow(0 0 2px rgba(99, 255, 122, .55));
+  }
+  50% {
+    opacity: 1;
+    stroke-width: 4px;
+    filter: drop-shadow(0 0 6px rgba(99, 255, 122, .98)) drop-shadow(0 0 12px rgba(54, 255, 90, .72));
+  }
+}
+
+#mapCustomArtifactPoints .map-artifact-visit-point:not(.visited):not(.map-custom-base-point) {
+  fill: rgba(18, 150, 42, .98) !important;
+  stroke: #63ff7a !important;
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 5px rgba(99, 255, 122, .82));
+}
+
+#mapCustomArtifactPoints .map-artifact-visit-point.visited {
+  fill: rgba(126, 134, 128, .84) !important;
+  stroke: #c5cdc7 !important;
+  opacity: .46 !important;
+  filter: none !important;
+}
+
+#mapCustomArtifactPoints .map-artifact-pulse-ring {
+  fill: none !important;
+  stroke: #63ff7a !important;
+  animation: zoneArtifactJourneyPulse 1.15s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.artifact-inventory {
+  border: 1px solid var(--border-soft);
+  border-radius: 13px;
+  background: rgba(7, 16, 10, .58);
+  overflow: hidden;
+}
+
+.artifact-inventory > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--text);
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.artifact-inventory > summary::-webkit-details-marker {
+  display: none;
+}
+
+.artifact-inventory > summary strong {
+  color: var(--accent-2);
+  font-size: .72rem;
+  white-space: nowrap;
+}
+
+.artifact-inventory-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+
+.artifact-inventory-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.artifact-inventory-add input {
+  min-width: 0;
+}
+
+.artifact-inventory-note,
+.artifact-inventory-empty {
+  color: var(--muted);
+  font-size: .63rem;
+  line-height: 1.45;
+}
+
+.artifact-inventory-list {
+  display: grid;
+  gap: 7px;
+}
+
+.artifact-inventory-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: rgba(7, 14, 9, .55);
+  opacity: .62;
+}
+
+.artifact-inventory-row.has-stock {
+  opacity: 1;
+  border-color: rgba(99, 255, 122, .26);
+}
+
+.artifact-inventory-info {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.artifact-inventory-info strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: .72rem;
+}
+
+.artifact-inventory-info span {
+  color: var(--accent-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .78rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.artifact-inventory-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.artifact-inventory-actions .btn {
+  min-height: 34px;
+  padding: 6px 8px;
+  font-size: .54rem;
+}
+
+.artifact-inventory-remove {
+  min-width: 34px;
+  padding-inline: 7px !important;
+}
+
+.map-dialog.map-fullscreen .artifact-inventory {
+  display: none !important;
+}
+
+@media (max-width: 620px) {
+  .artifact-inventory-row {
+    grid-template-columns: 1fr;
+  }
+
+  .artifact-inventory-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+  }
+
+  .artifact-inventory-actions .btn {
+    width: 100%;
+  }
+}

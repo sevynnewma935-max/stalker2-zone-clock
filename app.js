@@ -39,6 +39,7 @@
   const SAVED_ROUTE_MIGRATION_KEY = 'stalker2-zone-clock-saved-route-migration-v117';
   const ROUTE_RECORD_STORAGE_KEY = 'stalker2-zone-clock-route-records-v1';
   const ROUTE_RECORD_ACTIVE_KEY = 'stalker2-zone-clock-route-record-active-v1';
+  const ARTIFACT_INVENTORY_KEY = 'stalker2-zone-clock-artifact-inventory-v1';
   const MAP_SCALE_STORAGE_KEY = 'stalker2-zone-clock-map-scale-v1';
   const NOTIFICATION_KEY = 'stalker2-zone-clock-notifications-v1';
   const NOTIFICATION_NEXT_KEY = 'stalker2-zone-clock-next-message-v1';
@@ -123,6 +124,11 @@
     mapPresetRoutePoints: $('mapPresetRoutePoints'),
     mapArtifactVisitPoints: $('mapArtifactVisitPoints'),
     mapArtifactVisitHint: $('mapArtifactVisitHint'),
+    artifactInventory: $('artifactInventory'),
+    artifactInventoryForm: $('artifactInventoryForm'),
+    artifactInventoryName: $('artifactInventoryName'),
+    artifactInventoryList: $('artifactInventoryList'),
+    artifactInventoryTotal: $('artifactInventoryTotal'),
     mapRoadPlanner: $('mapRoadPlanner'),
     mapPlannerLocationSelect: $('mapPlannerLocationSelect'),
     mapPlannerUndoStopBtn: $('mapPlannerUndoStopBtn'),
@@ -1857,9 +1863,11 @@ mapMeasureHint: $('mapMeasureHint'),
 
   let mapCustomArtifactSequence = [];
   let mapCustomArtifactRoutePoints = [];
+  let mapCustomArtifactRouteLegs = [];
   let mapCustomArtifactMeters = 0;
   let mapCustomArtifactBusy = false;
   let mapCustomArtifactBuildTimer = 0;
+  let mapCustomArtifactJourneyVisited = new Set();
 
   let mapJourneyActive = false;
   let mapJourneyPlan = null;
@@ -3923,6 +3931,7 @@ mapMeasureHint: $('mapMeasureHint'),
     try {
       const grid = await loadRoadPlannerCostGrid();
       const fullPath = [];
+      const routeLegs = [];
       let totalMeters = 0;
 
       for (let index = 0; index < mapCustomArtifactSequence.length - 1; index++) {
@@ -3947,12 +3956,14 @@ mapMeasureHint: $('mapMeasureHint'),
         }
 
         const simplified = simplifyRoadScreenPoints(logicalPath, 2.2);
+        routeLegs.push(simplified);
         if (fullPath.length) fullPath.push(...simplified.slice(1));
         else fullPath.push(...simplified);
         totalMeters += plannerPathMeters(simplified);
       }
 
       mapCustomArtifactRoutePoints = fullPath;
+      mapCustomArtifactRouteLegs = routeLegs;
       mapCustomArtifactMeters = totalMeters;
       saveCustomArtifactRoute();
     } catch (error) {
@@ -3961,6 +3972,13 @@ mapMeasureHint: $('mapMeasureHint'),
         x: item.x,
         y: item.y
       }));
+      mapCustomArtifactRouteLegs = [];
+      for (let index = 0; index < mapCustomArtifactRoutePoints.length - 1; index++) {
+        mapCustomArtifactRouteLegs.push([
+          mapCustomArtifactRoutePoints[index],
+          mapCustomArtifactRoutePoints[index + 1]
+        ]);
+      }
       mapCustomArtifactMeters = plannerPathMeters(mapCustomArtifactRoutePoints);
     } finally {
       mapCustomArtifactBusy = false;
@@ -3975,6 +3993,8 @@ mapMeasureHint: $('mapMeasureHint'),
     window.clearTimeout(mapCustomArtifactBuildTimer);
     mapCustomArtifactSequence = [];
     mapCustomArtifactRoutePoints = [];
+    mapCustomArtifactRouteLegs = [];
+    mapCustomArtifactJourneyVisited = new Set();
     mapCustomArtifactMeters = 0;
     try {
       localStorage.removeItem(MAP_CUSTOM_ARTIFACT_STORAGE_KEY);
@@ -4001,6 +4021,22 @@ mapMeasureHint: $('mapMeasureHint'),
 
   function toggleCustomArtifactSelection(candidate) {
     if (!candidate) return;
+
+    if (
+      mapJourneyActive &&
+      mapJourneyPlan &&
+      mapJourneyPlan.routeKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT
+    ) {
+      const journeyIndex = mapCustomArtifactSequence.findIndex(
+        item => item.id === candidate.id
+      );
+      if (journeyIndex >= 0) {
+        markCustomArtifactJourneyStop(journeyIndex, candidate);
+      }
+      return;
+    }
+
+    mapCustomArtifactJourneyVisited = new Set();
     const existingIndex = mapCustomArtifactSequence.findIndex(
       item => item.id === candidate.id
     );
@@ -4012,6 +4048,7 @@ mapMeasureHint: $('mapMeasureHint'),
     }
 
     mapCustomArtifactRoutePoints = [];
+    mapCustomArtifactRouteLegs = [];
     mapCustomArtifactMeters = 0;
     saveCustomArtifactRoute();
     renderCustomArtifactRoute();
@@ -4039,13 +4076,27 @@ mapMeasureHint: $('mapMeasureHint'),
       // чтобы показать номер в последовательности.
       if (isBase && selectedIndex < 0) return;
 
+      const customJourneyActive = Boolean(
+        mapJourneyActive &&
+        mapJourneyPlan &&
+        mapJourneyPlan.routeKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT
+      );
+      const takenThisJourney = Boolean(
+        customJourneyActive &&
+        selectedIndex >= 0 &&
+        mapCustomArtifactJourneyVisited.has(selectedIndex)
+      );
       const elapsed = isBase
         ? null
         : artifactElapsedSeconds(
             candidate.routeKey,
             candidate.markerIndex
           );
-      const isVisited = !isBase && elapsed !== null;
+      const isVisited = isBase
+        ? takenThisJourney
+        : customJourneyActive && selectedIndex >= 0
+          ? takenThisJourney
+          : elapsed !== null;
       const respawnState = isBase
         ? { key: 'base' }
         : artifactRespawnState(elapsed);
@@ -4087,7 +4138,7 @@ mapMeasureHint: $('mapMeasureHint'),
         }
       });
 
-      if (!isBase && !isVisited && selectedIndex < 0) {
+      if (!isBase && !isVisited) {
         const pulseRing = document.createElementNS(
           'http://www.w3.org/2000/svg',
           'circle'
@@ -4123,7 +4174,32 @@ mapMeasureHint: $('mapMeasureHint'),
       return;
     }
 
-    const routeScreen = mapCustomArtifactRoutePoints.map(routePointToScreen);
+    let visibleRoutePoints = mapCustomArtifactRoutePoints;
+
+    const customJourneyActive = Boolean(
+      mapJourneyActive &&
+      mapJourneyPlan &&
+      mapJourneyPlan.routeKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT
+    );
+
+    if (customJourneyActive && mapCustomArtifactRouteLegs.length) {
+      let latestVisited = -1;
+      mapCustomArtifactJourneyVisited.forEach(index => {
+        latestVisited = Math.max(latestVisited, Number(index));
+      });
+
+      const firstVisibleLeg = Math.max(0, latestVisited);
+      const visibleLegs = mapCustomArtifactRouteLegs.slice(firstVisibleLeg);
+      visibleRoutePoints = [];
+
+      visibleLegs.forEach(leg => {
+        if (!Array.isArray(leg) || !leg.length) return;
+        if (visibleRoutePoints.length) visibleRoutePoints.push(...leg.slice(1));
+        else visibleRoutePoints.push(...leg);
+      });
+    }
+
+    const routeScreen = visibleRoutePoints.map(routePointToScreen);
     const simplified = simplifyRoadScreenPoints(routeScreen, 1.8);
     els.mapCustomArtifactPath.setAttribute(
       'd',
@@ -4161,6 +4237,87 @@ mapMeasureHint: $('mapMeasureHint'),
         label.setAttribute('x', screen.x + 8);
         label.setAttribute('y', screen.y - 8);
       });
+  }
+
+  function firstUnvisitedCustomArtifactJourneyIndex() {
+    for (let index = 0; index < mapCustomArtifactSequence.length; index++) {
+      if (!mapCustomArtifactJourneyVisited.has(index)) return index;
+    }
+    return Math.max(0, mapCustomArtifactSequence.length - 1);
+  }
+
+  function markCustomArtifactJourneyStop(sequenceIndex, candidate = null) {
+    if (
+      !mapJourneyActive ||
+      !mapJourneyPlan ||
+      mapJourneyPlan.routeKey !== MAP_ROUTE_MODE_CUSTOM_ARTIFACT ||
+      !Number.isInteger(sequenceIndex) ||
+      sequenceIndex < 0 ||
+      sequenceIndex >= mapCustomArtifactSequence.length
+    ) {
+      return;
+    }
+
+    const expectedIndex = firstUnvisitedCustomArtifactJourneyIndex();
+    const stop = candidate || mapCustomArtifactSequence[sequenceIndex];
+
+    if (mapCustomArtifactJourneyVisited.has(sequenceIndex)) {
+      const next = mapCustomArtifactSequence[
+        Math.min(mapCustomArtifactSequence.length - 1, sequenceIndex + 1)
+      ];
+      focusJourneyPoints(
+        next && next !== stop ? [stop, next] : [stop],
+        650,
+        true
+      );
+      return;
+    }
+
+    if (sequenceIndex !== expectedIndex) {
+      const expected = mapCustomArtifactSequence[expectedIndex];
+      if (els.mapArtifactVisitHint && expected) {
+        els.mapArtifactVisitHint.textContent =
+          'Следующая точка маршрута: ' + expected.label + '.';
+      }
+      return;
+    }
+
+    mapCustomArtifactJourneyVisited.add(sequenceIndex);
+
+    if (
+      stop &&
+      stop.kind !== 'base' &&
+      stop.routeKey &&
+      Number.isInteger(stop.markerIndex)
+    ) {
+      mapArtifactVisits[
+        artifactVisitKey(stop.routeKey, stop.markerIndex)
+      ] = absoluteGameSeconds;
+      saveVisitedArtifacts();
+    }
+
+    renderCustomArtifactRoute();
+    renderKnownLocationsLayer();
+    updateCustomArtifactRouteGeometry();
+
+    const hasNext = sequenceIndex < mapCustomArtifactSequence.length - 1;
+    const next = hasNext
+      ? mapCustomArtifactSequence[sequenceIndex + 1]
+      : null;
+
+    if (els.mapArtifactVisitHint) {
+      els.mapArtifactVisitHint.textContent = hasNext
+        ? stop.label + ' отмечена. Следующая точка: ' + next.label + '.'
+        : stop.label + ' отмечена. Маршрут завершён.';
+    }
+
+    window.setTimeout(() => {
+      focusJourneyPoints(
+        next ? [stop, next] : [stop],
+        850,
+        true
+      );
+    }, 120);
   }
 
   function getSelectedRouteMetrics() {
@@ -4962,6 +5119,12 @@ mapMeasureHint: $('mapMeasureHint'),
         : getMovementJourneyPlan();
 
       mapJourneyActive = true;
+      if (isCustomArtifactMode) {
+        mapCustomArtifactJourneyVisited = new Set();
+        renderCustomArtifactRoute();
+        renderKnownLocationsLayer();
+        updateCustomArtifactRouteGeometry();
+      }
       mapJourneySequence = isCustomArtifactMode
         ? mapCustomArtifactSequence.map((item, index) => ({
             x: Number(item.x),
@@ -9545,6 +9708,188 @@ mapMeasureHint: $('mapMeasureHint'),
     updateMovementLiveTimers();
   }, 500);
 
+  // PWA v128 — учёт найденных и проданных артефактов.
+  function normalizeArtifactInventoryName(value) {
+    return String(value || '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .slice(0, 50);
+  }
+
+  function loadArtifactInventory() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(ARTIFACT_INVENTORY_KEY) || '[]');
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map(item => ({
+          id: String(item && item.id || '').slice(0, 80),
+          name: normalizeArtifactInventoryName(item && item.name),
+          count: Math.max(0, Math.floor(Number(item && item.count) || 0))
+        }))
+        .filter(item => item.id && item.name)
+        .slice(0, 200);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  let artifactInventoryItems = loadArtifactInventory();
+
+  function saveArtifactInventory() {
+    localStorage.setItem(
+      ARTIFACT_INVENTORY_KEY,
+      JSON.stringify(artifactInventoryItems.slice(0, 200))
+    );
+  }
+
+  function makeArtifactInventoryId() {
+    return 'artifact_' + Date.now().toString(36) + '_' +
+      Math.random().toString(36).slice(2, 8);
+  }
+
+  function renderArtifactInventory() {
+    if (!els.artifactInventoryList) return;
+
+    const items = artifactInventoryItems
+      .slice()
+      .sort((a, b) => {
+        const stockDelta = Number(b.count > 0) - Number(a.count > 0);
+        if (stockDelta) return stockDelta;
+        return a.name.localeCompare(b.name, 'ru');
+      });
+
+    els.artifactInventoryList.innerHTML = '';
+
+    if (els.artifactInventoryTotal) {
+      const total = items.reduce((sum, item) => sum + item.count, 0);
+      els.artifactInventoryTotal.textContent = total + ' шт.';
+    }
+
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'artifact-inventory-empty';
+      empty.textContent = 'Список пуст. Добавьте название первого артефакта.';
+      els.artifactInventoryList.appendChild(empty);
+      return;
+    }
+
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'artifact-inventory-row' + (item.count > 0 ? ' has-stock' : '');
+      row.dataset.artifactInventoryId = item.id;
+
+      const info = document.createElement('div');
+      info.className = 'artifact-inventory-info';
+
+      const name = document.createElement('strong');
+      name.textContent = item.name;
+
+      const count = document.createElement('span');
+      count.textContent = '×' + item.count;
+
+      info.append(name, count);
+
+      const actions = document.createElement('div');
+      actions.className = 'artifact-inventory-actions';
+
+      const found = document.createElement('button');
+      found.type = 'button';
+      found.className = 'btn artifact-inventory-found';
+      found.dataset.inventoryAction = 'found';
+      found.textContent = 'НАШЁЛ +1';
+
+      const sold = document.createElement('button');
+      sold.type = 'button';
+      sold.className = 'btn artifact-inventory-sold';
+      sold.dataset.inventoryAction = 'sold';
+      sold.textContent = 'ПРОДАЛ −1';
+      sold.disabled = item.count <= 0;
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'btn artifact-inventory-remove';
+      remove.dataset.inventoryAction = 'remove';
+      remove.textContent = '×';
+      remove.setAttribute('aria-label', 'Удалить ' + item.name + ' из списка');
+
+      actions.append(found, sold, remove);
+      row.append(info, actions);
+      els.artifactInventoryList.appendChild(row);
+    });
+  }
+
+  function addArtifactInventoryItem(nameValue) {
+    const name = normalizeArtifactInventoryName(nameValue);
+    if (!name) return;
+
+    const lower = name.toLocaleLowerCase('ru-RU');
+    const existing = artifactInventoryItems.find(
+      item => item.name.toLocaleLowerCase('ru-RU') === lower
+    );
+
+    if (existing) {
+      existing.count += 1;
+    } else {
+      artifactInventoryItems.push({
+        id: makeArtifactInventoryId(),
+        name,
+        count: 1
+      });
+    }
+
+    saveArtifactInventory();
+    renderArtifactInventory();
+  }
+
+  function changeArtifactInventoryCount(id, delta) {
+    const item = artifactInventoryItems.find(entry => entry.id === id);
+    if (!item) return;
+    item.count = Math.max(0, item.count + delta);
+    saveArtifactInventory();
+    renderArtifactInventory();
+  }
+
+  function removeArtifactInventoryItem(id) {
+    artifactInventoryItems = artifactInventoryItems.filter(item => item.id !== id);
+    saveArtifactInventory();
+    renderArtifactInventory();
+  }
+
+  if (els.artifactInventoryForm) {
+    els.artifactInventoryForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const name = normalizeArtifactInventoryName(
+        els.artifactInventoryName && els.artifactInventoryName.value
+      );
+      if (!name) {
+        if (els.artifactInventoryName) els.artifactInventoryName.focus();
+        return;
+      }
+      addArtifactInventoryItem(name);
+      if (els.artifactInventoryName) {
+        els.artifactInventoryName.value = '';
+        els.artifactInventoryName.focus();
+      }
+    });
+  }
+
+  if (els.artifactInventoryList) {
+    els.artifactInventoryList.addEventListener('click', event => {
+      const button = event.target.closest('[data-inventory-action]');
+      if (!button) return;
+      const row = button.closest('[data-artifact-inventory-id]');
+      const id = row && row.dataset ? row.dataset.artifactInventoryId : '';
+      if (!id) return;
+
+      const action = button.dataset.inventoryAction;
+      if (action === 'found') changeArtifactInventoryCount(id, 1);
+      if (action === 'sold') changeArtifactInventoryCount(id, -1);
+      if (action === 'remove') removeArtifactInventoryItem(id);
+    });
+  }
+
+  renderArtifactInventory();
+
   const DAYLIGHT_EVENT_LABELS = {
     dawn_start: 'Начался рассвет',
     daylight: 'Стало светло',
@@ -9853,7 +10198,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'zone-clock-test-v118.csv';
+    link.download = 'zone-clock-test-v128.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();

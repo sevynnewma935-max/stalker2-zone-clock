@@ -245,6 +245,17 @@
 <div class="map-artifact-visit-hint" id="mapArtifactVisitHint">
         Артефакты: нажмите точку после сбора. До 2 суток — СОБРАН, 2–3 суток — ВОЗМОЖНО ПОЯВИЛСЯ, после 3 суток — ПОРА ПРОВЕРИТЬ.
       </div>
+<details class="artifact-inventory" id="artifactInventory">
+<summary><span>МОИ АРТЕФАКТЫ</span><strong id="artifactInventoryTotal">0 шт.</strong></summary>
+<div class="artifact-inventory-body">
+<form class="artifact-inventory-add" id="artifactInventoryForm">
+<input autocomplete="off" id="artifactInventoryName" maxlength="50" placeholder="Название артефакта" type="text"/>
+<button class="btn primary" type="submit">ДОБАВИТЬ</button>
+</form>
+<div class="artifact-inventory-note">«Нашёл +1» увеличивает количество. «Продал −1» вычитает один артефакт. Нулевые позиции остаются в списке.</div>
+<div class="artifact-inventory-list" id="artifactInventoryList"></div>
+</div>
+</details>
 <details class="map-road-planner" id="mapRoadPlanner">
 <summary><span>ПОСТРОИТЬ МАРШРУТ ПО МЕСТОПОЛОЖЕНИЯМ</span><span aria-hidden="true">⌄</span></summary>
 <div class="map-road-planner-body">
@@ -678,7 +689,7 @@
 </div>
 <div class="settings-group version-group">
 <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.27</strong></div>
+<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.28</strong></div>
 <button class="btn update-app-btn" id="updateAppBtn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>
