@@ -5366,3 +5366,15 @@ button.zone-button-press:not(:disabled) {
 #mapCustomArtifactPoints .map-artifact-visit-point.visited {
   animation: none !important;
 }
+
+
+/* PWA v132 — через 3 игровых дня взятый артефакт снова доступен и пульсирует. */
+#mapPresetRoutePoints .map-artifact-visit-point.artifact-ready,
+#mapCustomArtifactPoints .map-artifact-visit-point.artifact-ready:not(.map-custom-base-point) {
+  fill: rgba(18, 150, 42, .98) !important;
+  stroke: #63ff7a !important;
+  stroke-width: 2.5px !important;
+  opacity: 1 !important;
+  animation: zoneArtifactCorePulseV114 3.75s ease-in-out infinite !important;
+  filter: drop-shadow(0 0 5px rgba(99, 255, 122, .82)) !important;
+}
