@@ -3830,7 +3830,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
   function getCustomArtifactCandidates() {
     const defs = [
-      { routeKey: 'garbage_cement_cooling', exclude: new Set([3, 13]) },
+      { routeKey: 'garbage_cement_cooling', exclude: new Set([3, 6, 13]) },
       { routeKey: 'rostok_redforest_yanov_jupiter_chemical', exclude: new Set([7]) }
     ];
     const result = [];
