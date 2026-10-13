@@ -303,6 +303,7 @@
 <div class="zone-map-transform" id="zoneMapTransform">
 <img alt="" aria-hidden="true" class="zone-map-4096-image" draggable="false" id="zoneMapPreviewImage" src="./assets/zone-map-4096.jpg"/>
 <img alt="Карта Зоны S.T.A.L.K.E.R. 2" class="zone-map-8192-image" draggable="false" id="zoneMapImage" src="./assets/zone-map-8192.jpg"/>
+<div aria-hidden="true" class="zone-map-hd64-tiles" id="zoneMapHdTiles"></div>
 <img alt="Схематическая карта Зоны" class="zone-map-schematic-image" draggable="false" id="zoneMapSchematicImage" src="./assets/zone-map-schematic-4096.jpg"/>
 <svg aria-hidden="true" class="map-road-route-svg" viewbox="0 0 2048 2048">
 <path class="map-road-route-path" d="" id="mapRoadRoutePath"></path>
@@ -340,6 +341,7 @@
 <polyline fill="none" id="mapMeasureLine" points=""></polyline>
 <g id="mapMeasurePoints"></g>
 </svg>
+<div class="map-hd64-credit" hidden id="mapHdCredit"><span id="mapHdTileStatus">HD 64K</span> · карта © GSC Game World · <a href="https://github.com/joric/stalker2_tileset" target="_blank" rel="noopener noreferrer">тайлы joric</a> · требуется интернет</div>
 <div aria-label="Управление картой" class="map-fullscreen-zoom-controls" id="mapFullscreenZoomControls">
 <button aria-label="Увеличить карту" id="mapFullscreenZoomInBtn" type="button">+</button>
 <button aria-label="Уменьшить карту" id="mapFullscreenZoomOutBtn" type="button">−</button>
@@ -698,7 +700,7 @@
 </div>
 <div class="settings-group version-group">
 <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.36</strong></div>
+<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.37</strong></div>
 <button class="btn update-app-btn" id="updateAppBtn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>
