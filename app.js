@@ -2333,8 +2333,11 @@ mapMeasureHint: $('mapMeasureHint'),
       els.mapHdCredit.hidden = !hd64;
     }
     if (!hd64 && els.zoneMapHdTiles) {
-      // Release offscreen tiles when the user returns to local map modes.
-      els.zoneMapHdTiles.replaceChildren();
+      // Keep only the tiny, full-map HD preview: returning to HD no longer
+      // briefly reveals the different 8192px landscape image.
+      Array.from(els.zoneMapHdTiles.children).forEach(image => {
+        if (image.dataset.tileKey !== '0/0/0') image.remove();
+      });
       mapHdFailedTiles.clear();
       mapHdTileErrorCount = 0;
     }
@@ -6661,10 +6664,11 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
 
-  // PWA v137: stream only the visible 64K tiles. Tile coordinate (0,0)
-  // is the top-left of the same 2048×2048 logical map used by every marker.
+  // PWA v138: seamless progressive HD map.
+  // The already loaded HD tiles stay visible until all replacement tiles
+  // covering the new zoom/viewport have loaded. A persistent z=0 tile
+  // covers the complete map, preventing the 8192px fallback from flashing.
   // Source: https://github.com/joric/stalker2_tileset
-  // External tiles are optional; the existing map always remains underneath.
   function updateHdTileLayer() {
     if (
       mapViewMode !== 'hd64' ||
@@ -6674,8 +6678,50 @@ mapMeasureHint: $('mapMeasureHint'),
       !els.mapDialog.open
     ) return;
 
+    const container = els.zoneMapHdTiles;
     const bounds = els.mapViewport.getBoundingClientRect();
     if (bounds.width < 40 || bounds.height < 40 || mapZoom <= 0) return;
+
+    const tileKey = (level, x, y) => level + '/' + x + '/' + y;
+
+    // Fallback from the same HD source: once loaded, this low-resolution
+    // whole-map tile remains in the DOM across zooms and view switches.
+    let base = container.querySelector('[data-tile-key="0/0/0"]');
+    if (!base) {
+      base = document.createElement('img');
+      base.className = 'zone-hd64-tile zone-hd64-base-tile';
+      base.dataset.tileKey = '0/0/0';
+      base.dataset.tileLevel = '0';
+      base.alt = '';
+      base.draggable = false;
+      base.decoding = 'async';
+      base.style.left = '0';
+      base.style.top = '0';
+      base.style.width = MAP_IMAGE_SIZE + 'px';
+      base.style.height = MAP_IMAGE_SIZE + 'px';
+
+      base.addEventListener('load', () => {
+        base.classList.add('loaded');
+        mapHdTileErrorCount = 0;
+        if (els.mapHdTileStatus) {
+          els.mapHdTileStatus.textContent = 'HD 64K';
+        }
+        scheduleHdTileUpdate();
+      }, { once: true });
+
+      base.addEventListener('error', () => {
+        mapHdFailedTiles.set('0/0/0', Date.now());
+        base.remove();
+        if (els.mapHdTileStatus) {
+          els.mapHdTileStatus.textContent =
+            'HD недоступна — показана обычная карта';
+        }
+      }, { once: true });
+
+      // A z=0 tile is always behind the detailed tiles.
+      container.prepend(base);
+      base.src = MAP_HD64_TILE_BASE + '/0/0/0.jpg';
+    }
 
     let level = Math.max(0, Math.min(
       MAP_HD64_MAX_LEVEL,
@@ -6697,7 +6743,6 @@ mapMeasureHint: $('mapMeasureHint'),
       );
 
       if (left >= right || top >= bottom) return null;
-      // One-tile preload margin around viewport to avoid edges while dragging.
       return {
         size,
         xMin: Math.max(0, Math.floor(left / size) - 1),
@@ -6708,10 +6753,7 @@ mapMeasureHint: $('mapMeasureHint'),
     };
 
     let range = rangeForLevel(level);
-    if (!range) {
-      els.zoneMapHdTiles.replaceChildren();
-      return;
-    }
+    if (!range) return;
 
     const tileCount = r =>
       (r.xMax - r.xMin + 1) * (r.yMax - r.yMin + 1);
@@ -6722,15 +6764,14 @@ mapMeasureHint: $('mapMeasureHint'),
 
     const desired = new Set();
     const current = new Map();
-    Array.from(els.zoneMapHdTiles.children).forEach(image => {
+    Array.from(container.children).forEach(image => {
       current.set(image.dataset.tileKey, image);
     });
 
     for (let x = range.xMin; x <= range.xMax; x++) {
       for (let y = range.yMin; y <= range.yMax; y++) {
-        const key = level + '/' + x + '/' + y;
+        const key = tileKey(level, x, y);
         desired.add(key);
-
         if (current.has(key)) continue;
 
         const failedAt = mapHdFailedTiles.get(key);
@@ -6739,6 +6780,7 @@ mapMeasureHint: $('mapMeasureHint'),
         const image = document.createElement('img');
         image.className = 'zone-hd64-tile';
         image.dataset.tileKey = key;
+        image.dataset.tileLevel = String(level);
         image.alt = '';
         image.draggable = false;
         image.decoding = 'async';
@@ -6754,6 +6796,8 @@ mapMeasureHint: $('mapMeasureHint'),
           if (els.mapHdTileStatus) {
             els.mapHdTileStatus.textContent = 'HD 64K';
           }
+          // Important: retire old tiles ONLY after the new viewport is ready.
+          scheduleHdTileUpdate();
         }, { once: true });
 
         image.addEventListener('error', () => {
@@ -6762,18 +6806,51 @@ mapMeasureHint: $('mapMeasureHint'),
           mapHdTileErrorCount++;
           if (els.mapHdTileStatus) {
             els.mapHdTileStatus.textContent =
-              'HD недоступна — показана обычная карта';
+              'Часть HD недоступна — показана ранее загруженная карта';
           }
         }, { once: true });
 
-        els.zoneMapHdTiles.appendChild(image);
+        container.appendChild(image);
+        current.set(key, image);
         image.src = MAP_HD64_TILE_BASE + '/' + key + '.jpg';
       }
     }
 
-    current.forEach((image, key) => {
-      if (!desired.has(key)) image.remove();
+    // Do not remove previously visible HD tiles during a level change.
+    // A successful full set is the only signal to retire old imagery.
+    const complete = Array.from(desired).every(key => {
+      const image = current.get(key);
+      return Boolean(image && image.classList.contains('loaded'));
     });
+
+    Array.from(container.children).forEach(image => {
+      const key = image.dataset.tileKey;
+      if (key === '0/0/0' || desired.has(key)) return;
+      // Obsolete inflight requests are not useful on a fast zoom.
+      if (!image.classList.contains('loaded') || complete) {
+        image.remove();
+      }
+    });
+
+    // Never keep an unbounded history on mobile devices, even when the
+    // network fails to deliver a complete new set. Keep the most relevant
+    // already loaded tiles along with the persistent overview.
+    const stale = Array.from(container.children).filter(
+      image => image.dataset.tileKey !== '0/0/0' &&
+        !desired.has(image.dataset.tileKey)
+    );
+    const maxStale = MAP_HD64_MAX_TILES;
+    if (stale.length > maxStale) {
+      stale.slice(0, stale.length - maxStale).forEach(image => image.remove());
+    }
+
+    // Always draw tiles in order of increasing resolution. This allows
+    // previous low-zoom tiles to remain UNDER the new sharper tiles.
+    Array.from(container.children)
+      .sort((a, b) =>
+        Number(a.dataset.tileLevel || 0) - Number(b.dataset.tileLevel || 0)
+      )
+      .forEach(image => container.appendChild(image));
   }
 
   function scheduleHdTileUpdate() {
