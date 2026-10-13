@@ -5508,3 +5508,17 @@ button.zone-button-press:not(:disabled) {
   color: #bce5a0;
   text-decoration: underline;
 }
+
+
+/* PWA v138 — HD zoom continuity: keep parent/previous HD tiles visible. */
+.zone-map-transform .zone-map-hd64-tiles > img.zone-hd64-tile {
+  transition: opacity .16s ease-out;
+}
+.zone-map-transform .zone-map-hd64-tiles > img.zone-hd64-base-tile {
+  z-index: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .zone-map-transform .zone-map-hd64-tiles > img.zone-hd64-tile {
+    transition: none;
+  }
+}
