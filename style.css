@@ -5450,3 +5450,61 @@ button.zone-button-press:not(:disabled) {
     min-width: 67px;
   }
 }
+
+
+/* PWA v137 — отдельный 64K HD-режим со стримингом видимых тайлов. */
+.zone-map-transform .zone-map-hd64-tiles {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 2048px !important;
+  height: 2048px !important;
+  display: none;
+  overflow: hidden;
+  pointer-events: none !important;
+  user-select: none;
+  z-index: 3;
+}
+.map-viewport.map-view-hd64 .zone-map-hd64-tiles {
+  display: block;
+}
+.zone-map-transform .zone-map-hd64-tiles > img.zone-hd64-tile {
+  position: absolute !important;
+  display: block !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  object-fit: fill !important;
+  image-rendering: auto !important;
+  opacity: 0;
+  pointer-events: none !important;
+  user-select: none;
+}
+.zone-map-transform .zone-map-hd64-tiles > img.zone-hd64-tile.loaded {
+  opacity: 1;
+}
+.map-viewport.map-view-schematic .zone-map-hd64-tiles {
+  display: none !important;
+}
+.map-hd64-credit {
+  position: absolute;
+  left: 9px;
+  bottom: 10px;
+  max-width: calc(100% - 110px);
+  padding: 6px 8px;
+  border: 1px solid rgba(210, 230, 201, .22);
+  border-radius: 7px;
+  background: rgba(5, 14, 9, .83);
+  color: #e5e9df;
+  font-size: .59rem;
+  line-height: 1.35;
+  pointer-events: auto;
+  z-index: 21;
+}
+.map-hd64-credit[hidden] {
+  display: none !important;
+}
+.map-hd64-credit a {
+  color: #bce5a0;
+  text-decoration: underline;
+}
