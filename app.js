@@ -84,7 +84,7 @@
     mapHeaderFullscreenBtn: $('mapHeaderFullscreenBtn'),
     mapViewport: $('mapViewport'), zoneMapTransform: $('zoneMapTransform'),
     zoneMapPreviewImage: $('zoneMapPreviewImage'),
-    zoneMapImage: $('zoneMapImage'), zoneMapSchematicImage: $('zoneMapSchematicImage'), mapOverlay: $('mapOverlay'),
+    zoneMapImage: $('zoneMapImage'), zoneMapHdTiles: $('zoneMapHdTiles'), mapHdCredit: $('mapHdCredit'), mapHdTileStatus: $('mapHdTileStatus'), zoneMapSchematicImage: $('zoneMapSchematicImage'), mapOverlay: $('mapOverlay'),
     mapMeasureLine: $('mapMeasureLine'), mapMeasurePoints: $('mapMeasurePoints'),
     mapMeasureBtn: $('mapMeasureBtn'), mapUndoBtn: $('mapUndoBtn'),
     mapClearBtn: $('mapClearBtn'), mapZoomOutBtn: $('mapZoomOutBtn'),
@@ -1843,10 +1843,20 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapInteractionDepth = 0;
   let mapFullscreenMode = false;
   let mapParkedForClock = false;
+  const storedMapViewMode = localStorage.getItem(MAP_VIEW_STORAGE_KEY);
   let mapViewMode =
-    localStorage.getItem(MAP_VIEW_STORAGE_KEY) === 'schematic'
-      ? 'schematic'
+    storedMapViewMode === 'schematic' || storedMapViewMode === 'hd64'
+      ? storedMapViewMode
       : 'landscape';
+  // PWA v137: 64K texture in 512px tiles, streamed from the public
+  // community-hosted game map. The local 8192px map remains underneath.
+  const MAP_HD64_TILE_BASE =
+    'https://joric.github.io/stalker2_tileset/tiles';
+  const MAP_HD64_MAX_LEVEL = 7;
+  const MAP_HD64_MAX_TILES = 36;
+  let mapHdTileFrame = 0;
+  let mapHdTileErrorCount = 0;
+  const mapHdFailedTiles = new Map();
   let mapMovementTestVisible = false;
 
   let mapRoadPlannerSelectMode = null;
@@ -2033,7 +2043,9 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function ensureRoadPlannerLandscapeView() {
-    if (mapViewMode === 'landscape') {
+    // HD has the same logical coordinates as the landscape layer.
+    // Do not switch away from HD when building a route.
+    if (mapViewMode !== 'schematic') {
       return;
     }
 
@@ -2284,54 +2296,70 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function updateMapViewUI() {
-    const schematic =
-      mapViewMode === 'schematic';
+    const schematic = mapViewMode === 'schematic';
+    const hd64 = mapViewMode === 'hd64';
+    const nextMode = schematic
+      ? 'ЛАНДШАФТ'
+      : hd64
+        ? 'СХЕМА'
+        : 'HD 64K';
 
     if (els.mapViewport) {
-      els.mapViewport.classList.toggle(
-        'map-view-schematic',
-        schematic
-      );
+      els.mapViewport.classList.toggle('map-view-schematic', schematic);
+      els.mapViewport.classList.toggle('map-view-hd64', hd64);
     }
 
     if (els.mapViewModeLabel) {
-      els.mapViewModeLabel.textContent =
-        schematic
-          ? 'СХЕМА'
+      els.mapViewModeLabel.textContent = schematic
+        ? 'СХЕМА'
+        : hd64
+          ? 'HD 64K'
           : 'ЛАНДШАФТ';
     }
 
     if (els.mapViewModeBtn) {
-      els.mapViewModeBtn.classList.toggle(
-        'active',
-        schematic
-      );
-
+      els.mapViewModeBtn.classList.toggle('active', schematic || hd64);
       els.mapViewModeBtn.setAttribute(
         'aria-label',
-        schematic
-          ? 'Переключить на ландшафтный вид'
-          : 'Переключить на схематический вид'
+        'Переключить карту: следующий режим ' + nextMode
       );
-
       els.mapViewModeBtn.title =
-        schematic
-          ? 'Сейчас: схема. Нажмите для ландшафта.'
-          : 'Сейчас: ландшафт. Нажмите для схемы.';
+        'Вид карты: ' +
+        (schematic ? 'схема' : hd64 ? 'HD 64K' : 'ландшафт') +
+        '. Далее: ' + nextMode;
     }
+
+    if (els.mapHdCredit) {
+      els.mapHdCredit.hidden = !hd64;
+    }
+    if (!hd64 && els.zoneMapHdTiles) {
+      // Release offscreen tiles when the user returns to local map modes.
+      els.zoneMapHdTiles.replaceChildren();
+      mapHdFailedTiles.clear();
+      mapHdTileErrorCount = 0;
+    }
+    if (hd64) scheduleHdTileUpdate();
   }
 
   function toggleMapViewMode() {
-    mapViewMode =
-      mapViewMode === 'schematic'
-        ? 'landscape'
-        : 'schematic';
+    mapViewMode = mapViewMode === 'landscape'
+      ? 'hd64'
+      : mapViewMode === 'hd64'
+        ? 'schematic'
+        : 'landscape';
 
-    localStorage.setItem(
-      MAP_VIEW_STORAGE_KEY,
-      mapViewMode
-    );
+    // Other views retain the established max zoom of 8.
+    if (mapViewMode !== 'hd64' && mapZoom > 8 && els.mapViewport) {
+      const rect = els.mapViewport.getBoundingClientRect();
+      const centerX = (rect.width / 2 - mapPanX) / mapZoom;
+      const centerY = (rect.height / 2 - mapPanY) / mapZoom;
+      mapZoom = 8;
+      mapPanX = rect.width / 2 - centerX * mapZoom;
+      mapPanY = rect.height / 2 - centerY * mapZoom;
+      applyMapTransform(false);
+    }
 
+    localStorage.setItem(MAP_VIEW_STORAGE_KEY, mapViewMode);
     updateMapViewUI();
   }
 
@@ -6633,12 +6661,135 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
 
+  // PWA v137: stream only the visible 64K tiles. Tile coordinate (0,0)
+  // is the top-left of the same 2048×2048 logical map used by every marker.
+  // Source: https://github.com/joric/stalker2_tileset
+  // External tiles are optional; the existing map always remains underneath.
+  function updateHdTileLayer() {
+    if (
+      mapViewMode !== 'hd64' ||
+      !els.zoneMapHdTiles ||
+      !els.mapViewport ||
+      !els.mapDialog ||
+      !els.mapDialog.open
+    ) return;
+
+    const bounds = els.mapViewport.getBoundingClientRect();
+    if (bounds.width < 40 || bounds.height < 40 || mapZoom <= 0) return;
+
+    let level = Math.max(0, Math.min(
+      MAP_HD64_MAX_LEVEL,
+      Math.ceil(Math.log2(Math.max(mapZoom, 0.0625) * 4))
+    ));
+
+    const rangeForLevel = z => {
+      const count = 2 ** z;
+      const size = MAP_IMAGE_SIZE / count;
+      const left = Math.max(0, (0 - mapPanX) / mapZoom);
+      const right = Math.min(
+        MAP_IMAGE_SIZE,
+        (bounds.width - mapPanX) / mapZoom
+      );
+      const top = Math.max(0, (0 - mapPanY) / mapZoom);
+      const bottom = Math.min(
+        MAP_IMAGE_SIZE,
+        (bounds.height - mapPanY) / mapZoom
+      );
+
+      if (left >= right || top >= bottom) return null;
+      // One-tile preload margin around viewport to avoid edges while dragging.
+      return {
+        size,
+        xMin: Math.max(0, Math.floor(left / size) - 1),
+        xMax: Math.min(count - 1, Math.floor((right - 0.0001) / size) + 1),
+        yMin: Math.max(0, Math.floor(top / size) - 1),
+        yMax: Math.min(count - 1, Math.floor((bottom - 0.0001) / size) + 1)
+      };
+    };
+
+    let range = rangeForLevel(level);
+    if (!range) {
+      els.zoneMapHdTiles.replaceChildren();
+      return;
+    }
+
+    const tileCount = r =>
+      (r.xMax - r.xMin + 1) * (r.yMax - r.yMin + 1);
+    while (level > 0 && tileCount(range) > MAP_HD64_MAX_TILES) {
+      level--;
+      range = rangeForLevel(level);
+    }
+
+    const desired = new Set();
+    const current = new Map();
+    Array.from(els.zoneMapHdTiles.children).forEach(image => {
+      current.set(image.dataset.tileKey, image);
+    });
+
+    for (let x = range.xMin; x <= range.xMax; x++) {
+      for (let y = range.yMin; y <= range.yMax; y++) {
+        const key = level + '/' + x + '/' + y;
+        desired.add(key);
+
+        if (current.has(key)) continue;
+
+        const failedAt = mapHdFailedTiles.get(key);
+        if (failedAt && Date.now() - failedAt < 60000) continue;
+
+        const image = document.createElement('img');
+        image.className = 'zone-hd64-tile';
+        image.dataset.tileKey = key;
+        image.alt = '';
+        image.draggable = false;
+        image.decoding = 'async';
+        image.loading = 'eager';
+        image.style.left = (x * range.size) + 'px';
+        image.style.top = (y * range.size) + 'px';
+        image.style.width = (range.size + 0.06) + 'px';
+        image.style.height = (range.size + 0.06) + 'px';
+
+        image.addEventListener('load', () => {
+          image.classList.add('loaded');
+          mapHdTileErrorCount = 0;
+          if (els.mapHdTileStatus) {
+            els.mapHdTileStatus.textContent = 'HD 64K';
+          }
+        }, { once: true });
+
+        image.addEventListener('error', () => {
+          mapHdFailedTiles.set(key, Date.now());
+          image.remove();
+          mapHdTileErrorCount++;
+          if (els.mapHdTileStatus) {
+            els.mapHdTileStatus.textContent =
+              'HD недоступна — показана обычная карта';
+          }
+        }, { once: true });
+
+        els.zoneMapHdTiles.appendChild(image);
+        image.src = MAP_HD64_TILE_BASE + '/' + key + '.jpg';
+      }
+    }
+
+    current.forEach((image, key) => {
+      if (!desired.has(key)) image.remove();
+    });
+  }
+
+  function scheduleHdTileUpdate() {
+    if (mapViewMode !== 'hd64' || mapHdTileFrame) return;
+    mapHdTileFrame = window.requestAnimationFrame(() => {
+      mapHdTileFrame = 0;
+      updateHdTileLayer();
+    });
+  }
+
   function ensureHdZoneMap() {
-    // v63: используется одна цельная карта 8192×8192.
+    scheduleHdTileUpdate();
   }
 
   function maybeLoadHdZoneMap() {
-    // Дополнительные HD-слои и тайлы не используются.
+    scheduleHdTileUpdate();
   }
 
 
@@ -6949,7 +7100,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const imageY = (localY - mapPanY) / mapZoom;
 
     const minZoom = Math.max(.08, mapFitZoom * .75);
-    const maxZoom = 8;
+    const maxZoom = mapViewMode === 'hd64' ? 32 : 8;
     const nextZoom = Math.min(maxZoom, Math.max(minZoom, mapZoom * factor));
 
     mapPanX = localX - imageX * nextZoom;
@@ -7025,7 +7176,7 @@ mapMeasureHint: $('mapMeasureHint'),
     const localY = midpoint.y - rect.top;
 
     const minZoom = Math.max(.08, mapFitZoom * .75);
-    const maxZoom = 8;
+    const maxZoom = mapViewMode === 'hd64' ? 32 : 8;
     const scaleFactor = distance / mapPinchState.startDistance;
     const nextZoom = Math.min(
       maxZoom,
@@ -7496,7 +7647,7 @@ mapMeasureHint: $('mapMeasureHint'),
     }, { passive: false });
 
     els.mapViewport.addEventListener('pointerdown', event => {
-      if (event.target.closest && event.target.closest('button, select, input, label, .map-fullscreen-zoom-controls')) return;
+      if (event.target.closest && event.target.closest('button, select, input, label, a, .map-fullscreen-zoom-controls')) return;
       if (event.pointerType === 'mouse' && event.button !== 0) return;
 
       beginMapInteraction();
@@ -7560,7 +7711,7 @@ mapMeasureHint: $('mapMeasureHint'),
     });
 
     els.mapViewport.addEventListener('pointerup', event => {
-      if (event.target.closest && event.target.closest('button, select, input, label, .map-fullscreen-zoom-controls')) {
+      if (event.target.closest && event.target.closest('button, select, input, label, a, .map-fullscreen-zoom-controls')) {
         mapActivePointers.delete(event.pointerId);
         mapPointerState = null;
         mapPinchState = null;
