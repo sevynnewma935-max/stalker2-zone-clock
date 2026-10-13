@@ -6791,13 +6791,16 @@ mapMeasureHint: $('mapMeasureHint'),
         image.style.height = (range.size + 0.06) + 'px';
 
         image.addEventListener('load', () => {
+          image.dataset.hdReadyAt = String(Date.now());
           image.classList.add('loaded');
           mapHdTileErrorCount = 0;
           if (els.mapHdTileStatus) {
             els.mapHdTileStatus.textContent = 'HD 64K';
           }
-          // Important: retire old tiles ONLY after the new viewport is ready.
+          // Let the incoming tile become fully opaque before pruning.
+          // Otherwise the original background flashes during the fade.
           scheduleHdTileUpdate();
+          window.setTimeout(scheduleHdTileUpdate, 190);
         }, { once: true });
 
         image.addEventListener('error', () => {
@@ -6820,7 +6823,11 @@ mapMeasureHint: $('mapMeasureHint'),
     // A successful full set is the only signal to retire old imagery.
     const complete = Array.from(desired).every(key => {
       const image = current.get(key);
-      return Boolean(image && image.classList.contains('loaded'));
+      return Boolean(
+        image &&
+        image.classList.contains('loaded') &&
+        Date.now() - Number(image.dataset.hdReadyAt || 0) >= 180
+      );
     });
 
     Array.from(container.children).forEach(image => {
@@ -6850,7 +6857,12 @@ mapMeasureHint: $('mapMeasureHint'),
       .sort((a, b) =>
         Number(a.dataset.tileLevel || 0) - Number(b.dataset.tileLevel || 0)
       )
-      .forEach(image => container.appendChild(image));
+      .forEach((image, index) => {
+        // Avoid moving every <img> element in the DOM on each pan frame.
+        if (container.children[index] !== image) {
+          container.insertBefore(image, container.children[index] || null);
+        }
+      });
   }
 
   function scheduleHdTileUpdate() {
