@@ -5577,3 +5577,22 @@ button.zone-button-press:not(:disabled) {
     transition: none;
   }
 }
+
+/* PWA v142 — fix the real blur regression on Android.
+   The previous HD container had its own z-index:3 stacking context and
+   covered the entire local 16K layer at z-index:2 with blurry low-res
+   content. Make the HD wrapper layout-transparent, so its individual tiles
+   can stack on either side of the local image based on native resolution.
+   HD levels 0..5 have z-index 1..6 (<=16K), local 16K gets z-index 7,
+   HD level 6 and 7 have z-index 7 and 8 (32K/64K), drawn afterwards.
+*/
+.map-viewport.map-view-hd64 .zone-map-transform .zone-map-hd64-tiles {
+  display: contents !important;
+  isolation: auto !important;
+}
+.zone-map-transform .zone-map-local-detail-tiles {
+  z-index: 7 !important;
+}
+.zone-map-transform .zone-map-hd64-tiles > img.zone-hd64-base-tile {
+  display: none !important;
+}

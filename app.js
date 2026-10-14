@@ -6710,22 +6710,33 @@ mapMeasureHint: $('mapMeasureHint'),
     const total = desired.size;
     let loaded = 0;
     for (const key of desired) {
-      if (current.get(key)?.classList.contains('loaded')) loaded++;
+      const tile = current.get(key);
+      if (tile?.classList.contains('loaded') && tile.naturalWidth >= 512 &&
+          tile.naturalHeight >= 512) loaded++;
     }
     const local = els.zoneMapLocalDetailTiles;
     const localLoaded = local
       ? Array.from(local.children).filter(image => image.classList.contains('loaded')).length
       : 0;
     const localLoading = local ? local.childElementCount - localLoaded : 0;
-    if (total && loaded === total && level >= 5) {
-      els.mapHdTileStatus.textContent = 'HD 64K · детализация готова';
-    } else if (localLoaded) {
+    const sourceResolutionK = (512 * (2 ** level)) / 1024;
+    // HD64 means a REAL decoded native 64K level (7), not a full set of
+    // 8K/16K level-4/5 tiles. Progress remains visible for diagnostics.
+    if (localLoaded && (loaded < total || level <= 5)) {
       els.mapHdTileStatus.textContent =
-        'Локальная 16K · HD ' + loaded + '/' + total + ' тайлов';
+        `Локальная 16K · HD ${sourceResolutionK}K: ${loaded}/${total}`;
+    } else if (total && loaded === total) {
+      els.mapHdTileStatus.textContent = level === MAP_HD64_MAX_LEVEL
+        ? `HD 64K (ур. ${level}) · готово: ${loaded}/${total}`
+        : `HD ${sourceResolutionK}K (ур. ${level}) · готово: ${loaded}/${total}`;
     } else if (localLoading) {
-      els.mapHdTileStatus.textContent = 'Загрузка локальной 16K · HD ' + loaded + '/' + total;
+      els.mapHdTileStatus.textContent =
+        `Загрузка 16K · HD ${sourceResolutionK}K: ${loaded}/${total}`;
     } else if (total) {
-      els.mapHdTileStatus.textContent = 'HD загружается · ' + loaded + '/' + total;
+      els.mapHdTileStatus.textContent =
+        `HD ${sourceResolutionK}K · загрузка: ${loaded}/${total}`;
+    } else {
+      els.mapHdTileStatus.textContent = 'Карта 8192 px · ожидание HD';
     }
   }
 
@@ -6749,45 +6760,9 @@ mapMeasureHint: $('mapMeasureHint'),
 
     const tileKey = (level, x, y) => level + '/' + x + '/' + y;
 
-    // Fallback from the same HD source: once loaded, this low-resolution
-    // whole-map tile remains in the DOM across zooms and view switches.
-    let base = container.querySelector('[data-tile-key="0/0/0"]');
-    if (!base) {
-      base = document.createElement('img');
-      base.className = 'zone-hd64-tile zone-hd64-base-tile';
-      base.dataset.tileKey = '0/0/0';
-      base.dataset.tileLevel = '0';
-      base.alt = '';
-      base.draggable = false;
-      base.decoding = 'async';
-      base.style.left = '0';
-      base.style.top = '0';
-      base.style.width = MAP_IMAGE_SIZE + 'px';
-      base.style.height = MAP_IMAGE_SIZE + 'px';
-      base.style.zIndex = '0';
-
-      base.addEventListener('load', () => {
-        base.classList.add('loaded');
-        mapHdTileErrorCount = 0;
-        if (els.mapHdTileStatus) {
-          els.mapHdTileStatus.textContent = 'HD · загружаются детали…';
-        }
-        scheduleHdTileUpdate();
-      }, { once: true });
-
-      base.addEventListener('error', () => {
-        mapHdPrimaryFailures++;
-        if (retryHdImageFromMirror(base, '0/0/0')) return;
-        mapHdFailedTiles.set('0/0/0', Date.now());
-        base.remove();
-        scheduleHdTileUpdate();
-      });
-
-      // A z=0 tile is always behind the detailed tiles.
-      container.prepend(base);
-      if (mapHdPrimaryFailures >= 2) base.dataset.hdMirror = '1';
-      base.src = hdTileUrl('0/0/0', base.dataset.hdMirror === '1');
-    }
+    // v142: Do NOT load or paint z=0 remote base (512px over the entire
+    // map). The local 8192px underlay is 16x sharper, always available and
+    // avoids muddy imagery when external detail tiles are missing.
 
     // Match tile resolution to the *physical* screen, including Retina phones.
     // Each pyramid level doubles source detail (z=7 = 65536px original).
@@ -6947,15 +6922,11 @@ mapMeasureHint: $('mapMeasureHint'),
       }
     });
 
-    // The remote pyramid can fail independently of the PWA origin (VPN,
-    // DNS, CORS, offline). Fill uncovered areas from local 16K JPG tiles.
-    // Even if some remote tiles have loaded, they remain on top of local tiles.
-    // On 1x screens the selected remote level can be below local 16K detail.
-    // Put local tiles above that lower resolution, but beneath >=16K HD.
-    if (els.zoneMapLocalDetailTiles) {
-      els.zoneMapLocalDetailTiles.style.zIndex = level < 5 ? '4' : '2';
-    }
-    updateLocalDetailLayer(bounds, complete && level >= 5);
+    // v142: 8K full map, 16K local tiles and remote detail images must
+    // share a single stacking context. z=0-5 HD remains UNDER 16K; z>=6
+    // (32K, 64K native resolution) paints OVER 16K. This works even when
+    // only some of the external detail tiles have finished loading.
+    updateLocalDetailLayer(bounds, complete && level >= 6);
     updateHdQualityStatus(desired, current, level);
 
     // Never keep an unbounded history on mobile devices, even when the
@@ -6970,9 +6941,8 @@ mapMeasureHint: $('mapMeasureHint'),
       stale.slice(0, stale.length - maxStale).forEach(image => image.remove());
     }
 
-    // Do not reinsert tile <img> nodes to sort them: reparenting decoded
-    // images can briefly expose the blurred fallback on mobile Chromium.
-    // Explicit stacking levels make sharp tiles win without DOM movement.
+    // No DOM reparenting. Under 16K, source levels 0-5 are less detailed
+    // than the local 16K source. Levels 6 and 7 render in front.
     Array.from(container.children).forEach(image => {
       image.style.zIndex = String(Number(image.dataset.tileLevel || 0) + 1);
     });
