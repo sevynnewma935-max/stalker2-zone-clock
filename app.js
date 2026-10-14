@@ -84,7 +84,7 @@
     mapHeaderFullscreenBtn: $('mapHeaderFullscreenBtn'),
     mapViewport: $('mapViewport'), zoneMapTransform: $('zoneMapTransform'),
     zoneMapPreviewImage: $('zoneMapPreviewImage'),
-    zoneMapImage: $('zoneMapImage'), zoneMapHdTiles: $('zoneMapHdTiles'), mapHdCredit: $('mapHdCredit'), mapHdTileStatus: $('mapHdTileStatus'), zoneMapSchematicImage: $('zoneMapSchematicImage'), mapOverlay: $('mapOverlay'),
+    zoneMapImage: $('zoneMapImage'), zoneMapLocalDetailTiles: $('zoneMapLocalDetailTiles'), zoneMapHdTiles: $('zoneMapHdTiles'), mapHdCredit: $('mapHdCredit'), mapHdTileStatus: $('mapHdTileStatus'), zoneMapSchematicImage: $('zoneMapSchematicImage'), mapOverlay: $('mapOverlay'),
     mapMeasureLine: $('mapMeasureLine'), mapMeasurePoints: $('mapMeasurePoints'),
     mapMeasureBtn: $('mapMeasureBtn'), mapUndoBtn: $('mapUndoBtn'),
     mapClearBtn: $('mapClearBtn'), mapZoomOutBtn: $('mapZoomOutBtn'),
@@ -1860,10 +1860,29 @@ mapMeasureHint: $('mapMeasureHint'),
   // community-hosted game map. The local 8192px map remains underneath.
   const MAP_HD64_TILE_BASE =
     'https://joric.github.io/stalker2_tileset/tiles';
+  const MAP_HD64_TILE_MIRROR =
+    'https://raw.githubusercontent.com/joric/stalker2_tileset/main/tiles';
+  let mapHdPrimaryFailures = 0;
+  const hdTileUrl = (key, mirror = false) =>
+    (mirror ? MAP_HD64_TILE_MIRROR : MAP_HD64_TILE_BASE) + '/' + key + '.jpg';
+  function retryHdImageFromMirror(image, key) {
+    if (!image.isConnected || image.dataset.hdMirror === '1') return false;
+    image.dataset.hdMirror = '1';
+    image.src = hdTileUrl(key, true);
+    return true;
+  }
   const MAP_HD64_MAX_LEVEL = 7;
   // A 36-tile budget forced a lower-resolution pyramid level on large / high-DPI
   // screens. Reserve enough visible tiles to retain full HD detail on zoom.
   const MAP_HD64_MAX_TILES = 256;
+  // v141: a second, same-origin 16K fallback exists inside the PWA archive.
+  // It is only streamed near the current viewport when a whole-map 8K image
+  // cannot supply sufficient screen pixels. Filename order is row, column.
+  const MAP_LOCAL_DETAIL_GRID = 8;
+  const MAP_LOCAL_DETAIL_SIZE = MAP_IMAGE_SIZE / MAP_LOCAL_DETAIL_GRID;
+  const MAP_LOCAL_DETAIL_MAX_TILES = 12;
+  const MAP_LOCAL_DETAIL_BASE = './assets/map-tiles-16384';
+  const mapLocalFailedTiles = new Map();
   let mapHdTileFrame = 0;
   let mapHdTileErrorCount = 0;
   const mapHdFailedTiles = new Map();
@@ -6605,6 +6624,111 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
 
+  // PWA v141: local, detail-preserving 16K fallback. A 2048px native tile
+  // replaces only its own 256x256 logical cell; never stretch the whole 8K
+  // fallback across extreme zoom levels when the external host is blocked.
+  function updateLocalDetailLayer(bounds, highResRemoteReady) {
+    const container = els.zoneMapLocalDetailTiles;
+    if (!container) return;
+    const pixelRatio = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    const needDetail = mapViewMode === 'hd64' &&
+      mapZoom * pixelRatio > 4.4 && !highResRemoteReady;
+    if (!needDetail) {
+      // Remove decoded textures when the network HD version is ready or when
+      // zoomed out. This is important for Android WebView memory pressure.
+      if (container.childElementCount) container.replaceChildren();
+      return;
+    }
+
+    const cell = MAP_LOCAL_DETAIL_SIZE;
+    const minX = Math.max(0, Math.floor((-mapPanX / mapZoom) / cell));
+    const minY = Math.max(0, Math.floor((-mapPanY / mapZoom) / cell));
+    const maxX = Math.min(MAP_LOCAL_DETAIL_GRID - 1,
+      Math.floor(((bounds.width - mapPanX) / mapZoom - 0.001) / cell));
+    const maxY = Math.min(MAP_LOCAL_DETAIL_GRID - 1,
+      Math.floor(((bounds.height - mapPanY) / mapZoom - 0.001) / cell));
+    if (maxX < minX || maxY < minY) {
+      if (container.childElementCount) container.replaceChildren();
+      return;
+    }
+
+    const cells = [];
+    const cx = (-mapPanX + bounds.width / 2) / mapZoom / cell;
+    const cy = (-mapPanY + bounds.height / 2) / mapZoom / cell;
+    for (let row = minY; row <= maxY; row++) {
+      for (let col = minX; col <= maxX; col++) {
+        cells.push({ row, col, distance: (col + 0.5 - cx) ** 2 + (row + 0.5 - cy) ** 2 });
+      }
+    }
+    // Limit decoded 2048px tiles, which use roughly 16 MiB each in memory.
+    cells.sort((a, b) => a.distance - b.distance);
+    const desired = new Set(cells.slice(0, MAP_LOCAL_DETAIL_MAX_TILES)
+      .map(({row,col}) => row + '-' + col));
+
+    Array.from(container.children).forEach(image => {
+      if (!desired.has(image.dataset.localTileKey)) image.remove();
+    });
+    const present = new Set(Array.from(container.children)
+      .map(image => image.dataset.localTileKey));
+
+    for (const {row, col} of cells.slice(0, MAP_LOCAL_DETAIL_MAX_TILES)) {
+      const key = row + '-' + col;
+      if (present.has(key)) continue;
+      const failedAt = mapLocalFailedTiles.get(key);
+      if (failedAt && Date.now() - failedAt < 30000) continue;
+      const image = document.createElement('img');
+      image.className = 'zone-local-detail-tile';
+      image.dataset.localTileKey = key;
+      image.alt = '';
+      image.decoding = 'async';
+      image.loading = 'eager';
+      image.draggable = false;
+      image.style.left = (col * cell) + 'px';
+      image.style.top = (row * cell) + 'px';
+      image.style.width = (cell + 0.06) + 'px';
+      image.style.height = (cell + 0.06) + 'px';
+      image.addEventListener('load', async () => {
+        try { if (typeof image.decode === 'function') await image.decode(); }
+        catch (_) { /* onload still means usable when decode() rejects */ }
+        if (!image.isConnected) return;
+        image.classList.add('loaded');
+        scheduleHdTileUpdate();
+      }, {once: true});
+      image.addEventListener('error', () => {
+        mapLocalFailedTiles.set(key, Date.now());
+        image.remove();
+        scheduleHdTileUpdate();
+      }, {once: true});
+      container.appendChild(image);
+      // Local filenames are tile-ROW-COLUMN, unlike the remote XYZ URL.
+      image.src = MAP_LOCAL_DETAIL_BASE + '/tile-' + row + '-' + col + '.jpg';
+    }
+  }
+
+  function updateHdQualityStatus(desired, current, level) {
+    if (!els.mapHdTileStatus) return;
+    const total = desired.size;
+    let loaded = 0;
+    for (const key of desired) {
+      if (current.get(key)?.classList.contains('loaded')) loaded++;
+    }
+    const local = els.zoneMapLocalDetailTiles;
+    const localLoaded = local
+      ? Array.from(local.children).filter(image => image.classList.contains('loaded')).length
+      : 0;
+    const localLoading = local ? local.childElementCount - localLoaded : 0;
+    if (total && loaded === total && level >= 5) {
+      els.mapHdTileStatus.textContent = 'HD 64K · детализация готова';
+    } else if (localLoaded) {
+      els.mapHdTileStatus.textContent =
+        'Локальная 16K · HD ' + loaded + '/' + total + ' тайлов';
+    } else if (localLoading) {
+      els.mapHdTileStatus.textContent = 'Загрузка локальной 16K · HD ' + loaded + '/' + total;
+    } else if (total) {
+      els.mapHdTileStatus.textContent = 'HD загружается · ' + loaded + '/' + total;
+    }
+  }
+
   // PWA v138: seamless progressive HD map.
   // The already loaded HD tiles stay visible until all replacement tiles
   // covering the new zoom/viewport have loaded. A persistent z=0 tile
@@ -6646,23 +6770,23 @@ mapMeasureHint: $('mapMeasureHint'),
         base.classList.add('loaded');
         mapHdTileErrorCount = 0;
         if (els.mapHdTileStatus) {
-          els.mapHdTileStatus.textContent = 'HD 64K';
+          els.mapHdTileStatus.textContent = 'HD · загружаются детали…';
         }
         scheduleHdTileUpdate();
       }, { once: true });
 
       base.addEventListener('error', () => {
+        mapHdPrimaryFailures++;
+        if (retryHdImageFromMirror(base, '0/0/0')) return;
         mapHdFailedTiles.set('0/0/0', Date.now());
         base.remove();
-        if (els.mapHdTileStatus) {
-          els.mapHdTileStatus.textContent =
-            'HD недоступна — показана обычная карта';
-        }
-      }, { once: true });
+        scheduleHdTileUpdate();
+      });
 
       // A z=0 tile is always behind the detailed tiles.
       container.prepend(base);
-      base.src = MAP_HD64_TILE_BASE + '/0/0/0.jpg';
+      if (mapHdPrimaryFailures >= 2) base.dataset.hdMirror = '1';
+      base.src = hdTileUrl('0/0/0', base.dataset.hdMirror === '1');
     }
 
     // Match tile resolution to the *physical* screen, including Retina phones.
@@ -6770,25 +6894,36 @@ mapMeasureHint: $('mapMeasureHint'),
           image.classList.add('loaded');
           mapHdTileErrorCount = 0;
           if (els.mapHdTileStatus) {
-            els.mapHdTileStatus.textContent = 'HD 64K';
+            els.mapHdTileStatus.textContent = 'HD · загружаются детали…';
           }
           scheduleHdTileUpdate();
           window.setTimeout(scheduleHdTileUpdate, 190);
         }, { once: true });
 
         image.addEventListener('error', () => {
+          if (!image.isConnected) return;
+          mapHdPrimaryFailures++;
+          if (retryHdImageFromMirror(image, key)) return;
           mapHdFailedTiles.set(key, Date.now());
           image.remove();
           mapHdTileErrorCount++;
-          if (els.mapHdTileStatus) {
-            els.mapHdTileStatus.textContent =
-              'Часть HD недоступна — показана ранее загруженная карта';
-          }
-        }, { once: true });
+          scheduleHdTileUpdate();
+        });
 
         container.appendChild(image);
         current.set(key, image);
-        image.src = MAP_HD64_TILE_BASE + '/' + key + '.jpg';
+        const startFromMirror = mapHdPrimaryFailures >= 2;
+        if (startFromMirror) image.dataset.hdMirror = '1';
+        image.src = hdTileUrl(key, startFromMirror);
+        // Network/VPN stalls sometimes never raise IMG.onerror on Android.
+        // The mirror is attempted once after 9 s without a decoded tile.
+        if (!startFromMirror) {
+          window.setTimeout(() => {
+            if (image.isConnected && !image.classList.contains('loaded')) {
+              retryHdImageFromMirror(image, key);
+            }
+          }, 9000);
+        }
       }
     }
 
@@ -6812,6 +6947,17 @@ mapMeasureHint: $('mapMeasureHint'),
       }
     });
 
+    // The remote pyramid can fail independently of the PWA origin (VPN,
+    // DNS, CORS, offline). Fill uncovered areas from local 16K JPG tiles.
+    // Even if some remote tiles have loaded, they remain on top of local tiles.
+    // On 1x screens the selected remote level can be below local 16K detail.
+    // Put local tiles above that lower resolution, but beneath >=16K HD.
+    if (els.zoneMapLocalDetailTiles) {
+      els.zoneMapLocalDetailTiles.style.zIndex = level < 5 ? '4' : '2';
+    }
+    updateLocalDetailLayer(bounds, complete && level >= 5);
+    updateHdQualityStatus(desired, current, level);
+
     // Never keep an unbounded history on mobile devices, even when the
     // network fails to deliver a complete new set. Keep the most relevant
     // already loaded tiles along with the persistent overview.
@@ -6819,7 +6965,7 @@ mapMeasureHint: $('mapMeasureHint'),
       image => image.dataset.tileKey !== '0/0/0' &&
         !desired.has(image.dataset.tileKey)
     );
-    const maxStale = MAP_HD64_MAX_TILES;
+    const maxStale = 24; // v141: cap decoded old textures on phones
     if (stale.length > maxStale) {
       stale.slice(0, stale.length - maxStale).forEach(image => image.remove());
     }
