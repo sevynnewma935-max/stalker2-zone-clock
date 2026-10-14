@@ -287,8 +287,9 @@
 <option value="lesser_zone">Залесье</option>
 <option value="burnt_forest">Горелый лес</option>
 <option value="duga">Дуга</option>
-<option value="zaton_varta">Затон Варта</option>
-<option value="zaton_sultan">Затон Султан</option>
+<option value="zaton_varta">Икар</option>
+<option value="zaton_sultan">Султанск</option>
+<option value="shevchenko">Шевченко</option>
 <option value="swamps">Болота</option></select></label></div>
 <div class="map-road-planner-actions map-road-planner-sequence-actions">
 <button class="btn" id="mapPlannerUndoStopBtn" type="button">− ПОСЛЕДНЯЯ</button>
@@ -299,12 +300,11 @@
 <div class="map-road-planner-result"><div><span>ТОЧЕК</span><strong id="mapPlannerSequenceCount">0</strong></div><div><span>ДЛИНА</span><strong id="mapPlannerDistance">—</strong></div><div><span>ВРЕМЯ ЗОНЫ</span><strong id="mapPlannerZoneTime">—</strong></div></div>
 <div class="map-road-planner-message" id="mapPlannerMessage">Нажмите первую точку местоположения на карте.</div>
 </div></details>
-<div aria-label="Интерактивная карта Зоны" class="map-viewport" id="mapViewport">
+<div aria-label="Интерактивная карта Зоны" class="map-viewport map-view-hd64" id="mapViewport">
 <div class="zone-map-transform" id="zoneMapTransform">
 <img alt="" aria-hidden="true" class="zone-map-4096-image" draggable="false" id="zoneMapPreviewImage" src="./assets/zone-map-4096.jpg"/>
 <img alt="Карта Зоны S.T.A.L.K.E.R. 2" class="zone-map-8192-image" draggable="false" id="zoneMapImage" src="./assets/zone-map-8192.jpg"/>
 <div aria-hidden="true" class="zone-map-hd64-tiles" id="zoneMapHdTiles"></div>
-<img alt="Схематическая карта Зоны" class="zone-map-schematic-image" draggable="false" id="zoneMapSchematicImage" src="./assets/zone-map-schematic-4096.jpg"/>
 <svg aria-hidden="true" class="map-road-route-svg" viewbox="0 0 2048 2048">
 <path class="map-road-route-path" d="" id="mapRoadRoutePath"></path>
 </svg>
@@ -345,12 +345,7 @@
 <div aria-label="Управление картой" class="map-fullscreen-zoom-controls" id="mapFullscreenZoomControls">
 <button aria-label="Увеличить карту" id="mapFullscreenZoomInBtn" type="button">+</button>
 <button aria-label="Уменьшить карту" id="mapFullscreenZoomOutBtn" type="button">−</button>
-<button aria-label="Переключить вид карты" class="map-view-mode-btn" id="mapViewModeBtn" title="Вид карты" type="button">
-<svg aria-hidden="true" viewbox="0 0 24 24">
-<path d="m12 3 9 4.5-9 4.5-9-4.5L12 3Zm-6.7 8.1L12 14.45l6.7-3.35L21 12.25l-9 4.5-9-4.5 2.3-1.15Zm0 4.75L12 19.2l6.7-3.35L21 17l-9 4.5L3 17l2.3-1.15Z"></path>
-</svg>
-<span id="mapViewModeLabel">ЛАНДШАФТ</span>
-</button>
+
 <button aria-label="Развернуть карту на весь экран" class="icon-btn small" id="mapFullscreenBtn" title="На весь экран" type="button">
 <svg aria-hidden="true" class="map-fullscreen-icon map-fullscreen-icon-expand" viewbox="0 0 24 24">
 <path d="M4 9V4h5v2H6v3H4Zm11-5h5v5h-2V6h-3V4ZM4 15h2v3h3v2H4v-5Zm14 0h2v5h-5v-2h3v-3Z"></path>
@@ -700,7 +695,7 @@
 </div>
 <div class="settings-group version-group">
 <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.38</strong></div>
+<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.39</strong></div>
 <button class="btn update-app-btn" id="updateAppBtn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>

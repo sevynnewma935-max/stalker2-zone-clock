@@ -1588,14 +1588,21 @@ mapMeasureHint: $('mapMeasureHint'),
       visible: false
     },
     zaton_varta: {
-      label: 'Затон Варта',
+      label: 'Икар',
       x: 1528.7,
       y: 1516.1
     },
     zaton_sultan: {
-      label: 'Затон Султан',
+      label: 'Султанск',
       x: 1680.6,
       y: 1553.0
+    },
+    shevchenko: {
+      label: 'Шевченко',
+      // Ship Shevchenko in Zaton, on the shoreline south-west of Sultansk.
+      // Position checked against the 8192px base map.
+      x: 1620.0,
+      y: 1630.0
     },
     swamps: {
       label: 'Болота',
@@ -1641,6 +1648,7 @@ mapMeasureHint: $('mapMeasureHint'),
     'duga',
     'zaton_varta',
     'zaton_sultan',
+    'shevchenko',
     'swamps',
     'cement_bridge',
     'swyd_east'
@@ -1661,7 +1669,8 @@ mapMeasureHint: $('mapMeasureHint'),
     'cement',
     'jupiter',
     'zaton_varta',
-    'zaton_sultan'
+    'zaton_sultan',
+    'shevchenko'
   ];
 
   function isCustomArtifactBaseKey(placeKey) {
@@ -1843,11 +1852,10 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapInteractionDepth = 0;
   let mapFullscreenMode = false;
   let mapParkedForClock = false;
-  const storedMapViewMode = localStorage.getItem(MAP_VIEW_STORAGE_KEY);
-  let mapViewMode =
-    storedMapViewMode === 'schematic' || storedMapViewMode === 'hd64'
-      ? storedMapViewMode
-      : 'landscape';
+  // PWA v139: HD 64K is the sole user-visible map.
+  // Override previously saved landscape/schematic choices on upgrade.
+  let mapViewMode = 'hd64';
+  try { localStorage.setItem(MAP_VIEW_STORAGE_KEY, 'hd64'); } catch (_) {}
   // PWA v137: 64K texture in 512px tiles, streamed from the public
   // community-hosted game map. The local 8192px map remains underneath.
   const MAP_HD64_TILE_BASE =
@@ -2043,22 +2051,12 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function ensureRoadPlannerLandscapeView() {
-    // HD has the same logical coordinates as the landscape layer.
-    // Do not switch away from HD when building a route.
-    if (mapViewMode !== 'schematic') {
-      return;
+    // All planner and artifact coordinates use the same 2048px grid.
+    // Keep HD during route editing; it is the only user-visible layer.
+    if (mapViewMode !== 'hd64') {
+      mapViewMode = 'hd64';
+      updateMapViewUI();
     }
-
-    mapViewMode = 'landscape';
-
-    try {
-      localStorage.setItem(
-        MAP_VIEW_STORAGE_KEY,
-        mapViewMode
-      );
-    } catch (_) {}
-
-    updateMapViewUI();
   }
 
   function renderKnownLocationsLayer() {
@@ -2296,74 +2294,15 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   function updateMapViewUI() {
-    const schematic = mapViewMode === 'schematic';
-    const hd64 = mapViewMode === 'hd64';
-    const nextMode = schematic
-      ? 'ЛАНДШАФТ'
-      : hd64
-        ? 'СХЕМА'
-        : 'HD 64K';
-
+    // HD 64K is permanently selected. Local 8192px imagery sits behind
+    // the streamed tiles as a hidden technical fallback if the HD host fails.
+    mapViewMode = 'hd64';
     if (els.mapViewport) {
-      els.mapViewport.classList.toggle('map-view-schematic', schematic);
-      els.mapViewport.classList.toggle('map-view-hd64', hd64);
+      els.mapViewport.classList.remove('map-view-schematic');
+      els.mapViewport.classList.add('map-view-hd64');
     }
-
-    if (els.mapViewModeLabel) {
-      els.mapViewModeLabel.textContent = schematic
-        ? 'СХЕМА'
-        : hd64
-          ? 'HD 64K'
-          : 'ЛАНДШАФТ';
-    }
-
-    if (els.mapViewModeBtn) {
-      els.mapViewModeBtn.classList.toggle('active', schematic || hd64);
-      els.mapViewModeBtn.setAttribute(
-        'aria-label',
-        'Переключить карту: следующий режим ' + nextMode
-      );
-      els.mapViewModeBtn.title =
-        'Вид карты: ' +
-        (schematic ? 'схема' : hd64 ? 'HD 64K' : 'ландшафт') +
-        '. Далее: ' + nextMode;
-    }
-
-    if (els.mapHdCredit) {
-      els.mapHdCredit.hidden = !hd64;
-    }
-    if (!hd64 && els.zoneMapHdTiles) {
-      // Keep only the tiny, full-map HD preview: returning to HD no longer
-      // briefly reveals the different 8192px landscape image.
-      Array.from(els.zoneMapHdTiles.children).forEach(image => {
-        if (image.dataset.tileKey !== '0/0/0') image.remove();
-      });
-      mapHdFailedTiles.clear();
-      mapHdTileErrorCount = 0;
-    }
-    if (hd64) scheduleHdTileUpdate();
-  }
-
-  function toggleMapViewMode() {
-    mapViewMode = mapViewMode === 'landscape'
-      ? 'hd64'
-      : mapViewMode === 'hd64'
-        ? 'schematic'
-        : 'landscape';
-
-    // Other views retain the established max zoom of 8.
-    if (mapViewMode !== 'hd64' && mapZoom > 8 && els.mapViewport) {
-      const rect = els.mapViewport.getBoundingClientRect();
-      const centerX = (rect.width / 2 - mapPanX) / mapZoom;
-      const centerY = (rect.height / 2 - mapPanY) / mapZoom;
-      mapZoom = 8;
-      mapPanX = rect.width / 2 - centerX * mapZoom;
-      mapPanY = rect.height / 2 - centerY * mapZoom;
-      applyMapTransform(false);
-    }
-
-    localStorage.setItem(MAP_VIEW_STORAGE_KEY, mapViewMode);
-    updateMapViewUI();
+    if (els.mapHdCredit) els.mapHdCredit.hidden = false;
+    scheduleHdTileUpdate();
   }
 
 
@@ -7403,13 +7342,6 @@ mapMeasureHint: $('mapMeasureHint'),
     els.mapHeaderFullscreenBtn.addEventListener(
       'click',
       toggleMapFullscreen
-    );
-  }
-
-  if (els.mapViewModeBtn) {
-    els.mapViewModeBtn.addEventListener(
-      'click',
-      toggleMapViewMode
     );
   }
 
