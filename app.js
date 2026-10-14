@@ -1861,7 +1861,9 @@ mapMeasureHint: $('mapMeasureHint'),
   const MAP_HD64_TILE_BASE =
     'https://joric.github.io/stalker2_tileset/tiles';
   const MAP_HD64_MAX_LEVEL = 7;
-  const MAP_HD64_MAX_TILES = 36;
+  // A 36-tile budget forced a lower-resolution pyramid level on large / high-DPI
+  // screens. Reserve enough visible tiles to retain full HD detail on zoom.
+  const MAP_HD64_MAX_TILES = 256;
   let mapHdTileFrame = 0;
   let mapHdTileErrorCount = 0;
   const mapHdFailedTiles = new Map();
@@ -6638,6 +6640,7 @@ mapMeasureHint: $('mapMeasureHint'),
       base.style.top = '0';
       base.style.width = MAP_IMAGE_SIZE + 'px';
       base.style.height = MAP_IMAGE_SIZE + 'px';
+      base.style.zIndex = '0';
 
       base.addEventListener('load', () => {
         base.classList.add('loaded');
@@ -6662,9 +6665,12 @@ mapMeasureHint: $('mapMeasureHint'),
       base.src = MAP_HD64_TILE_BASE + '/0/0/0.jpg';
     }
 
+    // Match tile resolution to the *physical* screen, including Retina phones.
+    // Each pyramid level doubles source detail (z=7 = 65536px original).
+    const pixelRatio = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
     let level = Math.max(0, Math.min(
       MAP_HD64_MAX_LEVEL,
-      Math.ceil(Math.log2(Math.max(mapZoom, 0.0625) * 4))
+      Math.ceil(Math.log2(Math.max(mapZoom, 0.0625) * 4 * pixelRatio))
     ));
 
     const rangeForLevel = z => {
@@ -6696,9 +6702,29 @@ mapMeasureHint: $('mapMeasureHint'),
 
     const tileCount = r =>
       (r.xMax - r.xMin + 1) * (r.yMax - r.yMin + 1);
+    // When a desktop viewport covers an enormous area, first remove the
+    // prefetch border instead of immediately discarding a whole HD level.
+    const rangeWithoutMargin = z => {
+      const count = 2 ** z;
+      const size = MAP_IMAGE_SIZE / count;
+      const left = Math.max(0, (0 - mapPanX) / mapZoom);
+      const right = Math.min(MAP_IMAGE_SIZE, (bounds.width - mapPanX) / mapZoom);
+      const top = Math.max(0, (0 - mapPanY) / mapZoom);
+      const bottom = Math.min(MAP_IMAGE_SIZE, (bounds.height - mapPanY) / mapZoom);
+      return {
+        size,
+        xMin: Math.max(0, Math.floor(left / size)),
+        xMax: Math.min(count - 1, Math.floor((right - .0001) / size)),
+        yMin: Math.max(0, Math.floor(top / size)),
+        yMax: Math.min(count - 1, Math.floor((bottom - .0001) / size))
+      };
+    };
+    if (tileCount(range) > MAP_HD64_MAX_TILES) {
+      range = rangeWithoutMargin(level);
+    }
     while (level > 0 && tileCount(range) > MAP_HD64_MAX_TILES) {
       level--;
-      range = rangeForLevel(level);
+      range = rangeWithoutMargin(level);
     }
 
     const desired = new Set();
@@ -6724,20 +6750,28 @@ mapMeasureHint: $('mapMeasureHint'),
         image.draggable = false;
         image.decoding = 'async';
         image.loading = 'eager';
+        // Layer order is independent of DOM moves and loading order.
+        image.style.zIndex = String(level + 1);
         image.style.left = (x * range.size) + 'px';
         image.style.top = (y * range.size) + 'px';
         image.style.width = (range.size + 0.06) + 'px';
         image.style.height = (range.size + 0.06) + 'px';
 
-        image.addEventListener('load', () => {
+        image.addEventListener('load', async () => {
+          // A load event can precede image decoding. Keep the previous sharp
+          // tiles until the replacement is decoded and ready to paint.
+          try {
+            if (typeof image.decode === 'function') await image.decode();
+          } catch (_) {
+            // Browsers without decode() still display successfully loaded imgs.
+          }
+          if (!image.isConnected) return;
           image.dataset.hdReadyAt = String(Date.now());
           image.classList.add('loaded');
           mapHdTileErrorCount = 0;
           if (els.mapHdTileStatus) {
             els.mapHdTileStatus.textContent = 'HD 64K';
           }
-          // Let the incoming tile become fully opaque before pruning.
-          // Otherwise the original background flashes during the fade.
           scheduleHdTileUpdate();
           window.setTimeout(scheduleHdTileUpdate, 190);
         }, { once: true });
@@ -6790,18 +6824,12 @@ mapMeasureHint: $('mapMeasureHint'),
       stale.slice(0, stale.length - maxStale).forEach(image => image.remove());
     }
 
-    // Always draw tiles in order of increasing resolution. This allows
-    // previous low-zoom tiles to remain UNDER the new sharper tiles.
-    Array.from(container.children)
-      .sort((a, b) =>
-        Number(a.dataset.tileLevel || 0) - Number(b.dataset.tileLevel || 0)
-      )
-      .forEach((image, index) => {
-        // Avoid moving every <img> element in the DOM on each pan frame.
-        if (container.children[index] !== image) {
-          container.insertBefore(image, container.children[index] || null);
-        }
-      });
+    // Do not reinsert tile <img> nodes to sort them: reparenting decoded
+    // images can briefly expose the blurred fallback on mobile Chromium.
+    // Explicit stacking levels make sharp tiles win without DOM movement.
+    Array.from(container.children).forEach(image => {
+      image.style.zIndex = String(Number(image.dataset.tileLevel || 0) + 1);
+    });
   }
 
   function scheduleHdTileUpdate() {

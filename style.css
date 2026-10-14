@@ -5522,3 +5522,18 @@ button.zone-button-press:not(:disabled) {
     transition: none;
   }
 }
+
+
+/* PWA v140 — keep one steady fallback while HD tiles decode and zoom. */
+.map-viewport.map-view-hd64 .zone-map-transform img.zone-map-4096-image {
+  display: none !important;
+}
+.map-viewport.map-view-hd64 .zone-map-transform img.zone-map-8192-image {
+  display: block !important;
+}
+.zone-map-transform .zone-map-hd64-tiles {
+  isolation: isolate;
+}
+.zone-map-transform .zone-map-hd64-tiles > img.zone-hd64-base-tile {
+  z-index: 0 !important;
+}
