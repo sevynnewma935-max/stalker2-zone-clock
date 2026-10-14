@@ -41,6 +41,7 @@
   const ROUTE_RECORD_ACTIVE_KEY = 'stalker2-zone-clock-route-record-active-v1';
   const ARTIFACT_INVENTORY_KEY = 'stalker2-zone-clock-artifact-inventory-v1';
   const MAP_SCALE_STORAGE_KEY = 'stalker2-zone-clock-map-scale-v1';
+  const MAP_CAMERA_STORAGE_KEY = 'stalker2-zone-clock-map-camera-v1';
   const NOTIFICATION_KEY = 'stalker2-zone-clock-notifications-v1';
   const NOTIFICATION_NEXT_KEY = 'stalker2-zone-clock-next-message-v1';
   const NOTIFICATION_INTERVAL_KEY = 'stalker2-zone-clock-message-interval-v1';
@@ -1852,6 +1853,64 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapInteractionDepth = 0;
   let mapFullscreenMode = false;
   let mapParkedForClock = false;
+  let mapCameraSaveTimer = 0;
+
+  // Save the map as a logical center + zoom, not as viewport-dependent pan
+  // offsets. This restores the SAME location on devices with different
+  // viewport dimensions (rotation, browser chrome, PWA reopening).
+  function saveMapCamera() {
+    if (!els.mapDialog?.open || !els.mapViewport || !(mapZoom > 0)) return;
+    const rect = els.mapViewport.getBoundingClientRect();
+    if (!(rect.width > 20 && rect.height > 20)) return;
+    const centerX = (rect.width / 2 - mapPanX) / mapZoom;
+    const centerY = (rect.height / 2 - mapPanY) / mapZoom;
+    if (![centerX, centerY, mapZoom].every(Number.isFinite)) return;
+    try {
+      localStorage.setItem(MAP_CAMERA_STORAGE_KEY, JSON.stringify({
+        x: Math.max(0, Math.min(MAP_IMAGE_SIZE, centerX)),
+        y: Math.max(0, Math.min(MAP_IMAGE_SIZE, centerY)),
+        zoom: mapZoom
+      }));
+    } catch (_) { /* storage unavailable; map still works */ }
+  }
+
+  function scheduleMapCameraSave() {
+    if (!els.mapDialog?.open) return;
+    if (mapCameraSaveTimer) window.clearTimeout(mapCameraSaveTimer);
+    mapCameraSaveTimer = window.setTimeout(() => {
+      mapCameraSaveTimer = 0;
+      saveMapCamera();
+    }, 180);
+  }
+
+  function restoreMapCamera() {
+    if (!els.mapViewport) return false;
+    const rect = els.mapViewport.getBoundingClientRect();
+    if (!(rect.width > 20 && rect.height > 20)) return false;
+    let saved;
+    try {
+      saved = JSON.parse(localStorage.getItem(MAP_CAMERA_STORAGE_KEY) || 'null');
+    } catch (_) { return false; }
+    const x = Number(saved?.x);
+    const y = Number(saved?.y);
+    const zoom = Number(saved?.zoom);
+    if (!saved || ![x, y, zoom].every(Number.isFinite) ||
+        x < 0 || x > MAP_IMAGE_SIZE || y < 0 || y > MAP_IMAGE_SIZE ||
+        zoom < 0.02 || zoom > 32) return false;
+
+    if (els.mapOverlay) {
+      els.mapOverlay.setAttribute('width', String(rect.width));
+      els.mapOverlay.setAttribute('height', String(rect.height));
+    }
+    mapFitZoom = Math.min(rect.width / MAP_IMAGE_SIZE,
+      rect.height / MAP_IMAGE_SIZE);
+    const minZoom = Math.max(.08, mapFitZoom * .75);
+    mapZoom = Math.max(minZoom, Math.min(32, zoom));
+    mapPanX = rect.width / 2 - x * mapZoom;
+    mapPanY = rect.height / 2 - y * mapZoom;
+    applyMapTransform(true);
+    return true;
+  }
   // PWA v139: HD 64K is the sole user-visible map.
   // Override previously saved landscape/schematic choices on upgrade.
   let mapViewMode = 'hd64';
@@ -6979,6 +7038,7 @@ mapMeasureHint: $('mapMeasureHint'),
           `translate3d(${mapPanX}px, ${mapPanY}px, 0) scale(${mapZoom})`;
 
         maybeLoadHdZoneMap();
+        scheduleMapCameraSave();
 
         if (renderMeasurement) {
           renderMapMeasurement();
@@ -6994,6 +7054,12 @@ mapMeasureHint: $('mapMeasureHint'),
       });
     }
   }
+
+  // Mobile OS may kill a backgrounded PWA without a reliable unload event.
+  window.addEventListener('pagehide', saveMapCamera);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) saveMapCamera();
+  });
 
   function beginMapInteraction() {
     mapInteractionDepth += 1;
@@ -7415,31 +7481,18 @@ mapMeasureHint: $('mapMeasureHint'),
 
         window.requestAnimationFrame(
           () => {
-            if (restoreParkedMap) {
-              mapParkedForClock = false;
-
-              const rect =
-                els.mapViewport
-                  .getBoundingClientRect();
-
-              if (els.mapOverlay) {
-                els.mapOverlay.setAttribute(
-                  'width',
-                  String(rect.width)
-                );
-
-                els.mapOverlay.setAttribute(
-                  'height',
-                  String(rect.height)
-                );
+            // Restore last position and zoom on every map opening,
+            // including after a full Android PWA restart. Never call
+            // fitZoneMap() unless there is no saved camera yet.
+            mapParkedForClock = false;
+            if (!restoreMapCamera()) {
+              if (restoreParkedMap) {
+                applyMapTransform(true);
+              } else {
+                fitZoneMap();
               }
-
-              applyMapTransform(true);
-              updateMapInfo();
-            } else {
-              fitZoneMap();
-              updateMapInfo();
             }
+            updateMapInfo();
           }
         );
       }
@@ -7451,6 +7504,7 @@ mapMeasureHint: $('mapMeasureHint'),
       'click',
       () => {
         mapParkedForClock = true;
+        saveMapCamera();
 
         if (
           typeof els.mapDialog.close ===
