@@ -5537,3 +5537,43 @@ button.zone-button-press:not(:disabled) {
 .zone-map-transform .zone-map-hd64-tiles > img.zone-hd64-base-tile {
   z-index: 0 !important;
 }
+
+/* PWA v141 — 16K local tiles: memory-bounded, offline-capable HD fallback. */
+.zone-map-transform .zone-map-local-detail-tiles {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 2048px !important;
+  height: 2048px !important;
+  overflow: hidden;
+  pointer-events: none !important;
+  user-select: none;
+  z-index: 2;
+  display: none;
+}
+.map-viewport.map-view-hd64 .zone-map-local-detail-tiles {
+  display: block;
+}
+.zone-map-transform .zone-map-local-detail-tiles > img.zone-local-detail-tile {
+  position: absolute !important;
+  display: block !important;
+  width: auto;
+  height: auto;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: fill !important;
+  image-rendering: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 0;
+  transition: opacity .12s ease-out;
+  pointer-events: none !important;
+}
+.zone-map-transform .zone-map-local-detail-tiles > img.zone-local-detail-tile.loaded {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .zone-map-transform .zone-map-local-detail-tiles > img.zone-local-detail-tile {
+    transition: none;
+  }
+}
