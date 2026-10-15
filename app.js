@@ -2251,6 +2251,21 @@ mapMeasureHint: $('mapMeasureHint'),
     );
   }
 
+  // v151: every ordinary place marker, including POIs added after v144,
+  // can start a road route directly from the map. Do not steal taps from
+  // user-authored routes, artifact-base selection or an active journey.
+  function canSelectMapPlace(placeKey) {
+    const place = MAP_KNOWN_LOCATIONS[placeKey];
+    if (!place || place.visible === false) return false;
+    if (mapSelectedRouteKey === MAP_ROUTE_MODE_ROAD_PLANNER) return true;
+    if (mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT) {
+      return isCustomArtifactBaseKey(placeKey);
+    }
+    if (mapSelectedRouteKey === MAP_ROUTE_MODE_MOVEMENT_TEST ||
+        mapJourneyActive) return false;
+    return Boolean(MAP_PRESET_ROUTES[mapSelectedRouteKey]);
+  }
+
   function roadPlannerIsEngaged() {
     return Boolean(
       els.mapRoadPlanner &&
@@ -2333,7 +2348,7 @@ mapMeasureHint: $('mapMeasureHint'),
       );
 
       const classes = ['map-known-location'];
-      const locationInteractive = plannerActive || baseSelectable;
+      const locationInteractive = canSelectMapPlace(key);
       if (!locationInteractive) classes.push('is-passive');
       if (baseSelectable) classes.push('is-artifact-base');
       if (selectedIndex >= 0) classes.push('is-selected');
@@ -2361,7 +2376,9 @@ mapMeasureHint: $('mapMeasureHint'),
             ? `${place.label}, не входит в текущий маршрут`
             : baseSelectable
               ? `Добавить базу ${place.label} в маршрут по артефактам`
-              : `Местоположение: ${place.label}`
+              : locationInteractive
+                ? `Начать маршрут по дорогам через ${place.label}`
+                : `Местоположение: ${place.label}`
       );
       group.setAttribute('transform', `translate(${screen.x}, ${screen.y})`);
 
@@ -2653,10 +2670,10 @@ mapMeasureHint: $('mapMeasureHint'),
             .map(item => ({
               x: Number(item?.x),
               y: Number(item?.y),
-              label:
-                typeof item?.label === 'string'
-                  ? item.label
-                  : 'Точка',
+              // Rehydrate from the current POI catalog: custom labels and
+              // old saved routes survive renames like «Львов» in v150.
+              label: MAP_KNOWN_LOCATIONS[item?.placeKey]?.label ||
+                (typeof item?.label === 'string' ? item.label : 'Точка'),
               placeKey:
                 typeof item?.placeKey === 'string'
                   ? item.placeKey
@@ -7906,6 +7923,14 @@ mapMeasureHint: $('mapMeasureHint'),
       }
 
       const placeKey = group.dataset.placeKey;
+      if (!canSelectMapPlace(placeKey)) return;
+
+      // A tap on any place while a standard preset is selected starts the
+      // same multi-stop road planner used by old locations. Subsequent taps
+      // (old or new) append stops to that same road route.
+      if (MAP_PRESET_ROUTES[mapSelectedRouteKey] && !mapJourneyActive) {
+        changePresetRoute(MAP_ROUTE_MODE_ROAD_PLANNER);
+      }
 
       if (mapSelectedRouteKey === MAP_ROUTE_MODE_ROAD_PLANNER) {
         event.preventDefault();
@@ -7930,13 +7955,7 @@ mapMeasureHint: $('mapMeasureHint'),
       event => {
         const group = event.target.closest('[data-place-key]');
         const key = group?.dataset?.placeKey || '';
-        const interactive =
-          mapSelectedRouteKey === MAP_ROUTE_MODE_ROAD_PLANNER ||
-          (
-            mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT &&
-            isCustomArtifactBaseKey(key)
-          );
-        if (group && interactive) {
+        if (group && canSelectMapPlace(key)) {
           event.stopPropagation();
         }
       }
@@ -7947,13 +7966,7 @@ mapMeasureHint: $('mapMeasureHint'),
       event => {
         const group = event.target.closest('[data-place-key]');
         const key = group?.dataset?.placeKey || '';
-        const interactive =
-          mapSelectedRouteKey === MAP_ROUTE_MODE_ROAD_PLANNER ||
-          (
-            mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT &&
-            isCustomArtifactBaseKey(key)
-          );
-        if (!interactive) return;
+        if (!canSelectMapPlace(key)) return;
         event.stopPropagation();
         handleKnownLocationActivation(event);
       }
@@ -7969,6 +7982,10 @@ mapMeasureHint: $('mapMeasureHint'),
           return;
         }
 
+        const group = event.target.closest('[data-place-key]');
+        if (!group || !canSelectMapPlace(group.dataset.placeKey)) return;
+        event.preventDefault();
+        event.stopPropagation();
         handleKnownLocationActivation(event);
       }
     );
