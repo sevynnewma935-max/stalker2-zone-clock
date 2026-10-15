@@ -1695,7 +1695,9 @@ mapMeasureHint: $('mapMeasureHint'),
     zaton_vehicle_cemetery: { label: 'Кладбище транспортных средств', x: 915.7, y: 1250.2 },
     zaton_khlynka: { label: 'Хлынка', x: 978.8, y: 1243.8 },
     zaton_pol_warehouse: { label: 'Склад ПОЛ', x: 920.8, y: 1315.5 },
-    zaton_north_checkpoint: { label: 'Северный контрольно-пропускной пункт', x: 1008.7, y: 1299.7 }
+    zaton_north_checkpoint: { label: 'Северный контрольно-пропускной пункт', x: 1008.7, y: 1299.7 },
+    // PWA v149: screenshot-marked vent exit, registered to the 8192px terrain.
+    zaton_vent_exit: { label: 'Вентвыход', x: 1564.2, y: 1608.2 }
   };
 
   const MAP_ROUTE_LOCATION_ORDER = [
@@ -1782,6 +1784,7 @@ mapMeasureHint: $('mapMeasureHint'),
     'zaton_khlynka',
     'zaton_pol_warehouse',
     'zaton_north_checkpoint',
+    'zaton_vent_exit',
     'swamps',
     'cement_bridge',
     'swyd_east'
