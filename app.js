@@ -1626,7 +1626,23 @@ mapMeasureHint: $('mapMeasureHint'),
       x: 785.0,
       y: 948.5,
       visible: false
-    }
+    },
+    // v144: 13 locations from the player's map screenshot (Zaton).
+    // Positions aligned via SIFT affine registration of matching 8192px
+    // terrain, then converted to logical 2048x2048 coordinates.
+    zaton_azimuth_station: { label: 'Азимутальная станция', x: 1356.6, y: 1342.3 },
+    zaton_sand_quarry: { label: 'Песчаный карьер', x: 1391.6, y: 1376.2 },
+    zaton_railway_repair_base: { label: 'Железнодорожная ремонтно-техническая база', x: 1429.8, y: 1411.6 },
+    zaton_izumrudnoye: { label: 'Изумрудное', x: 1503.1, y: 1392.6 },
+    zaton_roadside_shop: { label: 'Придорожный магазин', x: 1564.6, y: 1362.1 },
+    zaton_fish_farm: { label: 'Рыбная ферма', x: 1631.4, y: 1357.0 },
+    zaton_weather_station: { label: 'Метеостанция', x: 1669.3, y: 1375.1 },
+    zaton_claw: { label: 'Коготь', x: 1582.9, y: 1399.2 },
+    zaton_gas_station: { label: 'Автозаправочная станция', x: 1562.9, y: 1410.8 },
+    zaton_cave_network: { label: 'Сеть пещер', x: 1604.9, y: 1434.9 },
+    zaton_hunters_hut: { label: 'Хижина охотника', x: 1645.4, y: 1414.4 },
+    zaton_cannery: { label: 'Консервный завод', x: 1414.6, y: 1507.0 },
+    zaton_opachychi: { label: 'Опачихи', x: 1698.6, y: 1443.4 }
   };
 
   const MAP_ROUTE_LOCATION_ORDER = [
@@ -1650,6 +1666,19 @@ mapMeasureHint: $('mapMeasureHint'),
     'zaton_varta',
     'zaton_sultan',
     'shevchenko',
+    'zaton_azimuth_station',
+    'zaton_sand_quarry',
+    'zaton_railway_repair_base',
+    'zaton_izumrudnoye',
+    'zaton_roadside_shop',
+    'zaton_fish_farm',
+    'zaton_weather_station',
+    'zaton_claw',
+    'zaton_gas_station',
+    'zaton_cave_network',
+    'zaton_hunters_hut',
+    'zaton_cannery',
+    'zaton_opachychi',
     'swamps',
     'cement_bridge',
     'swyd_east'
