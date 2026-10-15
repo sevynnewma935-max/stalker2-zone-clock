@@ -7750,7 +7750,27 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   if (els.mapPlannerLocationSelect) {
-    els.mapPlannerLocationSelect.addEventListener('change', event => {
+    // PWA v145: the route dropdown must be generated from the SAME source
+    // as map markers. In v144 the HTML contained an older, hard-coded list,
+    // so 13 new Zaton locations were visible as markers but absent here.
+    const select = els.mapPlannerLocationSelect;
+    const previous = select.value;
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Выберите местоположение…';
+    select.replaceChildren(placeholder);
+    visibleRoadPlannerLocations().forEach(key => {
+      const place = MAP_KNOWN_LOCATIONS[key];
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = place.label;
+      select.appendChild(option);
+    });
+    if (previous && visibleRoadPlannerLocations().includes(previous)) {
+      select.value = previous;
+    }
+
+    select.addEventListener('change', event => {
       const key = event.target.value;
       if (key) addRoadPlannerSequenceStop(key);
       event.target.value = '';
