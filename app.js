@@ -1563,8 +1563,8 @@ mapMeasureHint: $('mapMeasureHint'),
     },
     chemical: {
       label: 'Химический завод',
-      x: 790.2,
-      y: 1330.3
+      x: 775.3,
+      y: 1312.9
     },
     lesser_zone: {
       label: 'Залесье',
@@ -1681,7 +1681,21 @@ mapMeasureHint: $('mapMeasureHint'),
     zaton_boathouse: { label: 'Лодочный домик', x: 1219.7, y: 1246.3 },
     zaton_pontoon_depot: { label: 'Понтонное депо', x: 1299.4, y: 1289.9 },
     zaton_lodochki_lab: { label: 'Лаборатория Лодочки', x: 1258.9, y: 1338.5 },
-    zaton_deaf_meadow: { label: 'Глухой луг', x: 1091.6, y: 1336.4 }
+    zaton_deaf_meadow: { label: 'Глухой луг', x: 1091.6, y: 1336.4 },
+    // PWA v148: 13 new POIs registered from place 7.png; previous 3 screens duplicates.
+    zaton_chistokhalyavka: { label: 'Чистохалявка', x: 843.1, y: 1124.7 },
+    zaton_hydroelectric_station: { label: 'Гидроэлектростанция', x: 981.8, y: 1112.3 },
+    zaton_electric_field: { label: 'Электрическое поле', x: 1111.9, y: 1108.5 },
+    zaton_flea_market: { label: 'Барахолка', x: 959.6, y: 1152.5 },
+    zaton_plant: { label: 'Растение', x: 1040.7, y: 1146.9 },
+    zaton_depot: { label: 'Депо', x: 901.1, y: 1195.1 },
+    zaton_factory: { label: 'Фабрика', x: 1074.0, y: 1199.4 },
+    zaton_central_elevator: { label: 'Центральный лифт', x: 755.6, y: 1215.2 },
+    zaton_ward_outpost: { label: 'Аванпост Уорда', x: 874.7, y: 1226.7 },
+    zaton_vehicle_cemetery: { label: 'Кладбище транспортных средств', x: 915.7, y: 1250.2 },
+    zaton_khlynka: { label: 'Хлынка', x: 978.8, y: 1243.8 },
+    zaton_pol_warehouse: { label: 'Склад ПОЛ', x: 920.8, y: 1315.5 },
+    zaton_north_checkpoint: { label: 'Северный контрольно-пропускной пункт', x: 1008.7, y: 1299.7 }
   };
 
   const MAP_ROUTE_LOCATION_ORDER = [
@@ -1755,6 +1769,19 @@ mapMeasureHint: $('mapMeasureHint'),
     'zaton_pontoon_depot',
     'zaton_lodochki_lab',
     'zaton_deaf_meadow',
+    'zaton_chistokhalyavka',
+    'zaton_hydroelectric_station',
+    'zaton_electric_field',
+    'zaton_flea_market',
+    'zaton_plant',
+    'zaton_depot',
+    'zaton_factory',
+    'zaton_central_elevator',
+    'zaton_ward_outpost',
+    'zaton_vehicle_cemetery',
+    'zaton_khlynka',
+    'zaton_pol_warehouse',
+    'zaton_north_checkpoint',
     'swamps',
     'cement_bridge',
     'swyd_east'
