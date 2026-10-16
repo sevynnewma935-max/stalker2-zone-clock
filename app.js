@@ -1507,6 +1507,8 @@ mapMeasureHint: $('mapMeasureHint'),
     // v144: 13 locations from the player's map screenshot (Zaton).
     // Positions aligned via SIFT affine registration of matching 8192px
     // terrain, then converted to logical 2048x2048 coordinates.
+    // v164: Northern Tunnel, source image aligned to the 2048x2048 base map.
+    zaton_north_tunnel: { label: 'Северный тоннель', x: 1528.9, y: 1297.1 },
     zaton_azimuth_station: { label: 'станция «Азимут»', x: 1358.1, y: 1343.8 },
     zaton_sand_quarry: { label: 'Песчаный карьер', x: 1396.0, y: 1380.7 },
     zaton_railway_repair_base: { label: 'Станция техобслуживания', x: 1437.6, y: 1419.1 },
@@ -1625,6 +1627,7 @@ mapMeasureHint: $('mapMeasureHint'),
     'zaton_varta',
     'zaton_sultan',
     'shevchenko',
+    'zaton_north_tunnel',
     'zaton_azimuth_station',
     'zaton_sand_quarry',
     'zaton_railway_repair_base',
