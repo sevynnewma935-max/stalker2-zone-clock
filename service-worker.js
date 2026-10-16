@@ -1,5 +1,5 @@
-const APP_CACHE = 'stalker2-zone-clock-app-v156';
-const MAP_CACHE = 'stalker2-zone-clock-map-v156';
+const APP_CACHE = 'stalker2-zone-clock-app-v157';
+const MAP_CACHE = 'stalker2-zone-clock-map-v157';
 
 const APP_ASSETS = [
   './', './index.html', './style.css', './app.js', './manifest.webmanifest',
@@ -43,9 +43,6 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-
-  // Live telemetry is always network-only; never cache player coordinates.
-  if (url.pathname.startsWith('/api/live-')) return;
 
   if (isAppShellRequest(url)) {
     event.respondWith((async () => {

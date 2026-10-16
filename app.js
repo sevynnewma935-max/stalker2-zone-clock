@@ -45,11 +45,6 @@
   const NOTIFICATION_KEY = 'stalker2-zone-clock-notifications-v1';
   const NOTIFICATION_NEXT_KEY = 'stalker2-zone-clock-next-message-v1';
   const NOTIFICATION_INTERVAL_KEY = 'stalker2-zone-clock-message-interval-v1';
-  const LIVE_TRACKING_KEY = 'stalker2-zone-clock-live-enabled-v1';
-  const LIVE_THING_KEY = 'stalker2-zone-clock-live-thing-v1';
-  const LIVE_DEFAULT_THING = 'zc-6f37d4c9d21e';
-  const LIVE_GAME_WORLD_SIZE = 812900;
-  const LIVE_STALE_MS = 12000;
 
   const $ = (id) => document.getElementById(id);
 
@@ -71,9 +66,6 @@
     settingsBtn: $('settingsBtn'), closeSettingsBtn: $('closeSettingsBtn'),
     settingsDialog: $('settingsDialog'),
     updateAppBtn: $('updateAppBtn'), updateAppStatus: $('updateAppStatus'),
-    liveThingInput: $('liveThingInput'), liveTrackingBtn: $('liveTrackingBtn'),
-    liveCopyCodeBtn: $('liveCopyCodeBtn'), liveTrackingStatus: $('liveTrackingStatus'),
-    liveTrackingCoords: $('liveTrackingCoords'),
     enableNotificationsBtn: $('enableNotificationsBtn'),
     notificationStatus: $('notificationStatus'),
     notificationIntervalSelect: $('notificationIntervalSelect'),
@@ -149,8 +141,6 @@
     mapCustomArtifactPath: $('mapCustomArtifactPath'),
     mapCustomArtifactPoints: $('mapCustomArtifactPoints'),
     mapKnownLocationsLayer: $('mapKnownLocationsLayer'),
-    mapLivePlayerLayer: $('mapLivePlayerLayer'),
-    mapLiveStatus: $('mapLiveStatus'),
     mapZoneTime: $('mapZoneTime'),
     mapJourneyHud: $('mapJourneyHud'),
     mapJourneyHudDistance: $('mapJourneyHudDistance'),
@@ -217,124 +207,6 @@ mapMeasureHint: $('mapMeasureHint'),
   let emission = null;
   let deferredInstallPrompt = null;
   let lastSavedAt = 0;
-  let liveTrackingEnabled = localStorage.getItem(LIVE_TRACKING_KEY) === '1';
-  let liveThingName = localStorage.getItem(LIVE_THING_KEY) || LIVE_DEFAULT_THING;
-  let livePosition = null;
-  let livePollTimer = 0;
-  let livePollBusy = false;
-  let liveLastError = '';
-
-  function normalizeLiveThing(value) {
-    return String(value || '')
-      .trim()
-      .replace(/[^A-Za-z0-9_.-]/g, '')
-      .slice(0, 80);
-  }
-
-  function gamePositionToMapPosition(position) {
-    if (!position) return null;
-    const x = Number(position.x);
-    const y = Number(position.y);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-    return {
-      x: (x / LIVE_GAME_WORLD_SIZE) * MAP_IMAGE_SIZE,
-      y: (y / LIVE_GAME_WORLD_SIZE) * MAP_IMAGE_SIZE
-    };
-  }
-
-  function livePositionIsFresh() {
-    return Boolean(
-      livePosition &&
-      Number.isFinite(livePosition.receivedAt) &&
-      Date.now() - livePosition.receivedAt <= LIVE_STALE_MS
-    );
-  }
-
-  function updateLiveTrackingUi() {
-    if (els.liveThingInput && document.activeElement !== els.liveThingInput) {
-      els.liveThingInput.value = liveThingName;
-    }
-    if (els.liveTrackingBtn) {
-      els.liveTrackingBtn.textContent = liveTrackingEnabled ? 'LIVE: ВКЛ' : 'ВКЛЮЧИТЬ LIVE';
-      els.liveTrackingBtn.classList.toggle('active', liveTrackingEnabled);
-    }
-    const fresh = livePositionIsFresh();
-    if (els.liveTrackingStatus) {
-      if (!liveTrackingEnabled) {
-        els.liveTrackingStatus.textContent = 'Live-отслеживание выключено';
-      } else if (fresh) {
-        const age = Math.max(0, Math.round((Date.now() - livePosition.receivedAt) / 1000));
-        els.liveTrackingStatus.textContent = `Игрок подключён · обновлено ${age} с назад`;
-      } else if (liveLastError) {
-        els.liveTrackingStatus.textContent = `Нет свежих данных · ${liveLastError}`;
-      } else {
-        els.liveTrackingStatus.textContent = 'Ожидание данных от мода…';
-      }
-    }
-    if (els.liveTrackingCoords) {
-      els.liveTrackingCoords.textContent = livePosition
-        ? `X ${Math.round(livePosition.x)} · Y ${Math.round(livePosition.y)} · Z ${Math.round(livePosition.z || 0)} · yaw ${Math.round(livePosition.yaw || 0)}°`
-        : 'X — · Y — · Z —';
-    }
-    if (els.mapLiveStatus) {
-      els.mapLiveStatus.hidden = !fresh;
-    }
-    updateLivePlayerGeometry();
-  }
-
-  function updateLivePlayerGeometry() {
-    if (!els.mapLivePlayerLayer) return;
-    const fresh = livePositionIsFresh();
-    const mapPoint = fresh ? gamePositionToMapPosition(livePosition) : null;
-    if (!mapPoint || mapPoint.x < -100 || mapPoint.y < -100 || mapPoint.x > MAP_IMAGE_SIZE + 100 || mapPoint.y > MAP_IMAGE_SIZE + 100) {
-      els.mapLivePlayerLayer.style.display = 'none';
-      return;
-    }
-    const screen = routePointToScreen(mapPoint);
-    const yaw = Number.isFinite(Number(livePosition.yaw)) ? Number(livePosition.yaw) : 0;
-    // Стрелка нарисована вверх. В UE yaw=0 направлен вдоль +X, то есть вправо на карте.
-    const rotation = yaw + 90;
-    els.mapLivePlayerLayer.style.display = '';
-    els.mapLivePlayerLayer.setAttribute('transform', `translate(${screen.x} ${screen.y}) rotate(${rotation})`);
-  }
-
-  async function pollLivePosition() {
-    if (!liveTrackingEnabled || livePollBusy || document.hidden) return;
-    const thing = normalizeLiveThing(liveThingName);
-    if (!thing) return;
-    livePollBusy = true;
-    try {
-      const response = await fetch(`/api/live-state?thing=${encodeURIComponent(thing)}&t=${Date.now()}`, { cache: 'no-store' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      if (!data || !data.ok) throw new Error(data?.error || 'нет данных');
-      const x = Number(data.x), y = Number(data.y), z = Number(data.z), yaw = Number(data.yaw);
-      if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('неверные координаты');
-      livePosition = {
-        x, y,
-        z: Number.isFinite(z) ? z : 0,
-        yaw: Number.isFinite(yaw) ? yaw : 0,
-        receivedAt: data.created ? Date.parse(data.created) || Date.now() : Date.now()
-      };
-      liveLastError = '';
-    } catch (error) {
-      liveLastError = error && error.message ? error.message : 'ошибка связи';
-    } finally {
-      livePollBusy = false;
-      updateLiveTrackingUi();
-      maybeAdvanceJourneyFromLive();
-    }
-  }
-
-  function ensureLivePolling() {
-    if (livePollTimer) window.clearInterval(livePollTimer);
-    livePollTimer = window.setInterval(() => {
-      pollLivePosition();
-      updateLiveTrackingUi();
-    }, 1000);
-    if (liveTrackingEnabled) pollLivePosition();
-  }
-
   function currentTheme() {
     return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
   }
@@ -2147,11 +2019,6 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapJourneyActive = false;
   let mapJourneyPlan = null;
   let mapJourneyStartedAtMs = 0;
-  let mapJourneyLiveCandidateKey = '';
-  let mapJourneyLiveConsecutive = 0;
-  // Conditional LIVE tracking only; without live data a user may mark stops
-  // manually, never silently claim to know the player's actual location.
-  const MAP_JOURNEY_ARRIVAL_RADIUS = 8; // logical map pixels (~52m with current scale)
 
   let mapJourneySequence = [];
   let mapJourneyAnimationFrame = 0;
@@ -5067,8 +4934,6 @@ mapMeasureHint: $('mapMeasureHint'),
     mapJourneyPlan = null;
     mapJourneySequence = [];
     mapJourneyStartedAtMs = 0;
-    mapJourneyLiveCandidateKey = '';
-    mapJourneyLiveConsecutive = 0;
     if (finishedMode === MAP_ROUTE_MODE_CUSTOM_ARTIFACT) clearCustomArtifactRoute();
     if (finishedMode === MAP_ROUTE_MODE_ROAD_PLANNER) clearRoadPlanner();
     updateJourneyHud();
@@ -5079,39 +4944,6 @@ mapMeasureHint: $('mapMeasureHint'),
       if (typeof dialog.showModal === 'function') dialog.showModal();
       else dialog.setAttribute('open','');
     }
-  }
-
-  function maybeAdvanceJourneyFromLive() {
-    if (!mapJourneyActive || !mapJourneyPlan || !liveTrackingEnabled || !livePositionIsFresh()) {
-      mapJourneyLiveCandidateKey = '';
-      mapJourneyLiveConsecutive = 0;
-      return;
-    }
-    const isMixed = mapJourneyPlan.routeKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT;
-    const isRoad = mapJourneyPlan.routeKey === MAP_ROUTE_MODE_ROAD_PLANNER;
-    if (!isMixed && !isRoad) return;
-    const sequence = isMixed ? mapCustomArtifactSequence : mapJourneySequence;
-    const visited = isMixed ? mapCustomArtifactJourneyVisited : mapRoadPlannerJourneyVisited;
-    const index = sequence.findIndex((_,i) => !visited.has(i));
-    if (index < 0) return;
-    const target = sequence[index];
-    const player = gamePositionToMapPosition(livePosition);
-    const distance = player ? Math.hypot(player.x - target.x, player.y - target.y) : Infinity;
-    if (distance > MAP_JOURNEY_ARRIVAL_RADIUS) {
-      mapJourneyLiveCandidateKey = '';
-      mapJourneyLiveConsecutive = 0;
-      return;
-    }
-    // Two consecutive fresh updates avoid auto-checking a stop from one
-    // transient relay position. Visits still progress strictly in order.
-    const key = `${mapJourneyPlan.routeKey}:${index}`;
-    mapJourneyLiveConsecutive = mapJourneyLiveCandidateKey === key ? mapJourneyLiveConsecutive + 1 : 1;
-    mapJourneyLiveCandidateKey = key;
-    if (mapJourneyLiveConsecutive < 2) return;
-    mapJourneyLiveCandidateKey = '';
-    mapJourneyLiveConsecutive = 0;
-    if (isMixed) markCustomArtifactJourneyStop(index);
-    else markRoadPlannerJourneyVisit(index);
   }
 
   function updateJourneyHud() {
@@ -5485,8 +5317,6 @@ mapMeasureHint: $('mapMeasureHint'),
 
       mapJourneyActive = true;
       mapJourneyStartedAtMs = Date.now();
-      mapJourneyLiveCandidateKey = '';
-      mapJourneyLiveConsecutive = 0;
       if (isCustomArtifactMode) {
         mapCustomArtifactJourneyVisited = new Set();
         renderCustomArtifactRoute();
@@ -5547,8 +5377,6 @@ mapMeasureHint: $('mapMeasureHint'),
 
       mapJourneyActive = true;
       mapJourneyStartedAtMs = Date.now();
-      mapJourneyLiveCandidateKey = '';
-      mapJourneyLiveConsecutive = 0;
       mapJourneySequence =
         getRoadPlannerJourneySequence();
       mapRoadPlannerJourneyVisited = new Set();
@@ -5580,8 +5408,6 @@ mapMeasureHint: $('mapMeasureHint'),
 
     mapJourneyActive = true;
       mapJourneyStartedAtMs = Date.now();
-      mapJourneyLiveCandidateKey = '';
-      mapJourneyLiveConsecutive = 0;
     mapJourneySequence =
       getJourneySequence(route);
 
@@ -7300,7 +7126,6 @@ mapMeasureHint: $('mapMeasureHint'),
         updatePresetRouteScreenGeometry();
         updateRoadPlannerScreenGeometry();
         updateCustomArtifactRouteGeometry();
-        updateLivePlayerGeometry();
       });
     }
   }
@@ -11287,47 +11112,6 @@ mapMeasureHint: $('mapMeasureHint'),
     updateMovementLiveTimers();
     if (els.testMessage) els.testMessage.textContent = 'Тест времени и отметки освещения очищены. История маршрутов сохранена.';
   }
-
-  if (els.liveThingInput) {
-    els.liveThingInput.value = liveThingName;
-    els.liveThingInput.addEventListener('change', () => {
-      const next = normalizeLiveThing(els.liveThingInput.value) || LIVE_DEFAULT_THING;
-      liveThingName = next;
-      localStorage.setItem(LIVE_THING_KEY, next);
-      livePosition = null;
-      liveLastError = '';
-      updateLiveTrackingUi();
-      if (liveTrackingEnabled) pollLivePosition();
-    });
-  }
-
-  if (els.liveTrackingBtn) {
-    els.liveTrackingBtn.addEventListener('click', () => {
-      liveTrackingEnabled = !liveTrackingEnabled;
-      localStorage.setItem(LIVE_TRACKING_KEY, liveTrackingEnabled ? '1' : '0');
-      if (!liveTrackingEnabled) livePosition = null;
-      updateLiveTrackingUi();
-      if (liveTrackingEnabled) pollLivePosition();
-    });
-  }
-
-  if (els.liveCopyCodeBtn) {
-    els.liveCopyCodeBtn.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(liveThingName);
-        els.liveTrackingStatus.textContent = 'Код подключения скопирован';
-      } catch (_) {
-        els.liveThingInput?.select();
-      }
-    });
-  }
-
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && liveTrackingEnabled) pollLivePosition();
-  });
-
-  ensureLivePolling();
-  updateLiveTrackingUi();
 
   if (els.settingsTestBtn) {
     els.settingsTestBtn.addEventListener('click', () => {
