@@ -79,6 +79,7 @@
     notificationIntervalSelect: $('notificationIntervalSelect'),
     zoneToast: $('zoneToast'),
     mapBtn: $('mapBtn'), mapDialog: $('mapDialog'),
+    mapArtifactsToggleBtn: $('mapArtifactsToggleBtn'), mapMixedUndoBtn: $('mapMixedUndoBtn'), mapMixedClearBtn: $('mapMixedClearBtn'),
     mapClockBtn: $('mapClockBtn'),
     mapViewModeBtn: $('mapViewModeBtn'), mapViewModeLabel: $('mapViewModeLabel'),
     mapFullscreenBtn: $('mapFullscreenBtn'),
@@ -531,7 +532,7 @@ mapMeasureHint: $('mapMeasureHint'),
       nextAt: 3 * DAY_SECONDS, nextText: 'До высокого риска'
     };
     return {
-      badge: 'ВЫСОКИЙ', label: 'Высокая вероятность выброса',
+      badge: 'ВЫСОКИЙ', label: 'Высокий риск',
       progress: 100, color: 'var(--danger)',
       detail: 'Прошло 3 или больше дней. Следующий случайный выброс стоит ожидать в ближайшее время.',
       nextAt: null, nextText: ''
@@ -1833,22 +1834,11 @@ mapMeasureHint: $('mapMeasureHint'),
 
   // PWA v127 — базы, которые можно включать в маршрут по артефактам.
   // Используются те же координаты общего слоя местоположений.
-  const MAP_ARTIFACT_BASE_KEYS = [
-    'yaniv',
-    'rostok',
-    'svalka',
-    'yantar',
-    'malachite',
-    'sircaa',
-    'wild_island',
-    'chemical',
-    'lesser_zone',
-    'cement',
-    'jupiter',
-    'zaton_varta',
-    'zaton_sultan',
-    'shevchenko'
-  ];
+  // v154: every map location can be a stop in an artifact/location route.
+  // Keep stable place keys, so saved routes stay valid after label updates.
+  const MAP_ARTIFACT_BASE_KEYS = MAP_ROUTE_LOCATION_ORDER.filter(key =>
+    MAP_KNOWN_LOCATIONS[key] && MAP_KNOWN_LOCATIONS[key].visible !== false
+  );
 
   function isCustomArtifactBaseKey(placeKey) {
     return MAP_ARTIFACT_BASE_KEYS.includes(placeKey);
@@ -2153,8 +2143,10 @@ mapMeasureHint: $('mapMeasureHint'),
   const ROUTE_TRAVEL_SPEED_KMH = 8;
   let mapPresetRouteVisible =
     localStorage.getItem(MAP_PRESET_ROUTE_STORAGE_KEY) !== '0';
-  let mapSelectedRouteKey =
-    localStorage.getItem(MAP_PRESET_ROUTE_SELECTED_KEY) || 'garbage_cement_cooling';
+  // v154: unified map route is the default. Old presets and saved routes
+  // remain in storage; no legacy state is erased.
+  let mapSelectedRouteKey = MAP_ROUTE_MODE_CUSTOM_ARTIFACT;
+  let mapArtifactMarkersVisible = false;
 
   if (!MAP_PRESET_ROUTES[mapSelectedRouteKey] && !isSpecialMapRouteMode(mapSelectedRouteKey)) {
     mapSelectedRouteKey = 'garbage_cement_cooling';
@@ -4348,6 +4340,9 @@ mapMeasureHint: $('mapMeasureHint'),
       // В этом слое рисуем базу только если она включена в маршрут,
       // чтобы показать номер в последовательности.
       if (isBase && selectedIndex < 0) return;
+      // v154: map starts with locations only; the artifact button controls
+      // artifact display without clearing selected route stops.
+      if (!isBase && !mapArtifactMarkersVisible) return;
 
       const customJourneyActive = Boolean(
         mapJourneyActive &&
@@ -7606,6 +7601,18 @@ mapMeasureHint: $('mapMeasureHint'),
       () => {
         const restoreParkedMap =
           mapParkedForClock;
+        // Open the simplified unified mode every time, except when a
+        // movement-test editing session explicitly owns the map.
+        if (mapSelectedRouteKey !== MAP_ROUTE_MODE_MOVEMENT_TEST &&
+            mapSelectedRouteKey !== MAP_ROUTE_MODE_CUSTOM_ARTIFACT) {
+          changePresetRoute(MAP_ROUTE_MODE_CUSTOM_ARTIFACT);
+        }
+        if (mapSelectedRouteKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT) {
+          restoreCustomArtifactRoute();
+          renderCustomArtifactRoute();
+          requestCustomArtifactBuild();
+        }
+        updateArtifactVisibilityButton();
 
         updateMapZoneTime();
         updateMapFullscreenUI();
@@ -7651,6 +7658,23 @@ mapMeasureHint: $('mapMeasureHint'),
         );
       }
     );
+  }
+
+  // In landscape the topbar is removed; the transparent time readout
+  // doubles as the unobtrusive way back to the main clock screen.
+  const floatingMapTime = els.mapZoneTime?.closest('.map-zone-time-line');
+  if (floatingMapTime && els.mapClockBtn) {
+    floatingMapTime.setAttribute('tabindex', '0');
+    floatingMapTime.setAttribute('role', 'button');
+    floatingMapTime.setAttribute('title', 'Вернуться к часам');
+    floatingMapTime.setAttribute('aria-label', 'Игровое время. Вернуться к часам');
+    floatingMapTime.addEventListener('click', () => els.mapClockBtn.click());
+    floatingMapTime.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        els.mapClockBtn.click();
+      }
+    });
   }
 
   if (els.mapClockBtn) {
@@ -7863,6 +7887,47 @@ mapMeasureHint: $('mapMeasureHint'),
       clearRouteStartArtifactState(activeRoute);
       renderPresetRoute();
       updateJourneyHud();
+    });
+  }
+
+  function updateArtifactVisibilityButton() {
+    if (!els.mapArtifactsToggleBtn) return;
+    els.mapArtifactsToggleBtn.setAttribute('aria-pressed', String(mapArtifactMarkersVisible));
+    els.mapArtifactsToggleBtn.setAttribute('aria-label', mapArtifactMarkersVisible
+      ? 'Скрыть артефакты на карте' : 'Показать артефакты на карте');
+    els.mapArtifactsToggleBtn.classList.toggle('active', mapArtifactMarkersVisible);
+  }
+
+  if (els.mapArtifactsToggleBtn) {
+    els.mapArtifactsToggleBtn.addEventListener('click', () => {
+      if (mapSelectedRouteKey !== MAP_ROUTE_MODE_CUSTOM_ARTIFACT) {
+        changePresetRoute(MAP_ROUTE_MODE_CUSTOM_ARTIFACT);
+      }
+      mapArtifactMarkersVisible = !mapArtifactMarkersVisible;
+      updateArtifactVisibilityButton();
+      renderCustomArtifactRoute();
+      updateCustomArtifactRouteGeometry();
+    });
+  }
+  if (els.mapMixedUndoBtn) {
+    els.mapMixedUndoBtn.addEventListener('click', () => {
+      if (!mapCustomArtifactSequence.length) return;
+      mapCustomArtifactSequence.pop();
+      mapCustomArtifactRoutePoints = [];
+      mapCustomArtifactRouteLegs = [];
+      mapCustomArtifactMeters = 0;
+      saveCustomArtifactRoute();
+      renderCustomArtifactRoute();
+      renderKnownLocationsLayer();
+      updateCustomArtifactRouteGeometry();
+      requestCustomArtifactBuild();
+      updateMapRouteHeaderSummary();
+    });
+  }
+  if (els.mapMixedClearBtn) {
+    els.mapMixedClearBtn.addEventListener('click', () => {
+      clearCustomArtifactRoute();
+      renderKnownLocationsLayer();
     });
   }
 

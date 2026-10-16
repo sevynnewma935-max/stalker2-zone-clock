@@ -5596,3 +5596,36 @@ button.zone-button-press:not(:disabled) {
 .zone-map-transform .zone-map-hd64-tiles > img.zone-hd64-base-tile {
   display: none !important;
 }
+
+/* PWA v154 — minimal map + combined POI/artifact route */
+.zone-clock-line { display:flex; align-items:center; justify-content:center; gap:clamp(12px,4vw,35px); margin:12px 0 14px; }
+.zone-clock-line .clock { width:auto; flex:0 1 auto; min-width:0; margin:0; white-space:nowrap; font-size:clamp(2.9rem,13vw,6.1rem); }
+.zone-clock-side { display:grid; justify-items:start; gap:10px; min-width:110px; }
+.zone-clock-side .daypart-stack { justify-items:start; gap:6px; }
+.zone-clock-side .game-day-line {text-align:left; font-size:.8rem;}
+.zone-clock-side .status-chip {min-height:26px;}
+@media (max-width:390px) { .zone-clock-line {gap:9px;} .zone-clock-line .clock {font-size:clamp(2.6rem,13vw,3.6rem);} .zone-clock-side {min-width:95px;} .zone-clock-side .daypart-boundary {white-space:normal;} }
+/* Hide HD provider/debug credit, obsolete measurement controls and old route selectors. */
+.map-dialog .map-hd64-credit, .map-dialog .map-toolbar,
+.map-dialog .map-info-strip, .map-dialog .map-road-planner,
+.map-dialog .map-preset-route-label, .map-dialog .map-artifact-visit-hint,
+.map-dialog .map-measure-hint { display:none!important; }
+.map-quick-controls {position:absolute; z-index:51; bottom:max(14px,env(safe-area-inset-bottom)); left:max(10px,env(safe-area-inset-left)); display:flex; flex-direction:column; gap:8px; pointer-events:auto;}
+.map-quick-controls button {border:1px solid rgba(216,232,204,.36); border-radius:12px; background:rgba(6,19,12,.83); color:#f3faee; min-height:42px; padding:8px 11px; font-size:.72rem; font-weight:700; letter-spacing:.025em; backdrop-filter:blur(6px);}
+.map-quick-controls button.active {background:rgba(46,89,42,.95); border-color:#d9ea95; color:#e8ffa7;}
+.map-quick-controls button:focus-visible {outline:2px solid #e3ec9d; outline-offset:2px;}
+.map-dialog.map-fullscreen .map-quick-controls {display:flex!important;}
+.map-dialog:not(.map-fullscreen) .map-modal {display:flex!important; flex-direction:column; overflow-y:auto;}
+.map-dialog:not(.map-fullscreen) .map-viewport {flex:1 0 auto; min-height:400px!important; height:calc(100dvh - 140px)!important;}
+.map-dialog .map-viewport {position:relative;}
+@media (orientation:landscape) and (max-height:700px) and (max-width:1200px) {
+ .map-dialog, .map-dialog:not(.map-fullscreen) {width:100vw!important; height:100dvh!important; max-width:none!important; max-height:none!important; margin:0!important; border:0!important; border-radius:0!important;}
+ .map-dialog .map-modal, .map-dialog:not(.map-fullscreen) .map-modal {display:block!important; height:100%!important; overflow:hidden!important; border:0!important; border-radius:0!important; position:relative;}
+ .map-dialog .map-modal-header, .map-dialog:not(.map-fullscreen) .map-modal-header {position:absolute!important; top:max(7px,env(safe-area-inset-top)); left:max(9px,env(safe-area-inset-left)); right:auto; z-index:55; padding:0!important; margin:0!important; background:transparent!important; border:0!important; pointer-events:none!important; min-height:0!important;}
+ .map-dialog .map-brand-kicker,.map-dialog .map-brand-title,.map-dialog .map-route-header-summary,.map-dialog .map-journey-hud,.map-dialog .map-header-actions {display:none!important;}
+ .map-dialog .map-zone-time-line {display:block!important; margin:0!important; padding:5px 9px!important; color:#f6fff1!important; background:rgba(0,0,0,.24)!important; border-radius:7px; text-shadow:0 2px 5px #000, 0 0 8px #000; font-size:.7rem!important; font-weight:700;}
+ .map-dialog .map-zone-time-line strong {color:#fff!important; font-size:1.15rem!important; font-weight:900; text-shadow:0 1px 5px #000;}
+ .map-dialog .map-viewport, .map-dialog:not(.map-fullscreen) .map-viewport {height:100dvh!important; min-height:0!important; width:100%!important; border:0!important;}
+}
+
+@media (orientation:landscape) and (max-height:700px) and (max-width:1200px) { .map-dialog .map-zone-time-line {pointer-events:auto!important;cursor:pointer;} }
