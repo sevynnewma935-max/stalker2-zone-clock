@@ -45,6 +45,7 @@
   const NOTIFICATION_KEY = 'stalker2-zone-clock-notifications-v1';
   const NOTIFICATION_NEXT_KEY = 'stalker2-zone-clock-next-message-v1';
   const NOTIFICATION_INTERVAL_KEY = 'stalker2-zone-clock-message-interval-v1';
+
   const $ = (id) => document.getElementById(id);
 
   const els = {
@@ -2018,6 +2019,7 @@ mapMeasureHint: $('mapMeasureHint'),
   let mapJourneyActive = false;
   let mapJourneyPlan = null;
   let mapJourneyStartedAtMs = 0;
+
   let mapJourneySequence = [];
   let mapJourneyAnimationFrame = 0;
   let mapRoadPlannerJourneyVisited = new Set();
