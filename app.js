@@ -79,7 +79,7 @@
     notificationIntervalSelect: $('notificationIntervalSelect'),
     zoneToast: $('zoneToast'),
     mapBtn: $('mapBtn'), mapDialog: $('mapDialog'),
-    mapArtifactsToggleBtn: $('mapArtifactsToggleBtn'), mapMixedUndoBtn: $('mapMixedUndoBtn'), mapMixedClearBtn: $('mapMixedClearBtn'),
+    mapArtifactsToggleBtn: $('mapArtifactsToggleBtn'),
     mapClockBtn: $('mapClockBtn'),
     mapViewModeBtn: $('mapViewModeBtn'), mapViewModeLabel: $('mapViewModeLabel'),
     mapFullscreenBtn: $('mapFullscreenBtn'),
@@ -164,6 +164,14 @@ mapMeasureHint: $('mapMeasureHint'),
     mapApplyCalibrationBtn: $('mapApplyCalibrationBtn'),
     mapResetCalibrationBtn: $('mapResetCalibrationBtn'),
     mapCalibrationMessage: $('mapCalibrationMessage'),
+    mapJourneyCompleteDialog: $('mapJourneyCompleteDialog'),
+    mapJourneyCompleteClose: $('mapJourneyCompleteClose'),
+    mapJourneyCompleteDone: $('mapJourneyCompleteDone'),
+    mapJourneyCompleteWish: $('mapJourneyCompleteWish'),
+    mapJourneyCompleteDistance: $('mapJourneyCompleteDistance'),
+    mapJourneyCompleteTime: $('mapJourneyCompleteTime'),
+    mapJourneyCompleteArtifacts: $('mapJourneyCompleteArtifacts'),
+    mapJourneyCompleteCalories: $('mapJourneyCompleteCalories'),
     mapJourneyDialog: $('mapJourneyDialog'),
     closeJourneyBtn: $('closeJourneyBtn'),
     startJourneyBtn: $('startJourneyBtn'),
@@ -314,6 +322,7 @@ mapMeasureHint: $('mapMeasureHint'),
     } finally {
       livePollBusy = false;
       updateLiveTrackingUi();
+      maybeAdvanceJourneyFromLive();
     }
   }
 
@@ -2137,6 +2146,13 @@ mapMeasureHint: $('mapMeasureHint'),
 
   let mapJourneyActive = false;
   let mapJourneyPlan = null;
+  let mapJourneyStartedAtMs = 0;
+  let mapJourneyLiveCandidateKey = '';
+  let mapJourneyLiveConsecutive = 0;
+  // Conditional LIVE tracking only; without live data a user may mark stops
+  // manually, never silently claim to know the player's actual location.
+  const MAP_JOURNEY_ARRIVAL_RADIUS = 8; // logical map pixels (~52m with current scale)
+
   let mapJourneySequence = [];
   let mapJourneyAnimationFrame = 0;
   let mapRoadPlannerJourneyVisited = new Set();
@@ -4276,11 +4292,7 @@ mapMeasureHint: $('mapMeasureHint'),
       item => item.id === `base:${placeKey}`
     );
     if (!candidate) return;
-
-    if (mapCustomArtifactSequence.some(item => item.id === candidate.id)) {
-      return;
-    }
-
+    // A selected place is removed on the second tap, as are artifacts.
     toggleCustomArtifactSelection(candidate);
   }
 
@@ -4557,6 +4569,7 @@ mapMeasureHint: $('mapMeasureHint'),
     }
 
     mapCustomArtifactJourneyVisited.add(sequenceIndex);
+    const wasLastStop = sequenceIndex === mapCustomArtifactSequence.length - 1;
 
     if (
       stop &&
@@ -4585,13 +4598,13 @@ mapMeasureHint: $('mapMeasureHint'),
         : stop.label + ' отмечена. Маршрут завершён.';
     }
 
-    window.setTimeout(() => {
-      focusJourneyPoints(
-        next ? [stop, next] : [stop],
-        850,
-        true
-      );
-    }, 120);
+    if (wasLastStop) {
+      finishJourneyAndShowSummary();
+    } else {
+      window.setTimeout(() => {
+        if (mapJourneyActive) focusJourneyPoints([stop, next], 850, true);
+      }, 120);
+    }
   }
 
   function getSelectedRouteMetrics() {
@@ -4844,6 +4857,10 @@ mapMeasureHint: $('mapMeasureHint'),
 
     mapRoadPlannerJourneyVisited.add(sequenceIndex);
     renderKnownLocationsLayer();
+    if (sequenceIndex === mapJourneySequence.length - 1) {
+      finishJourneyAndShowSummary();
+      return;
+    }
 
     const hasNext = sequenceIndex < mapJourneySequence.length - 1;
 
