@@ -1487,11 +1487,6 @@ mapMeasureHint: $('mapMeasureHint'),
       x: 1620.0,
       y: 1630.0
     },
-    swamps: {
-      label: 'Болота',
-      x: 1882.5,
-      y: 1923.3
-    },
     burnt_forest: {
       label: 'Горелый лес',
       x: 653.4,
@@ -1711,7 +1706,6 @@ mapMeasureHint: $('mapMeasureHint'),
     'malachite_railway_tunnel',
     'malachite_energy_gas_station',
     'malachite_checkpoint',
-    'swamps',
     'cement_bridge',
     'swyd_east'
   ];
