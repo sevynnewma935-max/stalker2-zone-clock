@@ -1484,7 +1484,7 @@ mapMeasureHint: $('mapMeasureHint'),
 
   const MAP_ROAD_COST_GRID_SIZE = 512;
   const MAP_ROAD_COST_ASSET =
-    './assets/zone-road-cost-red-v136.png';
+    './assets/zone-road-red-mask-v153.txt';
 
   const MAP_VIEW_STORAGE_KEY =
     'stalker2-zone-clock-map-view-v1';
@@ -2751,109 +2751,70 @@ mapMeasureHint: $('mapMeasureHint'),
   }
 
   async function loadRoadPlannerCostGrid() {
-    if (mapRoadPlannerCostGrid) {
-      return mapRoadPlannerCostGrid;
-    }
+    if (mapRoadPlannerCostGrid) return mapRoadPlannerCostGrid;
+    if (mapRoadPlannerCostPromise) return mapRoadPlannerCostPromise;
 
-    if (mapRoadPlannerCostPromise) {
-      return mapRoadPlannerCostPromise;
-    }
-
-    mapRoadPlannerCostPromise =
-      new Promise((resolve, reject) => {
-        const image = new Image();
-
-        const finish = () => {
-          try {
-            const canvas =
-              document.createElement('canvas');
-
-            canvas.width =
-              MAP_ROAD_COST_GRID_SIZE;
-
-            canvas.height =
-              MAP_ROAD_COST_GRID_SIZE;
-
-            const context =
-              canvas.getContext(
-                '2d',
-                {
-                  willReadFrequently: true
-                }
-              );
-
-            if (!context) {
-              throw new Error(
-                'Canvas недоступен'
-              );
-            }
-
-            context.drawImage(
-              image,
-              0,
-              0,
-              MAP_ROAD_COST_GRID_SIZE,
-              MAP_ROAD_COST_GRID_SIZE
-            );
-
-            const imageData =
-              context.getImageData(
-                0,
-                0,
-                MAP_ROAD_COST_GRID_SIZE,
-                MAP_ROAD_COST_GRID_SIZE
-              ).data;
-
-            const grid =
-              new Uint8Array(
-                MAP_ROAD_COST_GRID_SIZE *
-                MAP_ROAD_COST_GRID_SIZE
-              );
-
-            for (
-              let index = 0;
-              index < grid.length;
-              index++
-            ) {
-              grid[index] =
-                imageData[index * 4];
-            }
-
-            mapRoadPlannerCostGrid =
-              grid;
-
-            resolve(grid);
-          } catch (error) {
-            reject(error);
+    // v153: decode the supplied red-road network, including the new east
+    // and south-east links. The packed 512x512 bitmap is in a separate,
+    // offline-cached asset; the cost surface is reconstructed on first use.
+    // No third-party image decoder or internet map service is required.
+    mapRoadPlannerCostPromise = (async () => {
+      const response = await fetch(MAP_ROAD_COST_ASSET);
+      if (!response.ok) throw new Error('Не удалось загрузить новую дорожную сеть');
+      const encoded = (await response.text()).trim();
+      if (typeof DecompressionStream !== 'function') {
+        throw new Error('Для новых дорог требуется современный браузер');
+      }
+      const compressed = Uint8Array.from(atob(encoded), ch => ch.charCodeAt(0));
+      const unpacked = new Uint8Array(await new Response(
+        new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'))
+      ).arrayBuffer());
+      const size = MAP_ROAD_COST_GRID_SIZE;
+      const count = size * size;
+      if (unpacked.length !== count / 8) {
+        throw new Error('Повреждена дорожная модель ZONE CLOCK v1.53');
+      }
+      const inf = 100000;
+      const dist = new Int32Array(count);
+      for (let i = 0; i < count; i++) {
+        dist[i] = ((unpacked[i >> 3] >> (7 - (i & 7))) & 1) ? 0 : inf;
+      }
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const i = y * size + x;
+          let d = dist[i];
+          if (x) d = Math.min(d, dist[i - 1] + 10);
+          if (y) {
+            d = Math.min(d, dist[i - size] + 10);
+            if (x) d = Math.min(d, dist[i - size - 1] + 14);
+            if (x + 1 < size) d = Math.min(d, dist[i - size + 1] + 14);
           }
-        };
-
-        image.onload = finish;
-
-        image.onerror = () => {
-          reject(
-            new Error(
-              'Не удалось загрузить дорожную модель карты'
-            )
-          );
-        };
-
-        image.src =
-          MAP_ROAD_COST_ASSET;
-
-        if (
-          typeof image.decode ===
-          'function'
-        ) {
-          image.decode()
-            .then(finish)
-            .catch(() => {});
+          dist[i] = d;
         }
-      })
-      .catch(error => {
-        mapRoadPlannerCostPromise = null;
-        throw error;
-      });
+      }
+      for (let y = size - 1; y >= 0; y--) {
+        for (let x = size - 1; x >= 0; x--) {
+          const i = y * size + x;
+          let d = dist[i];
+          if (x + 1 < size) d = Math.min(d, dist[i + 1] + 10);
+          if (y + 1 < size) {
+            d = Math.min(d, dist[i + size] + 10);
+            if (x) d = Math.min(d, dist[i + size - 1] + 14);
+            if (x + 1 < size) d = Math.min(d, dist[i + size + 1] + 14);
+          }
+          dist[i] = d;
+        }
+      }
+      const grid = new Uint8Array(count);
+      for (let i = 0; i < count; i++) {
+        grid[i] = Math.min(234, Math.floor((dist[i] * 234 + 25) / 50));
+      }
+      mapRoadPlannerCostGrid = grid;
+      return grid;
+    })().catch(error => {
+      mapRoadPlannerCostPromise = null;
+      throw error;
+    });
 
     return mapRoadPlannerCostPromise;
   }
@@ -12020,7 +11981,7 @@ mapMeasureHint: $('mapMeasureHint'),
   const restored = loadState();
 
   loadRoadPlannerState();
-  // PWA v136: invalidate old geometry; preserve the user-selected stops.
+  // PWA v153: rebuild saved route geometry from new east/southeast roads; keep stops.
   if (mapRoadPlannerSequence.length >= 2) {
     mapRoadPlannerRoutePoints = [];
     mapRoadPlannerMeters = 0;
