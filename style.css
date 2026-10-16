@@ -5629,3 +5629,37 @@ button.zone-button-press:not(:disabled) {
 }
 
 @media (orientation:landscape) and (max-height:700px) and (max-width:1200px) { .map-dialog .map-zone-time-line {pointer-events:auto!important;cursor:pointer;} }
+
+/* PWA v155: game day beneath the current game time; center period label
+   horizontally over the sunset/time-to-next-period countdown. */
+.zone-clock-time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.zone-clock-line .zone-clock-time .clock {
+  width: auto;
+  margin: 0;
+}
+.zone-clock-time .game-day-line {
+  margin-top: 8px;
+  text-align: center;
+  font-size: .84rem;
+  line-height: 1.25;
+}
+.zone-clock-line .zone-clock-side {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  text-align: center;
+}
+.zone-clock-line .zone-clock-side .daypart-stack {
+  justify-items: center;
+  text-align: center;
+}
+.zone-clock-line .zone-clock-side .daypart-boundary {
+  text-align: center;
+}
