@@ -349,11 +349,6 @@
 <g id="mapMeasurePoints"></g>
 </svg>
 <div class="map-hd64-credit" hidden id="mapHdCredit"><span id="mapHdTileStatus">HD 64K</span> · карта © GSC Game World · <a href="https://github.com/joric/stalker2_tileset" target="_blank" rel="noopener noreferrer">тайлы joric</a> · требуется интернет</div>
-<div class="map-quick-controls" aria-label="Управление маршрутом">
-<button id="mapArtifactsToggleBtn" type="button" aria-label="Показать артефакты на карте" aria-pressed="false" title="Показать или скрыть артефакты">✦ <span>АРТЕФАКТЫ</span></button>
-<button id="mapMixedUndoBtn" type="button" title="Убрать последнюю точку маршрута">− ТОЧКА</button>
-<button id="mapMixedClearBtn" type="button" title="Очистить маршрут">СБРОС</button>
-</div>
 <div aria-label="Управление картой" class="map-fullscreen-zoom-controls" id="mapFullscreenZoomControls">
 <button aria-label="Увеличить карту" id="mapFullscreenZoomInBtn" type="button">+</button>
 <button aria-label="Уменьшить карту" id="mapFullscreenZoomOutBtn" type="button">−</button>
@@ -365,6 +360,9 @@
 <svg aria-hidden="true" class="map-fullscreen-icon map-fullscreen-icon-collapse" viewbox="0 0 24 24">
 <path d="M9 4v5H4V7h3V4h2Zm6 0h2v3h3v2h-5V4ZM4 15h5v5H7v-3H4v-2Zm11 0h5v2h-3v3h-2v-5Z"></path>
 </svg>
+</button>
+<button id="mapArtifactsToggleBtn" class="map-artifact-icon-btn" type="button" aria-label="Показать артефакты на карте" aria-pressed="false" title="Показать или скрыть артефакты">
+<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2 21 10l-9 12L3 10 12 2Zm0 3.1L6.1 10l5.9 8 5.9-8L12 5.1Z"/><path d="M6 10h12M12 4l-3 6 3 9 3-9-3-6" fill="none" stroke="currentColor" stroke-width="1.35"/></svg>
 </button>
 <button aria-label="Сбросить выбранные точки" class="map-fullscreen-reset-points" id="mapFullscreenResetPointsBtn" title="Сбросить выбранные точки" type="button">
 <svg aria-hidden="true" viewbox="0 0 24 24">
@@ -430,6 +428,20 @@
 </div>
 </div>
 </dialog>
+<dialog id="mapJourneyCompleteDialog" class="journey-dialog journey-complete-dialog" aria-labelledby="mapJourneyCompleteTitle">
+<div class="journey-modal">
+<div class="journey-modal-header"><div><div class="eyebrow">ZONE CLOCK / ИТОГИ</div><h2 id="mapJourneyCompleteTitle">МАРШРУТ ПРОЙДЕН</h2></div>
+<button id="mapJourneyCompleteClose" aria-label="Закрыть результаты" class="icon-btn small" type="button">✕</button></div>
+<div class="journey-content"><div class="journey-wish" id="mapJourneyCompleteWish"></div>
+<div class="journey-stat-grid journey-complete-stats">
+<div class="journey-stat"><span>ДЛИНА МАРШРУТА ПО КАРТЕ</span><strong id="mapJourneyCompleteDistance">—</strong></div>
+<div class="journey-stat"><span>ВРЕМЯ ПРОХОЖДЕНИЯ</span><strong id="mapJourneyCompleteTime">—</strong></div>
+<div class="journey-stat"><span>ОТМЕЧЕНО АРТЕФАКТОВ</span><strong id="mapJourneyCompleteArtifacts">0</strong></div>
+<div class="journey-stat"><span>КАЛОРИИ (УСЛОВНО)</span><strong id="mapJourneyCompleteCalories">—</strong></div>
+</div>
+<div class="journey-estimate-note">Калории — игровая оценка по аналогии с ходьбой: 70 кг и 3,5 MET. Не измерение реального расхода энергии. Длина — по рассчитанному маршруту, время — с момента начала до последней отмеченной точки.</div>
+<button id="mapJourneyCompleteDone" class="btn primary wide journey-start-btn" type="button">ВЕРНУТЬСЯ В ЗОНУ</button>
+</div></div></dialog>
 <dialog aria-labelledby="chronometryDialogTitle" class="chronometry-dialog" id="chronometryDialog">
 <div class="chronometry-modal">
 <div class="chronometry-header">
@@ -707,7 +719,7 @@
 </div>
 <div class="settings-group version-group">
 <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.55</strong></div>
+<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.56</strong></div>
 <button class="btn update-app-btn" id="updateAppBtn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>

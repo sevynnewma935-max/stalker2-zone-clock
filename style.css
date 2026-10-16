@@ -5663,3 +5663,16 @@ button.zone-button-press:not(:disabled) {
 .zone-clock-line .zone-clock-side .daypart-boundary {
   text-align: center;
 }
+
+/* v156: artifact selector shares the compact right-hand toolbar. */
+.map-fullscreen-zoom-controls .map-artifact-icon-btn {display:grid!important;}
+.map-fullscreen-zoom-controls .map-artifact-icon-btn.active {
+  border-color:#b7cf72!important; color:#e7fa9c!important;
+  -webkit-text-fill-color:#e7fa9c!important; background:rgba(48,75,24,.93)!important;
+}
+.map-dialog .map-quick-controls {display:none!important;}
+.journey-complete-dialog {width:min(420px,calc(100vw - 28px));}
+.journey-complete-dialog .journey-modal {max-height:min(88dvh,700px);}
+.journey-complete-stats {grid-template-columns:repeat(2,minmax(0,1fr));}
+.journey-complete-stats .journey-stat strong {font-size:1rem;}
+@media(max-width:350px){.journey-complete-stats{grid-template-columns:1fr;}}
