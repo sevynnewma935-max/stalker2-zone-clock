@@ -5040,6 +5040,80 @@ mapMeasureHint: $('mapMeasureHint'),
     return 'ВЫБРОС: по текущему таймеру риск на этом отрезке остаётся низким, но точный момент заранее определить нельзя.';
   }
 
+  function finishJourneyAndShowSummary() {
+    if (!mapJourneyActive || !mapJourneyPlan) return;
+    const distance = Number(mapJourneyPlan.distanceMeters) || 0;
+    const seconds = Math.max(0, Math.floor((Date.now() - (mapJourneyStartedAtMs || Date.now())) / 1000));
+    const minutes = Math.floor(seconds / 60);
+    const h = Math.floor(minutes / 60);
+    const timeLabel = h > 0 ? `${h} ч ${minutes % 60} мин` :
+      minutes > 0 ? `${minutes} мин ${seconds % 60} с` : `${seconds} с`;
+    const artifactCount = mapJourneyPlan.routeKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT
+      ? mapCustomArtifactSequence.filter((stop,index) =>
+          stop.kind !== 'base' && mapCustomArtifactJourneyVisited.has(index)).length
+      : 0;
+    // MET kcal estimate, NOT physical calories burned by the player.
+    const kcal = Math.max(0, Math.round((3.5 * 3.5 * 70 / 200) * (seconds / 60)));
+    if (els.mapJourneyCompleteDistance) els.mapJourneyCompleteDistance.textContent = formatMapDistance(distance);
+    if (els.mapJourneyCompleteTime) els.mapJourneyCompleteTime.textContent = timeLabel;
+    if (els.mapJourneyCompleteArtifacts) els.mapJourneyCompleteArtifacts.textContent = String(artifactCount);
+    if (els.mapJourneyCompleteCalories) els.mapJourneyCompleteCalories.textContent = `${kcal} ккал`;
+    if (els.mapJourneyCompleteWish) els.mapJourneyCompleteWish.textContent =
+      artifactCount ? 'Хорошая добыча, сталкер. Не задерживайся на открытой местности — до укрытия ещё нужно дойти.' :
+      'Маршрут позади, сталкер. Пусть обратная дорога будет спокойнее пройденной.';
+
+    const finishedMode = mapJourneyPlan.routeKey;
+    mapJourneyActive = false;
+    mapJourneyPlan = null;
+    mapJourneySequence = [];
+    mapJourneyStartedAtMs = 0;
+    mapJourneyLiveCandidateKey = '';
+    mapJourneyLiveConsecutive = 0;
+    if (finishedMode === MAP_ROUTE_MODE_CUSTOM_ARTIFACT) clearCustomArtifactRoute();
+    if (finishedMode === MAP_ROUTE_MODE_ROAD_PLANNER) clearRoadPlanner();
+    updateJourneyHud();
+    renderKnownLocationsLayer();
+    updateMapFullscreenUI();
+    const dialog = els.mapJourneyCompleteDialog;
+    if (dialog && !dialog.open) {
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open','');
+    }
+  }
+
+  function maybeAdvanceJourneyFromLive() {
+    if (!mapJourneyActive || !mapJourneyPlan || !liveTrackingEnabled || !livePositionIsFresh()) {
+      mapJourneyLiveCandidateKey = '';
+      mapJourneyLiveConsecutive = 0;
+      return;
+    }
+    const isMixed = mapJourneyPlan.routeKey === MAP_ROUTE_MODE_CUSTOM_ARTIFACT;
+    const isRoad = mapJourneyPlan.routeKey === MAP_ROUTE_MODE_ROAD_PLANNER;
+    if (!isMixed && !isRoad) return;
+    const sequence = isMixed ? mapCustomArtifactSequence : mapJourneySequence;
+    const visited = isMixed ? mapCustomArtifactJourneyVisited : mapRoadPlannerJourneyVisited;
+    const index = sequence.findIndex((_,i) => !visited.has(i));
+    if (index < 0) return;
+    const target = sequence[index];
+    const player = gamePositionToMapPosition(livePosition);
+    const distance = player ? Math.hypot(player.x - target.x, player.y - target.y) : Infinity;
+    if (distance > MAP_JOURNEY_ARRIVAL_RADIUS) {
+      mapJourneyLiveCandidateKey = '';
+      mapJourneyLiveConsecutive = 0;
+      return;
+    }
+    // Two consecutive fresh updates avoid auto-checking a stop from one
+    // transient relay position. Visits still progress strictly in order.
+    const key = `${mapJourneyPlan.routeKey}:${index}`;
+    mapJourneyLiveConsecutive = mapJourneyLiveCandidateKey === key ? mapJourneyLiveConsecutive + 1 : 1;
+    mapJourneyLiveCandidateKey = key;
+    if (mapJourneyLiveConsecutive < 2) return;
+    mapJourneyLiveCandidateKey = '';
+    mapJourneyLiveConsecutive = 0;
+    if (isMixed) markCustomArtifactJourneyStop(index);
+    else markRoadPlannerJourneyVisit(index);
+  }
+
   function updateJourneyHud() {
     if (!els.mapJourneyHud) return;
 
