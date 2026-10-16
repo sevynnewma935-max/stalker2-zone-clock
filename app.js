@@ -2420,7 +2420,7 @@ mapMeasureHint: $('mapMeasureHint'),
             ? isVisited
               ? `${place.label}, точка ${selectedIndex + 1}, посещена`
               : `${place.label}, точка ${selectedIndex + 1}. Нажмите, чтобы отметить посещение.`
-            : `${place.label}, точка маршрута ${selectedIndex + 1}`
+            : `${place.label}, точка маршрута ${selectedIndex + 1}. Нажмите повторно, чтобы снять выделение`
           : isRoadJourney
             ? `${place.label}, не входит в текущий маршрут`
             : baseSelectable
@@ -5484,6 +5484,9 @@ mapMeasureHint: $('mapMeasureHint'),
         : getMovementJourneyPlan();
 
       mapJourneyActive = true;
+      mapJourneyStartedAtMs = Date.now();
+      mapJourneyLiveCandidateKey = '';
+      mapJourneyLiveConsecutive = 0;
       if (isCustomArtifactMode) {
         mapCustomArtifactJourneyVisited = new Set();
         renderCustomArtifactRoute();
@@ -5543,6 +5546,9 @@ mapMeasureHint: $('mapMeasureHint'),
           : getRoadPlannerJourneyPlan();
 
       mapJourneyActive = true;
+      mapJourneyStartedAtMs = Date.now();
+      mapJourneyLiveCandidateKey = '';
+      mapJourneyLiveConsecutive = 0;
       mapJourneySequence =
         getRoadPlannerJourneySequence();
       mapRoadPlannerJourneyVisited = new Set();
@@ -5573,6 +5579,9 @@ mapMeasureHint: $('mapMeasureHint'),
         : getJourneyPlan(route);
 
     mapJourneyActive = true;
+      mapJourneyStartedAtMs = Date.now();
+      mapJourneyLiveCandidateKey = '';
+      mapJourneyLiveConsecutive = 0;
     mapJourneySequence =
       getJourneySequence(route);
 
@@ -6829,6 +6838,7 @@ mapMeasureHint: $('mapMeasureHint'),
     mapJourneyActive = false;
     mapJourneyPlan = null;
     mapJourneySequence = [];
+    mapJourneyStartedAtMs = 0;
     localStorage.setItem(MAP_PRESET_ROUTE_SELECTED_KEY, mapSelectedRouteKey);
 
     if (routeKey === MAP_ROUTE_MODE_ROAD_PLANNER) {
@@ -7927,6 +7937,14 @@ mapMeasureHint: $('mapMeasureHint'),
     );
   }
 
+  const closeJourneyComplete = () => {
+    if (!els.mapJourneyCompleteDialog) return;
+    if (typeof els.mapJourneyCompleteDialog.close === 'function') els.mapJourneyCompleteDialog.close();
+    else els.mapJourneyCompleteDialog.removeAttribute('open');
+  };
+  if (els.mapJourneyCompleteClose) els.mapJourneyCompleteClose.addEventListener('click', closeJourneyComplete);
+  if (els.mapJourneyCompleteDone) els.mapJourneyCompleteDone.addEventListener('click', closeJourneyComplete);
+
   if (els.mapJourneyDialog) {
     els.mapJourneyDialog.addEventListener(
       'click',
@@ -8000,28 +8018,6 @@ mapMeasureHint: $('mapMeasureHint'),
       updateCustomArtifactRouteGeometry();
     });
   }
-  if (els.mapMixedUndoBtn) {
-    els.mapMixedUndoBtn.addEventListener('click', () => {
-      if (!mapCustomArtifactSequence.length) return;
-      mapCustomArtifactSequence.pop();
-      mapCustomArtifactRoutePoints = [];
-      mapCustomArtifactRouteLegs = [];
-      mapCustomArtifactMeters = 0;
-      saveCustomArtifactRoute();
-      renderCustomArtifactRoute();
-      renderKnownLocationsLayer();
-      updateCustomArtifactRouteGeometry();
-      requestCustomArtifactBuild();
-      updateMapRouteHeaderSummary();
-    });
-  }
-  if (els.mapMixedClearBtn) {
-    els.mapMixedClearBtn.addEventListener('click', () => {
-      clearCustomArtifactRoute();
-      renderKnownLocationsLayer();
-    });
-  }
-
   if (els.mapArtifactBaseSelect) {
     els.mapArtifactBaseSelect.addEventListener('change', event => {
       const key = event.target.value;
