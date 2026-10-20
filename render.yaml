@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: zone-clock-publisher
+    runtime: python
+    rootDir: publisher
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PUBLISH_PASSWORD
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_REPO
+        value: sevynnewma935-max/stalker2-zone-clock
+      - key: GITHUB_BRANCH
+        value: main
+      - key: ALLOWED_ORIGIN
+        sync: false
