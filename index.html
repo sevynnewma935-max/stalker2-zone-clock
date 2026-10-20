@@ -696,9 +696,24 @@
             Большой график расхождения времени Зоны и реального времени.
           </div>
 </div>
+<div class="settings-group" id="releaseAdminGroup">
+<div class="settings-heading">ПУБЛИКАЦИЯ НОВОЙ ВЕРСИИ</div>
+<button class="btn" id="openPublishBtn" type="button">ЗАГРУЗИТЬ ZIP НА СЕРВЕР</button>
+<div class="settings-subnote">Только для администратора. ZIP будет отправлен на Render, затем опубликован через GitHub → Vercel.</div>
+<div id="publishPanel" class="publish-panel" hidden>
+<label for="publishApiUrl">Адрес сервера Render (HTTPS)</label>
+<input id="publishApiUrl" type="url" inputmode="url" placeholder="https://zone-clock-publisher.onrender.com" autocomplete="url" />
+<label for="publishPassword">Пароль администратора</label>
+<input id="publishPassword" type="password" placeholder="Пароль публикации" autocomplete="off" />
+<label for="publishZip">Архив PWA vXXX.zip</label>
+<input id="publishZip" type="file" accept=".zip,application/zip" />
+<button class="btn" id="publishSubmitBtn" type="button">ОПУБЛИКОВАТЬ ВЕРСИЮ</button>
+<div class="settings-subnote" id="publishStatus" role="status" aria-live="polite">Новая версия появится после успешной публикации Vercel.</div>
+</div>
+</div>
 <div class="settings-group version-group">
 <div class="settings-heading">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
-<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.64</strong></div>
+<div aria-label="Версия приложения" class="app-version">ZONE CLOCK <strong>v1.66</strong></div>
 <button class="btn update-app-btn" id="updateAppBtn" type="button">
             ПОЛУЧИТЬ ПОСЛЕДНЮЮ ВЕРСИЮ
           </button>
