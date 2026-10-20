@@ -4012,6 +4012,26 @@ mapMeasureHint: $('mapMeasureHint'),
       label: 'Артефакт · Железный лес'
     });
 
+
+    // v165: 17 artifact markers from Zaton and Swamps.
+    result.push({ id: 'extra:screenshot_20261019_01', routeKey: 'extra_artifacts', markerIndex: 1, x: 1256.4, y: 1284.1, label: 'Артефакт · Затон 1' });
+    result.push({ id: 'extra:screenshot_20261019_02', routeKey: 'extra_artifacts', markerIndex: 2, x: 1286.5, y: 1331.8, label: 'Артефакт · Затон 2' });
+    result.push({ id: 'extra:screenshot_20261019_03', routeKey: 'extra_artifacts', markerIndex: 3, x: 1843.1, y: 1359.1, label: 'Артефакт · Затон 3' });
+    result.push({ id: 'extra:screenshot_20261019_04', routeKey: 'extra_artifacts', markerIndex: 4, x: 1519.5, y: 1403.0, label: 'Артефакт · Затон 4' });
+    result.push({ id: 'extra:screenshot_20261019_05', routeKey: 'extra_artifacts', markerIndex: 5, x: 1604.3, y: 1405.6, label: 'Артефакт · Затон 5' });
+    result.push({ id: 'extra:screenshot_20261019_06', routeKey: 'extra_artifacts', markerIndex: 6, x: 1617.8, y: 1445.5, label: 'Артефакт · Затон 6' });
+    result.push({ id: 'extra:screenshot_20261019_07', routeKey: 'extra_artifacts', markerIndex: 7, x: 1776.5, y: 1490.2, label: 'Артефакт · Затон 7' });
+    result.push({ id: 'extra:screenshot_20261019_08', routeKey: 'extra_artifacts', markerIndex: 8, x: 1202.5, y: 1493.8, label: 'Артефакт · Затон 8' });
+    result.push({ id: 'extra:screenshot_20261019_09', routeKey: 'extra_artifacts', markerIndex: 9, x: 1408.5, y: 1536.4, label: 'Артефакт · Затон 9' });
+    result.push({ id: 'extra:screenshot_20261019_10', routeKey: 'extra_artifacts', markerIndex: 10, x: 1755.9, y: 1645.3, label: 'Артефакт · Болота 1' });
+    result.push({ id: 'extra:screenshot_20261019_11', routeKey: 'extra_artifacts', markerIndex: 11, x: 1926.4, y: 1678.0, label: 'Артефакт · Болота 2' });
+    result.push({ id: 'extra:screenshot_20261019_12', routeKey: 'extra_artifacts', markerIndex: 12, x: 1801.7, y: 1778.1, label: 'Артефакт · Болота 3' });
+    result.push({ id: 'extra:screenshot_20261019_13', routeKey: 'extra_artifacts', markerIndex: 13, x: 1854.8, y: 1789.7, label: 'Артефакт · Болота 4' });
+    result.push({ id: 'extra:screenshot_20261019_14', routeKey: 'extra_artifacts', markerIndex: 14, x: 1960.0, y: 1787.7, label: 'Артефакт · Болота 5' });
+    result.push({ id: 'extra:screenshot_20261019_15', routeKey: 'extra_artifacts', markerIndex: 15, x: 1932.6, y: 1842.2, label: 'Артефакт · Болота 6' });
+    result.push({ id: 'extra:screenshot_20261019_16', routeKey: 'extra_artifacts', markerIndex: 16, x: 1984.6, y: 1894.1, label: 'Артефакт · Болота 7' });
+    result.push({ id: 'extra:screenshot_20261019_17', routeKey: 'extra_artifacts', markerIndex: 17, x: 1869.2, y: 1927.5, label: 'Артефакт · Болота 8' });
+
     MAP_ARTIFACT_BASE_KEYS.forEach(placeKey => {
       const place = MAP_KNOWN_LOCATIONS[placeKey];
       if (!place || place.visible === false) return;
@@ -11882,6 +11902,54 @@ mapMeasureHint: $('mapMeasureHint'),
       }
     );
   }
+
+  // v166: protected ZIP publication from the installed PWA.
+  const publishToggle = document.getElementById('openPublishBtn');
+  const publishPanel = document.getElementById('publishPanel');
+  const publishSubmit = document.getElementById('publishSubmitBtn');
+  const publishServer = document.getElementById('publishApiUrl');
+  const publishPassword = document.getElementById('publishPassword');
+  const publishZip = document.getElementById('publishZip');
+  const publishStatus = document.getElementById('publishStatus');
+  if (publishServer) publishServer.value = localStorage.getItem('zc_publish_api') || '';
+  if (publishToggle && publishPanel) publishToggle.addEventListener('click', () => {
+    publishPanel.hidden = !publishPanel.hidden;
+  });
+  if (publishSubmit) publishSubmit.addEventListener('click', async () => {
+    const server = (publishServer.value || '').trim().replace(/\/+$/, '');
+    const password = publishPassword.value;
+    const zip = publishZip.files && publishZip.files[0];
+    if (!server.startsWith('https://') || !password || !zip || !/\.zip$/i.test(zip.name)) {
+      publishStatus.textContent = 'Укажите HTTPS-адрес Render, пароль и ZIP-архив.';
+      return;
+    }
+    if (zip.size > 230 * 1024 * 1024) {
+      publishStatus.textContent = 'Архив превышает лимит 230 МБ.';
+      return;
+    }
+    localStorage.setItem('zc_publish_api', server);
+    publishSubmit.disabled = true;
+    publishStatus.textContent = 'Отправка ZIP на Render… Не закрывайте окно.';
+    const form = new FormData();
+    form.append('file', zip, zip.name);
+    try {
+      const response = await fetch(server + '/publish', {
+        method: 'POST', headers: {'X-Publish-Password': password}, body: form,
+        cache: 'no-store', mode: 'cors'
+      });
+      let result = {};
+      try { result = await response.json(); } catch (_) {}
+      if (!response.ok) throw new Error(result.detail || 'HTTP ' + response.status);
+      publishStatus.textContent = 'GitHub обновлён: ' + (result.version || 'новая версия') +
+        '. Файлов изменено: ' + result.changed_files +
+        '. Vercel публикует сайт. Нажмите «Получить последнюю версию» через 1–3 минуты.';
+      publishPassword.value = '';
+    } catch (error) {
+      publishStatus.textContent = 'Ошибка публикации: ' + (error.message || String(error));
+    } finally {
+      publishSubmit.disabled = false;
+    }
+  });
 
   if (els.updateAppBtn) {
     els.updateAppBtn.addEventListener('click', updateApplicationNow);
