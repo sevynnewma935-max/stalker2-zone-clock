@@ -74,7 +74,7 @@ async def publish(file: UploadFile = File(...), x_publish_password: str = Header
                 raise HTTPException(413, "File too large")
             collected[path] = content
     html = collected.get("index.html", b"").decode("utf-8", "replace")
-    version = re.search(r"ZONE CLOCK\\s*<strong>\\s*(v\\d+\\.\\d+)\\s*</strong>", html)
+    version = re.search(r"ZONE CLOCK\s*<strong>\s*(v\d+\\.\d+)\s*</strong>", html)
     if not version or "app.js" not in collected or "service-worker.js" not in collected:
         raise HTTPException(400, "Invalid Zone Clock build")
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
@@ -90,7 +90,7 @@ async def publish(file: UploadFile = File(...), x_publish_password: str = Header
         known = {i["path"]: i["sha"] for i in current["tree"] if i["type"] == "blob"}
         changed = []
         for path, content in collected.items():
-            blob_hash = hashlib.sha1(b"blob " + str(len(content)).encode() + b"\\0" + content).hexdigest()
+            blob_hash = hashlib.sha1(b"blob " + str(len(content)).encode() + b"\0" + content).hexdigest()
             if known.get(path) == blob_hash:
                 continue
             blob = await gh(client, "POST", f"/repos/{REPO}/git/blobs",
