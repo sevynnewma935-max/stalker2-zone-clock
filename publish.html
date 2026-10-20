@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111612"><title>ZONE CLOCK — публикация</title>
+<style>body{font:16px system-ui,sans-serif;background:#111612;color:#eee;margin:0;padding:24px}main{max-width:540px;margin:auto}h1{font-size:22px}label{display:block;margin:18px 0 6px}input,button{box-sizing:border-box;width:100%;padding:13px;border-radius:9px;font:inherit}input{color:white;background:#232c27;border:1px solid #67756c}button{border:0;background:#ba8733;color:#17140d;font-weight:700;margin-top:24px}button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere}a{color:#e2b96b}</style></head>
+<body><main><p><a href="/">← ZONE CLOCK</a></p><h1>Публикация новой версии</h1>
+<p>Выберите подготовленный ZIP. Сервер Render обновит GitHub; Vercel автоматически опубликует сайт после коммита.</p>
+<form id="f"><label for="endpoint">Адрес Render Publisher (HTTPS)</label><input id="endpoint" type="url" placeholder="https://zone-clock-publisher.onrender.com" required>
+<label for="password">Пароль администратора</label><input id="password" type="password" autocomplete="off" required>
+<label for="archive">ZIP-архив версии</label><input id="archive" type="file" accept=".zip,application/zip" required>
+<button id="send" type="submit">Опубликовать версию</button></form><pre id="message" role="status"></pre>
+<script>
+const f=document.getElementById('f'),msg=document.getElementById('message'),send=document.getElementById('send'),endpoint=document.getElementById('endpoint');
+endpoint.value=localStorage.getItem('zcPublisherEndpoint')||'';
+f.addEventListener('submit',async e=>{
+ e.preventDefault();send.disabled=true;msg.textContent='Загрузка ZIP — не закрывайте страницу...';
+ const url=endpoint.value.trim().replace(/\/$/,'');
+ if(!url.startsWith('https://')){msg.textContent='Нужен HTTPS-адрес Render';send.disabled=false;return;}
+ localStorage.setItem('zcPublisherEndpoint',url);
+ const fd=new FormData();fd.append('file',document.getElementById('archive').files[0]);
+ try{const r=await fetch(url+'/publish',{method:'POST',headers:{'X-Publish-Password':document.getElementById('password').value},body:fd});
+ const data=await r.json();if(!r.ok)throw new Error(data.detail||'HTTP '+r.status);
+ msg.textContent='Отправлено: '+data.version+'. Изменено файлов: '+(data.changed_files||0)+'. Дождитесь развёртывания Vercel.';}
+ catch(error){msg.textContent='Ошибка: '+error.message+'\nПроверьте адрес Render, пароль, CORS и размер ZIP.';}finally{send.disabled=false;}
+});
+</script></main></body></html>
