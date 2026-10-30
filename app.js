@@ -1609,7 +1609,7 @@ mapMeasureHint: $('mapMeasureHint'),
     malachite_vpc_mirror: { label: 'Зеркало VPC', x: 166.9, y: 1173.4 },
     malachite_x17_lab: { label: 'Лаборатория X17', x: 261.0, y: 1187.7 },
     malachite_railway_tunnel: { label: 'Малахитовый железнодорожный тоннель', x: 248.2, y: 1249.4 },
-    malachite_energy_gas_station: { label: 'Автозаправочная станция «Энергия»', x: 387.1, y: 1235.5 },
+    malachite_energy_gas_station: { label: 'АТП «Энергия»', x: 387.1, y: 1235.5 },
     malachite_checkpoint: { label: 'КПП Малахит', x: 419.5, y: 1257.9 },
 
     // v168: place 10.png, Burnt Forest, affine-aligned to 2048px terrain.
@@ -1673,9 +1673,31 @@ mapMeasureHint: $('mapMeasureHint'),
     duga_school: { label: "Школа", x: 460.6, y: 1698.7 },
     duga_officers: { label: "Офицерский квартал", x: 486.6, y: 1653.6 },
 
+    // v172: place 14.png, SIFT terrain-registered (49 inliers) on 4096 base map.
+    malachite_repair_depot: { label: "Рембаза «Малахита»", x: 314.5, y: 1290.6 },
+    malachite_rail_crossing: { label: "Железнодорожный переезд", x: 339.3, y: 1306.9 },
+    malachite_monolith_meeting: { label: "Собрание «Монолита»", x: 293.8, y: 1341 },
+    malachite_stechanka: { label: "Стечанка", x: 428.9, y: 1345.7 },
+    malachite_luch_plant: { label: "Завод ЦМИ «Луч»", x: 490, y: 1291.8 },
+    malachite_island_transformer: { label: "Трансформатор на острове", x: 582.8, y: 1250.1 },
+    malachite_toxic_swamp: { label: "Токсическое болото", x: 606.3, y: 1292.5 },
+    malachite_bloodsucker_village: { label: "Село кровососов", x: 590, y: 1316.9 },
+    malachite_observation_post: { label: "Пост наблюдения", x: 422.3, y: 1401.2 },
+    malachite_techzone_checkpoint: { label: "КПП Техзоны", x: 380.9, y: 1418.8 },
+
   };
 
   const MAP_ROUTE_LOCATION_ORDER = [
+    'malachite_repair_depot',
+    'malachite_rail_crossing',
+    'malachite_monolith_meeting',
+    'malachite_stechanka',
+    'malachite_luch_plant',
+    'malachite_island_transformer',
+    'malachite_toxic_swamp',
+    'malachite_bloodsucker_village',
+    'malachite_observation_post',
+    'malachite_techzone_checkpoint',
     'duga_crystal',
     'duga_cooling',
     'duga_comcenter',
