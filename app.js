@@ -1446,7 +1446,8 @@ mapMeasureHint: $('mapMeasureHint'),
     duga: {
       label: 'Дуга',
       x: 473.3,
-      y: 1653.3
+      y: 1653.3,
+      visible: false
     },
     chemical: {
       label: 'Химический завод',
@@ -1495,7 +1496,8 @@ mapMeasureHint: $('mapMeasureHint'),
     burnt_forest: {
       label: 'Горелый лес',
       x: 653.4,
-      y: 1511.0
+      y: 1511.0,
+      visible: false
     },
     cement_bridge: {
       label: 'Мост у Цементного завода',
@@ -1745,8 +1747,6 @@ mapMeasureHint: $('mapMeasureHint'),
     'wild_island',
     'chemical',
     'lesser_zone',
-    'burnt_forest',
-    'duga',
     'zaton_varta',
     'zaton_sultan',
     'shevchenko',
