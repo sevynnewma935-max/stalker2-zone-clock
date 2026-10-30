@@ -5633,3 +5633,14 @@ button.zone-button-press:not(:disabled) {
 .publish-panel label{font-size:.8rem;opacity:.9}
 .publish-panel input{min-width:0;width:100%;box-sizing:border-box;padding:10px;border:1px solid #576653;background:#121914;color:#f0f5e7;border-radius:7px}
 .publish-panel input[type=file]{font-size:.78rem}
+
+/* v167: 900m journey checkpoint markers and live progress HUD. */
+.journey-checkpoint { pointer-events:all; cursor:pointer; }
+.journey-checkpoint circle { fill:#b48024;stroke:#25190b;stroke-width:3;filter:drop-shadow(0 2px 4px #000a); }
+.journey-checkpoint text { font:700 14px system-ui,sans-serif;fill:#fff;pointer-events:none; }
+.journey-checkpoint.future { opacity:.55; }
+.journey-checkpoint.passed circle { fill:#2a8555; }
+.journey-checkpoint.next circle { fill:#d9a13b;stroke:#fff;stroke-width:3; }
+.map-journey-hud .journey-eta { font-size:clamp(11px,2.5vw,15px);font-weight:800;color:#f4cb76; }
+.map-journey-hud .journey-speed,.map-journey-hud .journey-progress { font-size:11px;opacity:.9; }
+.map-journey-hud { flex-wrap:wrap; }
