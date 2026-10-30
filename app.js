@@ -4933,6 +4933,78 @@ mapMeasureHint: $('mapMeasureHint'),
     return 'ВЫБРОС: по текущему таймеру риск на этом отрезке остаётся низким, но точный момент заранее определить нельзя.';
   }
 
+
+  // v167: manual route checkpoints at 900 m intervals.
+  let journeyCheckpoints = [];
+  let journeyPassed = new Set();
+  let checkpointSvgGroup = null;
+  function createJourneyCheckpoints() {
+    journeyCheckpoints = [];
+    journeyPassed.clear();
+    const mode = mapJourneyPlan?.routeKey;
+    const raw = mode === MAP_ROUTE_MODE_ROAD_PLANNER ? mapRoadPlannerRoutePoints :
+      mode === MAP_ROUTE_MODE_CUSTOM_ARTIFACT ? mapCustomArtifactRoutePoints :
+      mode === MAP_ROUTE_MODE_MOVEMENT_TEST ? getMovementTestRoute().points : mapJourneySequence;
+    const path = (Array.isArray(raw) ? raw : []).filter(p => Number.isFinite(Number(p?.x)) &&
+      Number.isFinite(Number(p?.y))).map(p => ({x:Number(p.x), y:Number(p.y)}));
+    const metres = Number(mapJourneyPlan?.distanceMeters) || 0;
+    if (path.length < 2 || metres <= 0) { drawJourneyCheckpoints(); return; }
+    const cumulative = [0];
+    for (let i=1;i<path.length;i++) cumulative.push(cumulative[i-1]+
+      Math.hypot(path[i].x-path[i-1].x, path[i].y-path[i-1].y));
+    const total = cumulative[cumulative.length-1];
+    if (!(total>0)) return;
+    for(let m=900; m<metres-150; m+=900) {
+      const pos = m/metres*total;
+      let j=1;
+      while(j<cumulative.length-1 && cumulative[j]<pos) j++;
+      const delta=cumulative[j]-cumulative[j-1];
+      const t=delta>0 ? (pos-cumulative[j-1])/delta : 0;
+      journeyCheckpoints.push({x:path[j-1].x+t*(path[j].x-path[j-1].x),
+        y:path[j-1].y+t*(path[j].y-path[j-1].y), metres:m});
+    }
+    drawJourneyCheckpoints();
+  }
+  function currentJourneyMetres() {
+    return journeyPassed.size ? journeyCheckpoints[journeyPassed.size-1]?.metres||0 : 0;
+  }
+  function currentJourneySpeed() {
+    const elapsed=(Date.now()-mapJourneyStartedAtMs)/1000;
+    return elapsed>0 && currentJourneyMetres()>0 ? currentJourneyMetres()*3.6/elapsed : 0;
+  }
+  function drawJourneyCheckpoints() {
+    const svg=document.getElementById('mapOverlay');
+    if(!svg)return;
+    if(!checkpointSvgGroup) {
+      checkpointSvgGroup=document.createElementNS('http://www.w3.org/2000/svg','g');
+      checkpointSvgGroup.setAttribute('id','journeyCheckpointLayer');
+      svg.append(checkpointSvgGroup);
+    }
+    checkpointSvgGroup.replaceChildren();
+    if(!mapJourneyActive)return;
+    journeyCheckpoints.forEach((p,i)=>{
+      const pos=routePointToScreen(p);
+      const group=document.createElementNS('http://www.w3.org/2000/svg','g');
+      group.setAttribute('transform',`translate(${pos.x},${pos.y})`);
+      group.setAttribute('class','journey-checkpoint '+(journeyPassed.has(i)?'passed':i===journeyPassed.size?'next':'future'));
+      const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      circle.setAttribute('r','16');
+      const label=document.createElementNS('http://www.w3.org/2000/svg','text');
+      label.setAttribute('text-anchor','middle');label.setAttribute('dy','5');
+      label.textContent=journeyPassed.has(i)?'✓':String(i+1);
+      group.append(circle,label);
+      group.addEventListener('pointerdown',event=>event.stopPropagation());
+      group.addEventListener('click',event=>{
+        event.stopPropagation();
+        if(i!==journeyPassed.size || !mapJourneyActive)return;
+        journeyPassed.add(i);
+        drawJourneyCheckpoints();updateJourneyHud();
+      });
+      checkpointSvgGroup.append(group);
+    });
+  }
+  window.setInterval(()=>{if(mapJourneyActive)updateJourneyHud()},1000);
+
   function finishJourneyAndShowSummary() {
     if (!mapJourneyActive || !mapJourneyPlan) return;
     const distance = Number(mapJourneyPlan.distanceMeters) || 0;
@@ -4955,11 +5027,16 @@ mapMeasureHint: $('mapMeasureHint'),
       artifactCount ? 'Хорошая добыча, сталкер. Не задерживайся на открытой местности — до укрытия ещё нужно дойти.' :
       'Маршрут позади, сталкер. Пусть обратная дорога будет спокойнее пройденной.';
 
+    if(els.mapJourneyCompleteSpeed)els.mapJourneyCompleteSpeed.textContent =
+      (seconds>0?distance*3.6/seconds:0).toFixed(1).replace('.',',')+' км/ч';
+    if(els.mapJourneyCompleteCheckpoints)els.mapJourneyCompleteCheckpoints.textContent =
+      journeyPassed.size+'/'+journeyCheckpoints.length;
     const finishedMode = mapJourneyPlan.routeKey;
     mapJourneyActive = false;
     mapJourneyPlan = null;
     mapJourneySequence = [];
     mapJourneyStartedAtMs = 0;
+    journeyCheckpoints=[];journeyPassed.clear();drawJourneyCheckpoints();
     if (finishedMode === MAP_ROUTE_MODE_CUSTOM_ARTIFACT) clearCustomArtifactRoute();
     if (finishedMode === MAP_ROUTE_MODE_ROAD_PLANNER) clearRoadPlanner();
     updateJourneyHud();
@@ -4993,11 +5070,17 @@ mapMeasureHint: $('mapMeasureHint'),
     }
 
     if (els.mapJourneyHudTime) {
-      els.mapJourneyHudTime.textContent =
-        formatJourneyZoneTime(
-          mapJourneyPlan.zoneAdvanceSeconds
-        );
+      els.mapJourneyHudTime.textContent = formatJourneyZoneTime(mapJourneyPlan.zoneAdvanceSeconds);
     }
+    const speed=currentJourneySpeed();
+    if(els.mapJourneyHudEta)els.mapJourneyHudEta.textContent=speed>0
+      ? 'ОСТАЛОСЬ ≈ '+formatMovementElapsed(
+          ((Number(mapJourneyPlan.distanceMeters)||0)-currentJourneyMetres())*3.6/speed)
+      : 'ОСТАЛОСЬ: отметьте точку № 1';
+    if(els.mapJourneyHudSpeed)els.mapJourneyHudSpeed.textContent=speed>0
+      ? 'СР. '+speed.toFixed(1).replace('.',',')+' км/ч' : 'СР. СКОРОСТЬ —';
+    if(els.mapJourneyHudProgress)els.mapJourneyHudProgress.textContent=
+      journeyPassed.size+'/'+journeyCheckpoints.length+' точек';
   }
 
   function openJourneyPreview() {
@@ -5375,6 +5458,7 @@ mapMeasureHint: $('mapMeasureHint'),
         updateMapFullscreenUI();
       }
 
+      createJourneyCheckpoints();
       updateJourneyHud();
 
       window.setTimeout(() => {
@@ -5414,6 +5498,7 @@ mapMeasureHint: $('mapMeasureHint'),
         updateMapFullscreenUI();
       }
 
+      createJourneyCheckpoints();
       updateJourneyHud();
 
       window.setTimeout(() => {
@@ -5454,6 +5539,7 @@ mapMeasureHint: $('mapMeasureHint'),
       updateMapFullscreenUI();
     }
 
+    createJourneyCheckpoints();
     updateJourneyHud();
 
     window.setTimeout(() => {
@@ -7152,6 +7238,7 @@ mapMeasureHint: $('mapMeasureHint'),
         updatePresetRouteScreenGeometry();
         updateRoadPlannerScreenGeometry();
         updateCustomArtifactRouteGeometry();
+        if(mapJourneyActive)drawJourneyCheckpoints();
       });
     }
   }
